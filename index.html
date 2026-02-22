@@ -123,11 +123,9 @@
 <!-- Utilities & Init -->
 <script src="js/utils.js"></script>
 <script>
-  // Load persisted data from localStorage, then initialize Clerk.
-  // Clerk checks for an existing session and calls setState({loggedIn:true})
-  // if the user is already signed in — no password prompt needed.
   loadState();
-  window.addEventListener('load', () => initClerk());
+  render();
+  initClerk();
 </script>
 </body>
 </html>
