@@ -1,0 +1,559 @@
+// ── Resume Builder ────────────────────────────────────────────────────
+function renderResume() {
+  const jobs = state.jobs;
+  const selJob = state.ui.resumeJob || '';
+  const fmt = state.ui.resumeFmt || 'ats';
+  const mode = state.ui.resumeMode || 'targeted'; // 'targeted' or 'generic'
+  const job = jobs.find(j=>j.id===selJob);
+  const busy = state.ui.resumeBusy || false;
+  const status = state.ui.resumeStatus || '';
+  const result = state.ui.resumeResult || null;
+  const error = state.ui.resumeError || '';
+
+  const jobOptions = jobs.map(j=>`<option value="${j.id}" ${selJob===j.id?'selected':''}>${esc(j.title)} — ${esc(j.company)}</option>`).join('');
+
+  const canGenTargeted = !busy && !!selJob && !!state.apiKey;
+  const canGenGeneric  = !busy && !!state.apiKey && !!state.profile?.fullName;
+
+  return `
+    <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">Resume Builder</h1>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px">AI-powered resume writing — Claude reads your actual experience and writes a real resume</p>
+    ${!state.apiKey?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:20px;font-size:14px;color:#92400e">⚠️ <strong>API Key Required.</strong> Go to <strong>⚙ API Settings</strong> in the sidebar to add your Claude API key first.</div>`:''}
+
+    <!-- Mode selector tabs -->
+    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb;width:fit-content">
+      <button onclick="toggleUI('resumeMode','targeted')" style="padding:10px 22px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:${mode==='targeted'?'#2563eb':'white'};color:${mode==='targeted'?'white':'#6b7280'};transition:all 0.15s">🎯 Tailored to a Job</button>
+      <button onclick="toggleUI('resumeMode','generic')" style="padding:10px 22px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:${mode==='generic'?'#2563eb':'white'};color:${mode==='generic'?'white':'#6b7280'};transition:all 0.15s;border-left:1.5px solid #e5e7eb">📋 General Resume</button>
+    </div>
+
+    <div class="card">
+      <h2>${mode==='targeted'?'Configure & Generate Tailored Resume':'Generate General-Purpose Resume'}</h2>
+
+      ${mode==='targeted'?`
+      <p style="font-size:13px;color:#6b7280;margin:-8px 0 16px">Select a job from your tracker — Claude will tailor your resume and cover letter specifically for it.</p>
+      <div class="grid2">
+        <div class="field"><label class="field-label">Target Job</label>
+          <select id="resume-job" onchange="toggleUI('resumeJob',this.value)"><option value="">Select a job...</option>${jobOptions}</select></div>
+        <div class="field"><label class="field-label">Resume Format</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            ${[{id:'ats',l:'ATS-Friendly',d:'Passes screening bots'},{id:'visual',l:'Professional',d:'Polished for humans'}].map(f=>`
+              <div onclick="toggleUI('resumeFmt','${f.id}')" style="padding:10px;border:2px solid ${fmt===f.id?'#2563eb':'#e5e7eb'};background:${fmt===f.id?'#eff6ff':'white'};border-radius:8px;cursor:pointer">
+                <div style="font-weight:600;font-size:13px">${f.l}</div>
+                <div style="font-size:11px;color:#6b7280">${f.d}</div>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>
+      ${job?`<div style="background:#f9fafb;border-radius:8px;padding:10px;font-size:13px;margin-bottom:14px"><strong>${esc(job.title)}</strong> at <span style="color:#2563eb">${esc(job.company)}</span>${job.location?' — '+esc(job.location):''}${job.salaryRange?` <span style="color:#16a34a;font-weight:600">· ${esc(job.salaryRange)}</span>`:''}</div>`:''}
+      <div class="field" style="margin-bottom:16px">
+        <label class="field-label">Optional: Special instructions for this resume</label>
+        <textarea id="resume-instructions" rows="3" placeholder="e.g., Consolidate all active duty into one section called 'Military Experience'&#10;Emphasize leadership over technical skills&#10;Keep it to one page&#10;Lead with my security clearance" style="font-size:13px" onchange="toggleUI('resumeInstructions',this.value)">${esc(state.ui.resumeInstructions||'')}</textarea>
+        <div style="font-size:11px;color:#9ca3af;margin-top:3px">Tell Claude how you want this specific resume structured or weighted — it will follow your lead.</div>
+      </div>
+      <button class="btn btn-primary" onclick="generateResume()" ${canGenTargeted?'':'disabled'} style="padding:12px 24px">
+        ${busy?'<div class="spinner"></div> Building...':'🚀 Generate Resume & Cover Letter'}
+      </button>
+      ${!state.jobs.length&&!busy?`<p style="font-size:13px;color:#f59e0b;margin-top:10px">💡 No jobs in your tracker yet — <button onclick="setState({view:'jobs'})" style="background:none;border:none;color:#2563eb;cursor:pointer;font-size:13px;font-weight:600;padding:0">add one</button>, or use the General Resume tab instead.</p>`:''}
+      `:`
+      <p style="font-size:13px;color:#6b7280;margin:-8px 0 16px">Generates a strong all-purpose resume you can hand out at career fairs, networking events, or any job posting. Also creates a short professional bio you can use on LinkedIn or email.</p>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-size:13px;color:#1e40af;margin-bottom:16px">
+        💡 This resume highlights your strongest experience across all industries. Use it when you don't have a specific job posting yet.
+      </div>
+      <div class="grid2" style="margin-bottom:14px">
+        <div class="field"><label class="field-label">Resume Format</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            ${[{id:'ats',l:'ATS-Friendly',d:'Passes screening bots'},{id:'visual',l:'Professional',d:'Polished for humans'}].map(f=>`
+              <div onclick="toggleUI('resumeFmt','${f.id}')" style="padding:10px;border:2px solid ${fmt===f.id?'#2563eb':'#e5e7eb'};background:${fmt===f.id?'#eff6ff':'white'};border-radius:8px;cursor:pointer">
+                <div style="font-weight:600;font-size:13px">${f.l}</div>
+                <div style="font-size:11px;color:#6b7280">${f.d}</div>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="field"><label class="field-label">Optional: Any specific focus areas?</label>
+          <input id="generic-focus" placeholder="e.g., leadership roles, project management, defense sector..." value="${esc(state.ui.genericFocus||'')}">
+          <div style="font-size:11px;color:#9ca3af;margin-top:4px">Leave blank for a broad general resume</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="generateGenericResume()" ${canGenGeneric?'':'disabled'} style="padding:12px 24px">
+        ${busy?'<div class="spinner"></div> Building...':'📋 Generate General Resume & Bio'}
+      </button>
+      ${!state.profile?.fullName&&!busy?`<p style="font-size:13px;color:#f59e0b;margin-top:10px">⚠️ Complete your profile first — <button onclick="setState({view:'profile'})" style="background:none;border:none;color:#2563eb;cursor:pointer;font-size:13px;font-weight:600;padding:0">go to Profile</button>.</p>`:''}
+      `}
+
+      ${busy?`<div style="background:#eff6ff;border-radius:8px;padding:12px;margin-top:12px;display:flex;align-items:center;gap:10px"><div class="spinner"></div><div><div style="font-weight:600;color:#1e40af;font-size:14px">${status}</div><div style="font-size:12px;color:#3b82f6;margin-top:2px">Takes 20–40 seconds — Claude is reading your experience</div></div></div>`:''}
+      ${error?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;color:#dc2626">${esc(error)}</div>`:''}
+    </div>
+    ${result?renderResumeResult(result,fmt):''}`;
+}
+
+function renderResumeResult(result, fmt) {
+  const sc = result.ats?.score;
+  const scoreGrad = sc>=85?'linear-gradient(135deg,#22c55e,#16a34a)':sc>=70?'linear-gradient(135deg,#3b82f6,#2563eb)':sc>=55?'linear-gradient(135deg,#f59e0b,#d97706)':'linear-gradient(135deg,#ef4444,#dc2626)';
+  const scoreBg = sc>=85?'#f0fdf4':sc>=70?'#eff6ff':sc>=55?'#fffbeb':'#fef2f2';
+  const scoreBorder = sc>=85?'#86efac':sc>=70?'#bfdbfe':sc>=55?'#fde68a':'#fecaca';
+  const scoreLabel = sc>=85?'Strong Match — Apply with confidence':sc>=70?'Good Match — Address gaps in cover letter':sc>=55?'Moderate Fit — Emphasize transferable skills':'Stretch Role — Lead with cover letter';
+  const isGeneric = result.isGeneric || false;
+
+  return `
+    ${!isGeneric && result.ats ? `
+    <!-- Overall Score -->
+    <div class="card" style="background:${scoreBg};border:2px solid ${scoreBorder}">
+      <h2 style="margin-bottom:12px">🎯 Resume Fit Analysis</h2>
+      <div style="display:flex;gap:20px;align-items:center;margin-bottom:16px">
+        <div class="score-circle" style="background:${scoreGrad};flex-shrink:0">
+          <span style="font-size:28px;font-weight:800">${sc}</span>
+          <span style="font-size:11px;opacity:0.9">Grade: ${result.ats.grade}</span>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:17px;margin-bottom:4px">${scoreLabel}</div>
+          <div style="font-size:14px;color:#4b5563;line-height:1.5">${esc(result.ats.summary||'')}</div>
+          ${result.ats.clearance_value ? `<div style="margin-top:8px;background:#ede9fe;border:1px solid #c4b5fd;border-radius:6px;padding:6px 10px;font-size:12px;color:#6d28d9;font-weight:600">🔐 ${esc(result.ats.clearance_value)}</div>` : ''}
+        </div>
+      </div>
+    </div>
+
+    <!-- Transferable Skills — the key veteran section -->
+    ${(result.ats.transferable_strengths||[]).length ? `
+    <div class="card" style="border-left:4px solid #2563eb">
+      <h2 style="margin-bottom:4px">🪖 → 💼 Your Military Experience Translates</h2>
+      <p style="font-size:13px;color:#6b7280;margin:0 0 12px">Here's how your military background maps to what this employer needs — even if the words look different on paper.</p>
+      ${(result.ats.transferable_strengths||[]).map(s=>`
+        <div style="display:flex;gap:10px;align-items:start;padding:10px;background:#eff6ff;border-radius:8px;margin-bottom:8px">
+          <span style="font-size:18px;flex-shrink:0">✓</span>
+          <span style="font-size:14px;color:#1e3a8a;line-height:1.5">${esc(s)}</span>
+        </div>`).join('')}
+    </div>` : ''}
+
+    <!-- Coaching tip -->
+    ${result.ats.coaching_tip ? `
+    <div class="card" style="background:#fffbeb;border:1px solid #fde68a">
+      <h2 style="margin-bottom:6px">💡 Top Coaching Tip</h2>
+      <p style="font-size:14px;color:#92400e;margin:0;line-height:1.6">${esc(result.ats.coaching_tip)}</p>
+    </div>` : ''}
+
+    <!-- Strengths & Gaps -->
+    <div class="card">
+      <h2 style="margin-bottom:12px">📋 Detailed Breakdown</h2>
+      <div class="grid2">
+        <div>
+          ${(result.ats.strengths||[]).length?`
+          <div style="font-size:12px;font-weight:700;color:#16a34a;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">✅ Resume Strengths</div>
+          ${(result.ats.strengths||[]).map(s=>`<div style="font-size:13px;color:#166534;padding:6px 8px;background:#f0fdf4;border-radius:6px;margin-bottom:6px">• ${esc(s)}</div>`).join('')}`:''}
+        </div>
+        <div>
+          ${(result.ats.gaps||[]).length?`
+          <div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">⚠️ Areas to Strengthen</div>
+          ${(result.ats.gaps||[]).map(g=>`<div style="font-size:13px;color:#92400e;padding:6px 8px;background:#fffbeb;border-radius:6px;margin-bottom:6px">• ${esc(g)}</div>`).join('')}`:''}
+        </div>
+      </div>
+      ${(result.ats.keywords_missing||[]).length?`
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f3f4f6">
+        <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">🔑 Keywords to Add (ATS Screening)</div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:8px">Consider weaving these into your resume naturally — these terms help get past automated screening.</div>
+        <div>${(result.ats.keywords_missing||[]).map(k=>`<span class="tag tag-orange">${esc(k)}</span>`).join('')}</div>
+      </div>`:''}
+    </div>` : ''}
+
+    <!-- Resume output -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+        <h2 style="margin:0">📄 ${isGeneric?'General Resume':'Resume'} — ${fmt==='ats'?'ATS-Friendly':'Professional'} Format</h2>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="copyResumeToClipboard()">📋 Copy Text</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportResumeToWord()">📝 Export Word</button>
+          <button class="btn btn-primary btn-sm" onclick="printResume()">🖨 Print / Save PDF</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#6b7280;margin:0 0 12px">Print / Save PDF → in print dialog choose <strong>Save as PDF</strong> · Or copy text to paste into Word/Google Docs for formatting</p>
+      <div class="resume-preview" id="resume-text-output" style="font-family:${fmt==='ats'?'Arial':'Georgia'},serif">${esc(result.resume)}</div>
+    </div>
+
+    ${result.bio ? `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h2 style="margin:0">🙋 Professional Bio</h2>
+          <p style="font-size:12px;color:#6b7280;margin:4px 0 0">Use on LinkedIn "About" section, email intros, or anywhere you need a quick summary.</p>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="copyBioToClipboard()">📋 Copy for LinkedIn</button>
+          <button class="btn btn-primary btn-sm" onclick="downloadBio()">⬇ Download .txt</button>
+        </div>
+      </div>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 12px;font-size:12px;color:#1e40af;margin-bottom:10px">
+        💡 <strong>LinkedIn tip:</strong> Paste this into your LinkedIn "About" section. Then add 3-5 bullet points below it listing your key skills and clearance level.
+      </div>
+      <div class="resume-preview" id="bio-text">${esc(result.bio)}</div>
+    </div>` : ''}
+
+    ${result.coverLetter ? `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0">✉️ Cover Letter</h2>
+        <button class="btn btn-primary btn-sm" onclick="downloadCover()">⬇ Download .txt</button>
+      </div>
+      <div class="resume-preview" id="cover-text">${esc(result.coverLetter)}</div>
+    </div>` : ''}`;
+}
+
+async function generateResume() {
+  const selJob = state.ui.resumeJob;
+  if (!selJob) { alert('Select a job first'); return; }
+  if (!state.profile?.fullName) { alert('Complete your profile first (add your name in Profile)'); return; }
+  if (!state.apiKey) { alert('Add your API key in Settings first'); return; }
+  const job = state.jobs.find(j=>j.id===selJob);
+
+  // Capture latest instructions value from textarea before generating
+  const instrEl = document.getElementById('resume-instructions');
+  if (instrEl) toggleUI('resumeInstructions', instrEl.value);
+
+  const setStatus = (s) => setState({ ui:{...state.ui, resumeBusy:true, resumeStatus:s, resumeError:'', resumeResult:null} });
+
+  const context = buildResumeContext(job);
+
+  try {
+    setStatus('✍️ Writing tailored resume...');
+    // Snapshot any unsaved profile fields from the DOM before generating
+    const p = { ...state.profile };
+    ['fullName','email','phone','location','linkedin'].forEach(f => {
+      const el = document.getElementById('p-'+f); if(el && el.value) p[f] = el.value;
+    });
+
+    const contactBlock = [
+      p.fullName || '[Name]',
+      [p.phone, p.email].filter(Boolean).join(' | '),
+      p.linkedin ? p.linkedin.replace(/^https?:\/\//,'') : '',
+      p.location || ''
+    ].filter(Boolean).join('\n');
+
+    const userInstructions = state.ui.resumeInstructions?.trim() || '';
+
+    const resume = await callClaude(
+      `You are a former military officer turned senior resume writer. You've written hundreds of resumes for veterans and you know exactly what makes hiring managers stop scrolling. Your resumes sound like a real person wrote them — not a bot, not a template, not an HR form. You write the way a confident, accomplished human talks about their own career.
+
+WHAT MAKES A RESUME SOUND HUMAN (follow every one of these):
+
+VOICE:
+- Write the Professional Summary in first person, past/present tense, like the veteran is speaking directly — "I led..." or "After 20 years commanding..." NOT "Results-driven leader with proven track record"
+- Bullet points should vary in structure. Some start with a number ("12 soldiers, zero incidents"). Some start with a verb. Some start with a context clause ("During a 9-month deployment to...")
+- Read it out loud test: if any sentence sounds like it was generated by a machine, rewrite it
+
+FORBIDDEN WORDS AND PHRASES (never use any of these, ever):
+"results-driven" / "results-oriented" / "proven track record" / "dynamic" / "synergistic" / "leveraged" / "passionate about" / "detail-oriented" / "hard-working" / "go-getter" / "strategic thinker" / "thought leader" / "innovative" / "spearheaded" / "orchestrated" / "facilitated" / "championed" / "executed" (use "ran", "delivered", "completed") / "stakeholders" (use "partners", "decision-makers", "customers") / "deliverables" (use "results", "outputs", "work") / "utilize" (use "use") / "impactful" / "value-add" / "bandwidth" / "deep dive" / "circle back" / "move the needle" / "low-hanging fruit" / "best practices" / "robust" / "scalable" / "mission-critical"
+
+BULLET POINTS:
+- Every bullet needs at least ONE number — team size, budget, percentage, time, people trained, contracts, miles, sorties, whatever
+- Mix bullet lengths: some are one punchy line (under 12 words). Some are two lines with context
+- Use at least 6 different opening verbs across the whole resume — not all "Led" or "Managed"
+- Strong verbs: Directed, Built, Slashed, Doubled, Recovered, Rescued, Trained, Launched, Negotiated, Restructured, Deployed, Coordinated, Advised, Audited, Delivered, Reduced, Grew, Secured, Commanded, Overhauled
+- Translate all military jargon — hiring managers don't know what FOB, MOS, OPORD, or MTOE mean
+
+PROFESSIONAL SUMMARY (3 sentences max):
+- Sentence 1: Who they are + years of service + the ONE thing that defines their career
+- Sentence 2: The specific capability that's most relevant to this job
+- Sentence 3: What they're looking for / what they bring (optional — skip if it sounds generic)
+- Do NOT start with "I am a..." — that's weak. Start with the accomplishment or the context
+
+CONTACT BLOCK:
+- The contact block provided MUST appear verbatim at the top — do not add, remove, or reformat anything in it
+- Return ONLY the resume content, no preamble, no commentary, no "Here is your resume:"`,
+      `Write a complete, tailored resume for this veteran applying to the target job.
+
+${context}
+
+${userInstructions ? `VETERAN'S SPECIAL INSTRUCTIONS — follow these exactly:\n${userInstructions}\n` : ''}
+
+Use this EXACT contact block at the very top (copy it verbatim, do not change it):
+${contactBlock}
+
+Then continue with these sections using === headers: Professional Summary (2-3 sentences, first-person, specific and confident), Core Competencies (12-16 skills as comma-separated list), Professional Experience (reverse chronological, 4-6 bullets each with metrics), Awards & Recognition, Education, Certifications. Translate ALL military terms. Quantify every achievement.`
+    );
+
+    setStatus('✉️ Writing cover letter...');
+    const coverLetter = await callClaude(
+      `You are a career coach who writes cover letters that actually get read. You write them the way a confident, accomplished person would write them — specific, direct, and human. You avoid every cliché in the book.
+
+COVER LETTER RULES:
+- Open with something specific and compelling — NOT "I am writing to express my interest in..."
+- Never use: "I am passionate about", "I believe I would be a great fit", "Please find attached", "Thank you for your consideration", "I look forward to hearing from you"
+- Mention 2-3 real accomplishments with actual numbers
+- Connect military experience to business outcomes the company cares about
+- Sound like a real person wrote this at 9pm after doing research on the company — not like a template
+- Close with confidence, not desperation
+- Under 380 words. Plain text paragraphs only.`,
+      `Write a tailored cover letter for this veteran.\n\n${context}\n\nWrite 3-4 paragraphs. Paragraph 1: Strong opening hook — lead with your biggest relevant strength, not with "I am applying for...". Paragraph 2-3: Two specific accomplishments with numbers that directly connect to what this company needs. Final paragraph: Direct, confident close — why this role, what you bring, what happens next.`
+    );
+
+    setStatus('🔍 Analyzing fit & transferable skills...');
+    const atsRaw = await callClaude(
+      `You are a senior hiring manager and veteran career specialist who deeply understands military-to-civilian transitions. You evaluate resumes with full awareness that military experience translates powerfully to civilian roles — even when the exact civilian keywords aren't present.
+
+CRITICAL SCORING PHILOSOPHY:
+- Score based on DEMONSTRATED CAPABILITY, not keyword matching alone
+- A veteran who "led logistics for 200 personnel across 3 FOBs" has supply chain and operations management experience — score it accordingly
+- A veteran who "managed $4M equipment accountability program" has budget management and asset tracking experience
+- Military leadership roles (platoon sergeant, XO, OIC) translate directly to team management, project leadership, operations roles
+- Intelligence analysts have data analysis, reporting, and pattern recognition skills
+- Combat arms veterans have crisis management, decision-making under pressure, team leadership
+- Security clearances are a SIGNIFICANT positive differentiator — always call this out
+- Do NOT penalize for lack of corporate buzzwords if the underlying competency is clearly demonstrated
+- NEVER score a veteran below 55 purely because of keyword gaps — focus on transferable capability`,
+
+      `You are evaluating a MILITARY VETERAN's resume for a civilian job. Score generously for transferable skills, not just keyword matches.
+
+RESUME:
+${resume}
+
+TARGET JOB: ${job.title} at ${job.company}
+Job Notes/Requirements: ${job.notes || 'Not provided'}
+
+VETERAN BACKGROUND:
+Branch: ${state.profile.branch||'N/A'} | Rank: ${state.profile.rank||'N/A'} | Years: ${state.profile.yearsOfService||'N/A'}
+Clearance: ${state.profile.clearance||'None'} (${state.profile.clearanceStatus||'N/A'})
+
+SCORING INSTRUCTIONS:
+1. Identify what the job REALLY needs (core competencies behind the job title)
+2. Map military experience to those core competencies — look for equivalence, not exact matches
+3. Score 0-100 where:
+   - 85-100: Strong match, military background directly applicable
+   - 70-84: Good match, most core competencies covered via transferable experience
+   - 55-69: Moderate match, solid foundation but some real gaps to address
+   - 40-54: Stretch role, significant gaps but worth attempting with strong cover letter
+   - Below 40: Poor fit, fundamental requirements not met
+
+Return ONLY this JSON (no markdown, no extra text):
+{
+  "score": <0-100>,
+  "grade": "A/B/C/D/F",
+  "summary": "One plain-English sentence on overall fit",
+  "transferable_strengths": ["3-5 specific military-to-civilian translations — e.g., 'Combat logistics experience directly maps to supply chain management'"],
+  "strengths": ["3-4 resume strengths as written"],
+  "gaps": ["2-4 genuine gaps or areas to strengthen — be specific and actionable, not just 'lacks X keyword'"],
+  "keywords_missing": ["5-8 keywords from the job posting not in the resume that would help ATS screening"],
+  "keywords_found": ["5-8 important keywords present"],
+  "clearance_value": "Brief note on clearance value for this role, or empty string if not applicable",
+  "coaching_tip": "One specific, actionable tip to improve this application"
+}`
+    );
+
+    let ats = { score:75, grade:'B', summary:'Good transferable match.', transferable_strengths:[], strengths:[], gaps:[], keywords_missing:[], keywords_found:[], clearance_value:'', coaching_tip:'' };
+    try { ats = JSON.parse(atsRaw.replace(/```json|```/g,'').trim()); } catch(e) {}
+
+    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume,coverLetter,ats}} });
+  } catch(err) {
+    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'. Check your API key in Settings.'} });
+  }
+}
+
+async function generateGenericResume() {
+  if (!state.profile?.fullName) { alert('Complete your profile first (at least your name and branch)'); return; }
+  if (!state.apiKey) { alert('Add your API key in Settings first'); return; }
+
+  const focus = document.getElementById('generic-focus')?.value?.trim() || '';
+  toggleUI('genericFocus', focus);
+
+  const setStatus = (s) => setState({ ui:{...state.ui, resumeBusy:true, resumeStatus:s, resumeError:'', resumeResult:null} });
+
+  const p = state.profile;
+  const exp = [...state.assignments.map(a => {
+    let t = `MILITARY: ${a.dutyTitle}${a.rank?' ('+a.rank+')':''} | ${a.unit||''} | ${a.base||''} | ${a.startDate||'?'}-${a.endDate||'Present'}\nAccomplishments:\n${a.accomplishments||'None'}`;
+    if ((a.roles||[]).length>0) { t += '\nAdditional roles: ' + a.roles.map(r=>`${r.title}${r.rank?' ('+r.rank+')':''}${r.accomplishments?': '+r.accomplishments.slice(0,100):''}`).join(' | '); }
+    return t;
+  }), ...state.civilianJobs.map(j=>`CIVILIAN: ${j.title} at ${j.company} | ${j.startDate||'?'}-${j.endDate||'Present'}\nAccomplishments:\n${j.accomplishments||'None'}`)].join('\n---\n');
+  const awards = state.awards.map(a=>`${a.name}${a.civilianTranslation?' — '+a.civilianTranslation:''}`).join('\n');
+
+  const context = `VETERAN PROFILE:
+Name: ${p.fullName} | Phone: ${p.phone||'N/A'} | Email: ${p.email||'N/A'} | LinkedIn: ${p.linkedin||'N/A'} | Location: ${p.location||'N/A'}
+Branch: ${p.branch} | Rank: ${p.rank} | Years of Service: ${p.yearsOfService}
+MOS/Rate: ${p.mosRate||'N/A'} | Security Clearance: ${p.clearance||'None'} (${p.clearanceStatus||'N/A'})
+Work Preference: ${p.workPreference||'N/A'} | Willing to Relocate: ${p.willingToRelocate||'N/A'}
+Technical Skills: ${(p.technicalSkills||[]).join(', ')||'None'}
+Leadership/Soft Skills: ${(p.softSkills||[]).join(', ')||'None'}
+Education: ${p.education||'N/A'}
+Certifications: ${p.certifications||'N/A'}
+Professional Summary: ${p.elevatorPitch||'Not written'}
+Target Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?(i.subType?i.name+' ('+i.subType+')':i.name):i).join(', ')||'Not specified'}
+
+EXPERIENCE:
+${exp||'None'}
+
+AWARDS & DECORATIONS:
+${awards||'None'}
+
+${focus?`FOCUS AREAS REQUESTED BY VETERAN: ${focus}`:'NO SPECIFIC FOCUS — write a broad, versatile general resume'}`;
+
+  const systemPrompt = `You are a former military officer turned senior resume writer. You've written hundreds of resumes for veterans and you know exactly what makes hiring managers stop scrolling. Your resumes sound like a real person wrote them — not a bot, not a template, not an HR form.
+
+FORBIDDEN WORDS AND PHRASES (never use any of these):
+"results-driven" / "results-oriented" / "proven track record" / "dynamic" / "synergistic" / "leveraged" / "passionate about" / "detail-oriented" / "hard-working" / "go-getter" / "strategic thinker" / "thought leader" / "innovative" / "spearheaded" / "orchestrated" / "facilitated" / "championed" / "executed" (use "ran"/"delivered") / "stakeholders" (use "partners"/"decision-makers") / "deliverables" (use "results"/"outputs") / "utilize" (use "use") / "impactful" / "value-add" / "bandwidth" / "robust" / "scalable" / "mission-critical" / "best practices"
+
+BULLET POINTS: Every one needs a number. Vary length and structure. Use at least 6 different opening verbs. Translate ALL military jargon.
+PROFESSIONAL SUMMARY: First person. Start with accomplishment or context, not "I am a...". 2-3 sentences max.
+CONTACT BLOCK: Copy verbatim — do not add, remove, or reformat anything.
+OUTPUT: Resume content only — no preamble, no "Here is your resume:", no commentary.`;
+
+  try {
+    setStatus('✍️ Writing your general resume...');
+    // Snapshot any unsaved profile fields from the DOM
+    ['fullName','email','phone','location','linkedin'].forEach(f => {
+      const el = document.getElementById('p-'+f); if(el && el.value) p[f] = el.value;
+    });
+    const contactBlock = [
+      p.fullName || '[Name]',
+      [p.phone, p.email].filter(Boolean).join(' | '),
+      p.linkedin ? p.linkedin.replace(/^https?:\/\//,'') : '',
+      p.location || ''
+    ].filter(Boolean).join('\n');
+
+    const resume = await callClaude(
+      systemPrompt,
+      `Write a strong, versatile general-purpose resume for this veteran. This resume should present them at their best without being targeted to a single job.
+
+${context}
+
+Use this EXACT contact block at the very top (copy it verbatim, do not change it):
+${contactBlock}
+
+Then continue with === headers. Sections: Professional Summary (3 sentences, first-person, confident and specific), Core Competencies (14-18 skills as a clean list), Professional Experience (reverse chronological — military and civilian, 4-6 bullets each with metrics), Awards & Recognition, Education, Certifications.
+
+Make the Professional Experience highlight their most transferable and impressive achievements. This is a document they can hand to anyone and be proud of.`
+    );
+
+    setStatus('🙋 Writing your professional bio...');
+    const bio = await callClaude(
+      'You write crisp, confident professional bios for veterans transitioning to civilian careers. Bios should sound human, specific, and compelling — like a LinkedIn "About" section written by someone who knows their own value.',
+      `Write a 3-paragraph professional bio for this veteran.
+
+${context}
+
+Paragraph 1 (3-4 sentences): Who they are, years of service, branch, and their career-defining achievement — be specific with numbers.
+Paragraph 2 (3-4 sentences): The skills and experiences that make them uniquely valuable to civilian employers — translate military strengths into business impact.
+Paragraph 3 (2-3 sentences): What they're looking for next and what they bring to the table — forward-looking and confident.
+
+Rules:
+- First person ("I" voice)
+- No military jargon
+- No clichés: "passionate about", "proven track record", "results-driven", "seeking to leverage"
+- Sound like a real, confident human who knows their value
+- Plain text paragraphs only`
+    );
+
+    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume, bio, isGeneric:true}} });
+  } catch(err) {
+    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'. Check your API key in Settings.'} });
+  }
+}
+
+function downloadBio() {
+  const text = document.getElementById('bio-text')?.innerText || '';
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+  a.download = `Professional_Bio_${(state.profile.fullName||'').replace(/\s+/g,'_')}.txt`;
+  a.click();
+}
+
+function buildResumeContext(job) {
+  const p = state.profile;
+
+  // Build rich assignment text including sub-roles
+  const assignmentText = state.assignments.map(a => {
+    let text = `MILITARY ASSIGNMENT: ${a.dutyTitle}${a.rank?' ('+a.rank+')':''} | ${a.unit||''} | ${a.base||''} | ${a.startDate||'?'}-${a.endDate||'Present'}`;
+    if (a.description) text += `\nRole: ${a.description}`;
+    if (a.accomplishments) text += `\nAccomplishments:\n${a.accomplishments}`;
+    if ((a.roles||[]).length > 0) {
+      text += '\n\nADDITIONAL ROLES AT THIS ASSIGNMENT:';
+      a.roles.forEach(r => {
+        text += `\n  • ${r.title}${r.rank?' ('+r.rank+')':''}${r.startDate?' | '+r.startDate+'-'+(r.endDate||'Present'):''}`;
+        if (r.accomplishments) text += `\n    ${r.accomplishments}`;
+      });
+    }
+    return text;
+  }).join('\n---\n');
+
+  const civText = state.civilianJobs.map(j =>
+    `CIVILIAN: ${j.title} at ${j.company} | ${j.startDate||'?'}-${j.endDate||'Present'}\nAccomplishments:\n${j.accomplishments||'None'}`
+  ).join('\n---\n');
+
+  const awards = state.awards.map(a=>`${a.name}${a.civilianTranslation?' — '+a.civilianTranslation:''}`).join('\n');
+  const docs = state.documents.map(d=>`[${d.type}] ${d.name}:\n${(d.content||'').slice(0,500)}`).join('\n---\n');
+
+  return `VETERAN CONTACT INFO (copy exactly into resume header — do not omit or alter):
+Full Name: ${p.fullName||'[Name not set — ask veteran to complete Profile]'}
+Phone: ${p.phone||'[Phone not set]'}
+Email: ${p.email||'[Email not set]'}
+LinkedIn: ${p.linkedin||''}
+City/State: ${p.location||'[Location not set]'}
+
+VETERAN BACKGROUND:
+Branch: ${p.branch||'N/A'} | Rank: ${p.rank||'N/A'} | Years of Service: ${p.yearsOfService||'N/A'}
+MOS/Rate: ${p.mosRate||'N/A'} | Clearance: ${p.clearance||'None'} (${p.clearanceStatus||'N/A'})
+Work Preference: ${p.workPreference||'N/A'} | Willing to Relocate: ${p.willingToRelocate||'N/A'}
+Technical Skills: ${(p.technicalSkills||[]).join(', ')||'None'}
+Leadership/Soft Skills: ${(p.softSkills||[]).join(', ')||'None'}
+Education: ${p.education||'N/A'}
+Certifications: ${p.certifications||'N/A'}
+Professional Summary: ${p.elevatorPitch||'Not written'}
+Target Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?(i.subType?i.name+' ('+i.subType+')':i.name):i).join(', ')||'Not specified'}
+
+EXPERIENCE:
+${assignmentText||'None'}
+${civText?'\n---\n'+civText:''}
+
+AWARDS:
+${awards||'None'}
+
+PERFORMANCE DOCUMENTS:
+${docs||'None'}
+
+TARGET JOB:
+Title: ${job.title}
+Company: ${job.company}
+Location: ${job.location||'N/A'}
+Salary: ${job.salaryRange||'N/A'}
+Job Notes / Requirements: ${job.notes||'None'}`;
+}
+
+function copyResumeToClipboard() {
+  const text = document.getElementById('resume-text-output')?.innerText || '';
+  navigator.clipboard.writeText(text).then(() => showToast('✓ Resume copied! Paste into Word or Google Docs')).catch(()=>{
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('✓ Resume copied!');
+  });
+}
+
+function copyBioToClipboard() {
+  const text = document.getElementById('bio-text')?.innerText || '';
+  navigator.clipboard.writeText(text).then(() => showToast('✓ Bio copied — paste into LinkedIn "About" section!')).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('✓ Bio copied!');
+  });
+}
+
+function printResume() {
+  const text = document.getElementById('resume-text-output')?.innerText || document.querySelector('.resume-preview')?.innerText || '';
+  const fmt = state.ui.resumeFmt || 'ats';
+  const name = state.profile.fullName || 'Resume';
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>${name} — Resume</title><style>
+    @page { margin: 0.65in; }
+    body { font-family:${fmt==='ats'?'Arial, Helvetica':'Georgia, serif'};font-size:10.5pt;color:#111;max-width:100%;line-height:1.55;margin:0 }
+    pre { font-family:inherit;white-space:pre-wrap;font-size:10.5pt;margin:0 }
+    @media print { body { margin:0 } }
+  </style></head><body><pre>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></body></html>`);
+  w.document.close();
+  setTimeout(()=>{ w.focus(); w.print(); }, 500);
+}
+
+function downloadCover() {
+  const text = document.getElementById('cover-text')?.innerText || '';
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+  a.download = `Cover_Letter_${(state.profile.fullName||'').replace(/\s+/g,'_')}.txt`;
+  a.click();
+}
+
