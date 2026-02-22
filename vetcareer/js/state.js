@@ -1,6 +1,7 @@
 // ── State ─────────────────────────────────────────────────────────────
 let state = {
-  loggedIn: false,
+  loggedIn: false,   // Controlled by Clerk — do not persist to localStorage
+  clerkUserId: '',   // Set by auth.js after Clerk initializes
   view: 'dashboard',
   profile: { fullName:'', email:'', phone:'', location:'', linkedin:'', branch:'', rank:'', yearsOfService:'', mosRate:'', clearance:'', clearanceStatus:'', workPreference:'', willingToRelocate:'', targetLocations:'', targetIndustries:[], technicalSkills:[], softSkills:[], education:'', certifications:'', elevatorPitch:'' },
   assignments: [],
