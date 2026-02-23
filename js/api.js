@@ -1,42 +1,62 @@
-// ── Claude API ────────────────────────────────────────────────────────
+// ── API Configuration ─────────────────────────────────────────────────
+// All Claude API calls go through our Cloudflare Worker proxy.
+// The Worker verifies the user's session, enforces rate limits,
+// and forwards the request to Anthropic using our secret API key.
+// Users never need their own API key.
+const WORKER_URL = 'https://vetcareer-api.falconjayhawk.workers.dev';
+
+// ── Claude API via Worker ─────────────────────────────────────────────
 async function callClaude(system, user) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const token = await getClerkToken();
+  const res = await fetch(`${WORKER_URL}/api/claude`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': state.apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
+      'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 4000, system, messages: [{ role: 'user', content: user }] })
+    body: JSON.stringify({ system, user })
   });
-  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'API error'); }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Request failed (${res.status})`);
+  }
+
   const data = await res.json();
-  return data.content[0].text;
+  return data.text;
 }
 
-// ── Claude with file (PDF/image) ─────────────────────────────────────
+// ── Claude with file (PDF/image) via Worker ───────────────────────────
 async function callClaudeWithFile(system, user, base64Data, mimeType) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const token = await getClerkToken();
+  const res = await fetch(`${WORKER_URL}/api/claude`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': state.apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4000,
       system,
-      messages: [{ role: 'user', content: [
-        { type: 'document', source: { type: 'base64', media_type: mimeType, data: base64Data } },
-        { type: 'text', text: user }
-      ]}]
+      user,
+      fileData: { base64: base64Data, mimeType }
     })
   });
-  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'API error'); }
-  return (await res.json()).content[0].text;
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Request failed (${res.status})`);
+  }
+
+  const data = await res.json();
+  return data.text;
+}
+
+// Gets the current Clerk session token to authenticate with the Worker
+async function getClerkToken() {
+  if (!clerkInstance) throw new Error('Not signed in');
+  const token = await clerkInstance.session?.getToken();
+  if (!token) throw new Error('No active session — please sign in again');
+  return token;
 }
 
 function readFileAsBase64(file) {
