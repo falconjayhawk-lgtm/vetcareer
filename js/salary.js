@@ -9,7 +9,7 @@ function renderSalary() {
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">💰 Salary Intelligence</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px">Know your number before you walk in. Get market-calibrated salary ranges, negotiation anchors, and veteran-specific leverage points for any target role.</p>
-    ${!state.apiKey?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:16px;font-size:14px;color:#92400e">⚠️ Add your Claude API key in <strong>⚙ Settings</strong> first.</div>`:''}
+    
     <div class="card">
       <h2>Configure Salary Research</h2>
       <div class="grid2">
@@ -47,7 +47,7 @@ function renderSalary() {
           <input id="sal-worry" placeholder="e.g., don't know if clearance premium applies, first civilian job..." value="${esc(state.ui.salaryWorry||'')}">
         </div>
       </div>
-      <button class="btn btn-primary" onclick="generateSalaryIntel()" ${busy||!state.apiKey?'disabled':''} style="padding:12px 24px">
+      <button class="btn btn-primary" onclick="generateSalaryIntel()" ${busy?'disabled':''} style="padding:12px 24px">
         ${busy?'<div class="spinner"></div> Researching...':'💰 Get Salary Intelligence'}
       </button>
       ${busy?`<div style="background:#eff6ff;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;color:#1e40af;display:flex;align-items:center;gap:10px"><div class="spinner"></div> Analyzing market data and your negotiation position...</div>`:''}
@@ -98,8 +98,7 @@ function renderSalary() {
 }
 
 async function generateSalaryIntel() {
-  if (!state.apiKey) return;
-  const selJob = state.ui.salaryJob;
+    const selJob = state.ui.salaryJob;
   const manualRole = document.getElementById('sal-role')?.value?.trim()||'';
   const location = document.getElementById('sal-location')?.value?.trim()||'';
   const companyType = document.getElementById('sal-company-type')?.value||'';

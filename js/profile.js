@@ -91,9 +91,9 @@ function renderProfile() {
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h2 style="margin:0">Skills Inventory</h2>
-        ${state.apiKey && (state.assignments.length > 0 || state.civilianJobs.length > 0) ? `<button class="btn btn-secondary btn-sm" onclick="extractSkillsFromExperience()">🤖 Auto-Extract from Experience</button>` : ''}
+        ${(state.assignments.length > 0 || state.civilianJobs.length > 0) ? `<button class="btn btn-secondary btn-sm" onclick="extractSkillsFromExperience()">🤖 Auto-Extract from Experience</button>` : ''}
       </div>
-      ${state.apiKey && (state.assignments.length > 0 || state.civilianJobs.length > 0) ? `<p style="font-size:12px;color:#6b7280;margin:-8px 0 12px">Claude can read your assignments and jobs to automatically pull out technical and leadership skills you've demonstrated.</p>` : ''}
+      ${(state.assignments.length > 0 || state.civilianJobs.length > 0) ? `<p style="font-size:12px;color:#6b7280;margin:-8px 0 12px">Claude can read your assignments and jobs to automatically pull out technical and leadership skills you've demonstrated.</p>` : ''}
       <div class="grid2">
         <div>
           <label class="field-label">Technical Skills</label>
@@ -110,7 +110,7 @@ function renderProfile() {
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h2 style="margin:0">Professional Summary (Elevator Pitch)</h2>
-        ${state.apiKey && state.assignments.length > 0 ? `<button class="btn btn-primary btn-sm" onclick="generateElevatorPitch()">🤖 AI Generate</button>` : ''}
+        ${state.assignments.length > 0 ? `<button class="btn btn-primary btn-sm" onclick="generateElevatorPitch()">🤖 AI Generate</button>` : ''}
       </div>
       <p style="font-size:13px;color:#6b7280;margin:-8px 0 12px">This is your baseline. AI will tailor it for each specific job during resume generation.</p>
       <div class="field"><label class="field-label">30-second summary for resume header & cover letters</label>
@@ -143,11 +143,17 @@ function renderProfile() {
 
 function saveProfile() {
   const fields = ['fullName','email','phone','location','linkedin','branch','rank','yearsOfService','mosRate','clearance','clearanceStatus','workPreference','willingToRelocate','targetLocations','education','certifications','elevatorPitch'];
+  const updated = { ...state.profile };
+  fields.forEach(f => {
+    const el = document.getElementById('p-' + f);
+    if (el) updated[f] = el.value;
+  });
+  setState({ profile: updated });
+  showToast('Profile saved ✓');
 }
 
 async function generateElevatorPitch() {
-  if (!state.apiKey) { showToast('Add your API key in Settings first', false); return; }
-  if (state.assignments.length === 0) { showToast('Add some assignments first', false); return; }
+    if (state.assignments.length === 0) { showToast('Add some assignments first', false); return; }
   
   showToast('🤖 Generating your professional summary...', true);
   
@@ -207,8 +213,7 @@ WRITING RULES — follow every one:
 }
 
 async function extractSkillsFromExperience() {
-  if (!state.apiKey) { showToast('Add your API key in Settings first', false); return; }
-  if (state.assignments.length === 0 && state.civilianJobs.length === 0) { 
+    if (state.assignments.length === 0 && state.civilianJobs.length === 0) { 
     showToast('Add some assignments or jobs first', false); 
     return; 
   }

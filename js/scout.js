@@ -14,7 +14,7 @@ function renderScout() {
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">🔭 Job Scout</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px">Set your standing filters once — then run a targeted pull anytime to surface new, relevant postings with fit assessments. Think of this as a recruiter who already knows you.</p>
 
-    ${!state.apiKey?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:20px;font-size:14px;color:#92400e">⚠️ <strong>API Key Required.</strong> Go to <strong>⚙ Settings</strong> to add your key first.</div>`:''}
+    
 
     <!-- Standing Filters -->
     <div class="card">
@@ -72,7 +72,7 @@ function renderScout() {
       </div>
 
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="runScout()" ${busy||!filtersSet||!state.apiKey?'disabled':''} style="padding:12px 24px">
+        <button class="btn btn-primary" onclick="runScout()" ${busy||!filtersSet?'disabled':''} style="padding:12px 24px">
           ${busy?`<div class="spinner"></div> ${esc(status)}`:'🔭 Run Job Scout'}
         </button>
         ${results?`<button class="btn btn-secondary btn-sm" onclick="toggleUI('scoutResults',null)">Clear Results</button>`:''}
@@ -168,8 +168,7 @@ function saveScoutFilters() {
 }
 
 async function runScout() {
-  if (!state.apiKey) { showToast('Add your API key in Settings first', false); return; }
-  const sf = state.scoutFilters;
+    const sf = state.scoutFilters;
   if (!sf.roleTypes) { showToast('Set your target role types first', false); return; }
 
   const focus = document.getElementById('scout-focus')?.value?.trim() || '';

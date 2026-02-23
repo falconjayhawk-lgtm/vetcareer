@@ -155,28 +155,16 @@ function renderSettings() {
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">Settings</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px">API keys, cloud sync, and data management</p>
 
-    <!-- Claude API Key -->
+    <!-- AI Status -->
     <div class="card">
-      <h2>🤖 Claude API Key</h2>
-      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#1e40af">
-        <strong>How to get your free API key:</strong><br>
-        1. Go to <strong>console.anthropic.com</strong> and create a free account<br>
-        2. Click <strong>API Keys</strong> in the left sidebar<br>
-        3. Click <strong>Create Key</strong> → name it "VetCareer" → copy it<br>
-        4. Paste it below and click Save<br><br>
-        💡 Free tier is enough for dozens of resumes. Each generation costs ~$0.01–0.05.
-      </div>
-      <div class="field"><label class="field-label">Your API Key</label>
-        <div style="display:flex;gap:8px">
-          <input type="password" id="api-key-input" value="${esc(k)}" placeholder="sk-ant-..." style="font-family:monospace">
-          <button class="btn btn-secondary" onclick="toggleApiKeyVis()">👁 Show</button>
+      <h2>🤖 AI Features</h2>
+      <div style="display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px;font-size:14px;color:#166534">
+        <span style="font-size:24px">✅</span>
+        <div>
+          <div style="font-weight:700">AI is included with your subscription</div>
+          <div style="font-size:13px;margin-top:2px">All resume generation, interview prep, salary intel, and other AI features are ready to use — no API key needed.</div>
         </div>
       </div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <button class="btn btn-primary" onclick="saveApiKey()">💾 Save Key</button>
-        ${k?'<button class="btn btn-secondary" onclick="clearApiKey()">Remove Key</button>':''}
-      </div>
-      ${k?`<div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px;margin-top:14px;font-size:14px;color:#166534">✅ API key configured — Resume Builder is ready</div>`:''}
     </div>
 
     <!-- Supabase Cloud Sync -->

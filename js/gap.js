@@ -15,8 +15,7 @@ function renderGap() {
   else good.push('Education on file');
   if (!p?.certifications) gaps.push({sev:'low',area:'Certs',issue:'No certifications listed',fix:'Add certifications — even military ones like PMP, Security+'});
   else good.push('Certifications listed');
-  if (!state.apiKey) gaps.push({sev:'high',area:'Settings',issue:'No API key — AI resume generation disabled',fix:'Go to ⚙ API Settings and add your Claude API key'});
-  else good.push('API key configured ✓');
+  good.push('AI features ready ✓');
   if (state.assignments.length===0) gaps.push({sev:'high',area:'Experience',issue:'No assignment history added',fix:'Go to Experience → add your military assignments'});
   else good.push(`${state.assignments.length} assignment(s) on record`);
   const noAccomp = state.assignments.filter(a=>!a.accomplishments?.trim());

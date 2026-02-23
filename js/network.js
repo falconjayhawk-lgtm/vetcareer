@@ -8,7 +8,7 @@ function renderNetwork() {
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">📬 Networking Emails</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px">Generate targeted outreach emails — cold contact, referral requests, informational interviews, or reconnecting with old contacts. Written from your actual background, not a template.</p>
-    ${!state.apiKey?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:16px;font-size:14px;color:#92400e">⚠️ Add your Claude API key in <strong>⚙ Settings</strong> first.</div>`:''}
+    
     <div class="card">
       <h2>Configure Your Outreach</h2>
       <div class="grid2">
@@ -50,7 +50,7 @@ function renderNetwork() {
         <label class="field-label">Key point you want to make in this email</label>
         <input id="net-point" placeholder="Emphasize my TS/SCI, mention our shared SOCOM background, reference the Palantir contract..." value="${esc(state.ui.networkPoint||'')}">
       </div>
-      <button class="btn btn-primary" onclick="generateNetworkEmail()" ${busy||!state.apiKey?'disabled':''} style="padding:12px 24px">
+      <button class="btn btn-primary" onclick="generateNetworkEmail()" ${busy?'disabled':''} style="padding:12px 24px">
         ${busy?'<div class="spinner"></div> Writing...':'📬 Generate Email'}
       </button>
       ${busy?`<div style="background:#eff6ff;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;color:#1e40af;display:flex;align-items:center;gap:10px"><div class="spinner"></div> Writing your outreach email...</div>`:''}
@@ -74,8 +74,7 @@ function renderNetwork() {
 }
 
 async function generateNetworkEmail() {
-  if (!state.apiKey) return;
-  const type = document.getElementById('net-type')?.value||'cold-contact';
+    const type = document.getElementById('net-type')?.value||'cold-contact';
   const selJob = document.getElementById('net-job')?.value||'';
   const name = document.getElementById('net-name')?.value?.trim()||'';
   const title = document.getElementById('net-title')?.value?.trim()||'';

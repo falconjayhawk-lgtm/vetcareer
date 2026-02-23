@@ -12,13 +12,13 @@ function renderResume() {
 
   const jobOptions = jobs.map(j=>`<option value="${j.id}" ${selJob===j.id?'selected':''}>${esc(j.title)} — ${esc(j.company)}</option>`).join('');
 
-  const canGenTargeted = !busy && !!selJob && !!state.apiKey;
-  const canGenGeneric  = !busy && !!state.apiKey && !!state.profile?.fullName;
+  const canGenTargeted = !busy && !!selJob;
+  const canGenGeneric  = !busy && !!!!state.profile?.fullName;
 
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">Resume Builder</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px">AI-powered resume writing — Claude reads your actual experience and writes a real resume</p>
-    ${!state.apiKey?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:20px;font-size:14px;color:#92400e">⚠️ <strong>API Key Required.</strong> Go to <strong>⚙ API Settings</strong> in the sidebar to add your Claude API key first.</div>`:''}
+    
 
     <!-- Mode selector tabs -->
     <div style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb;width:fit-content">
@@ -200,8 +200,7 @@ async function generateResume() {
   const selJob = state.ui.resumeJob;
   if (!selJob) { alert('Select a job first'); return; }
   if (!state.profile?.fullName) { alert('Complete your profile first (add your name in Profile)'); return; }
-  if (!state.apiKey) { alert('Add your API key in Settings first'); return; }
-  const job = state.jobs.find(j=>j.id===selJob);
+    const job = state.jobs.find(j=>j.id===selJob);
 
   // Capture latest instructions value from textarea before generating
   const instrEl = document.getElementById('resume-instructions');
@@ -341,14 +340,13 @@ Return ONLY this JSON (no markdown, no extra text):
 
     setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume,coverLetter,ats}} });
   } catch(err) {
-    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'. Check your API key in Settings.'} });
+    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'.'} });
   }
 }
 
 async function generateGenericResume() {
   if (!state.profile?.fullName) { alert('Complete your profile first (at least your name and branch)'); return; }
-  if (!state.apiKey) { alert('Add your API key in Settings first'); return; }
-
+  
   const focus = document.getElementById('generic-focus')?.value?.trim() || '';
   toggleUI('genericFocus', focus);
 
@@ -440,7 +438,7 @@ Rules:
 
     setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume, bio, isGeneric:true}} });
   } catch(err) {
-    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'. Check your API key in Settings.'} });
+    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'.'} });
   }
 }
 

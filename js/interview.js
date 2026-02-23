@@ -9,7 +9,7 @@ function renderInterview() {
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">🎤 Interview Prep</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px">Claude reads the job and your background, then generates the questions you're most likely to face — with coached answers drawn from your actual experience.</p>
-    ${!state.apiKey?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:16px;font-size:14px;color:#92400e">⚠️ Add your Claude API key in <strong>⚙ Settings</strong> first.</div>`:''}
+    
     <div class="card">
       <h2>Configure Interview Prep</h2>
       <div class="grid2">
@@ -42,7 +42,7 @@ function renderInterview() {
           <input id="iv-concern" placeholder="e.g., gaps in technical background, explaining my clearance, salary question...">
         </div>
       </div>
-      <button class="btn btn-primary" onclick="generateInterviewPrep()" ${busy||!state.apiKey||!selJob?'disabled':''} style="padding:12px 24px">
+      <button class="btn btn-primary" onclick="generateInterviewPrep()" ${busy||!selJob?'disabled':''} style="padding:12px 24px">
         ${busy?'<div class="spinner"></div> Generating...':'🎤 Generate Interview Prep'}
       </button>
       ${!jobs.length?`<p style="font-size:13px;color:#f59e0b;margin-top:10px">💡 Add jobs to your tracker first — <button onclick="setState({view:'jobs'})" style="background:none;border:none;color:#2563eb;cursor:pointer;font-size:13px;font-weight:600;padding:0">go to Job Tracker</button>.</p>`:''}
@@ -84,7 +84,7 @@ function renderInterviewResult(result) {
 
 async function generateInterviewPrep() {
   const selJob = state.ui.interviewJob;
-  if (!selJob||!state.apiKey) return;
+  if (!selJob) return;
   const job = state.jobs.find(j=>j.id===selJob);
   if (!job) return;
   const stage = document.getElementById('iv-stage')?.value||'behavioral';

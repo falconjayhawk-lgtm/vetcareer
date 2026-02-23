@@ -13,7 +13,7 @@ function renderJobs() {
       <div class="card">
         <h2>${job?'Edit Job':'Add New Job'}</h2>
         
-        ${!job && state.apiKey ? `
+        ${!job ? `
         <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;margin-bottom:16px">
           <div style="font-weight:700;color:#1e40af;margin-bottom:6px">🤖 AI Job Analysis — Auto-Fill from Posting</div>
           <div style="font-size:13px;color:#1e3a8a;margin-bottom:10px">Paste a job URL or the full job description. Claude will extract the details AND analyze how well it matches your background.</div>
@@ -239,8 +239,7 @@ function removeJob(jid) { if(confirm('Delete this job?')) setState({ jobs: state
 async function analyzeJobPosting() {
   const input = document.getElementById('job-analysis-input')?.value?.trim();
   if (!input) { showToast('Please paste a job URL or description', false); return; }
-  if (!state.apiKey) { showToast('Add your API key in Settings first', false); return; }
-  
+    
   setState({ ui: { ...state.ui, jobAnalyzing: true, jobAnalysisError: '', jobAnalysisResult: null } });
   
   try {

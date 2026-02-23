@@ -7,7 +7,7 @@ function renderRefLetter() {
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">📜 Reference Letter Generator</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px">Draft a professional reference letter a former CO, supervisor, or colleague can sign. Claude writes it from your actual accomplishments — they just review, personalize, and sign.</p>
-    ${!state.apiKey?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:16px;font-size:14px;color:#92400e">⚠️ Add your Claude API key in <strong>⚙ Settings</strong> first.</div>`:''}
+    
     <div class="card">
       <h2>Configure the Letter</h2>
       <div class="grid2">
@@ -50,7 +50,7 @@ function renderRefLetter() {
         <label class="field-label">Specific accomplishments or qualities to highlight (optional)</label>
         <textarea id="ref-highlights" rows="3" placeholder="e.g., led the wing's COVID response, saved $2M through process improvements, exceptional under pressure...">${esc(state.ui.refHighlights||'')}</textarea>
       </div>
-      <button class="btn btn-primary" onclick="generateRefLetter()" ${busy||!state.apiKey||!p.fullName?'disabled':''} style="padding:12px 24px">
+      <button class="btn btn-primary" onclick="generateRefLetter()" ${busy||!p.fullName?'disabled':''} style="padding:12px 24px">
         ${busy?'<div class="spinner"></div> Writing letter...':'📜 Generate Reference Letter'}
       </button>
       ${!p.fullName?`<p style="font-size:13px;color:#f59e0b;margin-top:10px">⚠️ Complete your Profile first.</p>`:''}
@@ -80,8 +80,7 @@ function renderRefLetter() {
 }
 
 async function generateRefLetter() {
-  if (!state.apiKey) return;
-  const writerName = document.getElementById('ref-writer-name')?.value?.trim()||'';
+    const writerName = document.getElementById('ref-writer-name')?.value?.trim()||'';
   const writerRel = document.getElementById('ref-writer-rel')?.value||'direct-supervisor';
   const writerTitle = document.getElementById('ref-writer-title')?.value?.trim()||'';
   const target = document.getElementById('ref-target')?.value?.trim()||'';

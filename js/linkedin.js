@@ -8,7 +8,7 @@ function renderLinkedIn() {
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">💼 LinkedIn Profile Generator</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px">Generate a complete, optimized LinkedIn profile — headline, about section, and experience bullets — based on your actual background.</p>
-    ${!state.apiKey?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:16px;font-size:14px;color:#92400e">⚠️ Add your Claude API key in <strong>⚙ Settings</strong> first.</div>`:''}
+    
     <div class="card">
       <h2>🎯 Configure Your LinkedIn Profile</h2>
       <div class="grid2">
@@ -39,7 +39,7 @@ function renderLinkedIn() {
           <input id="li-emphasis" placeholder="Leadership, technical expertise, specific programs..." value="${esc(state.ui.liEmphasis||'')}">
         </div>
       </div>
-      <button class="btn btn-primary" onclick="generateLinkedIn()" ${busy||!state.apiKey||!hasProfile?'disabled':''} style="padding:12px 24px">
+      <button class="btn btn-primary" onclick="generateLinkedIn()" ${busy||!hasProfile?'disabled':''} style="padding:12px 24px">
         ${busy?'<div class="spinner"></div> Generating...':'💼 Generate LinkedIn Profile'}
       </button>
       ${!hasProfile?`<p style="font-size:13px;color:#f59e0b;margin-top:10px">⚠️ Complete your Profile first (name and branch at minimum).</p>`:''}
@@ -98,8 +98,7 @@ function renderLinkedIn() {
 }
 
 async function generateLinkedIn() {
-  if (!state.apiKey) return;
-  const audience = document.getElementById('li-audience')?.value?.trim()||'';
+    const audience = document.getElementById('li-audience')?.value?.trim()||'';
   const tone = document.getElementById('li-tone')?.value||'professional';
   const clearanceVis = document.getElementById('li-clearance')?.value||'prominent';
   const emphasis = document.getElementById('li-emphasis')?.value?.trim()||'';
