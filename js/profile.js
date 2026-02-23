@@ -290,8 +290,7 @@ Rules:
 }
 
 function toggleIndustry(industryName) {
-  // Save any currently open profile form fields first to avoid wiping them on re-render
-  const fields = ['fullName','email','phone','location','linkedin','branch','rank','yearsOfService','mosRate','clearance','clearanceStatus','workPreference','willingToRelocate','targetLocations','education','certifications','elevatorPitch'];
+  const inds = state.profile.targetIndustries || [];
   
   // Check if this industry is already selected (could be string or object)
   const existingIdx = inds.findIndex(i => 
