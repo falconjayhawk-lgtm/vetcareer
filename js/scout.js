@@ -9,7 +9,12 @@ function renderScout() {
   const feedback = state.ui.scoutFeedback || {};
 
   const industries = (p.targetIndustries || [])
-    .map(i => typeof i === 'object' ? (i.subTypes && i.subTypes.length ? `${i.name} – ${i.subTypes.join(', ')}` : i.subType ? `${i.name} – ${i.subType}` : i.name) : i)
+    .map(i => {
+      if (typeof i === 'string') return i;
+      if (i.subTypes && i.subTypes.length) return `${i.name} (${i.subTypes.join(', ')})`;
+      if (i.subType) return `${i.name} (${i.subType})`;
+      return `${i.name} (all areas)`;
+    })
     .join(', ') || 'Not specified';
 
   return `
@@ -28,19 +33,20 @@ function renderScout() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
         <div class="field">
           <label class="field-label">Target Industries</label>
-          <input type="text" id="sc-industries" value="${esc(industries)}" placeholder="e.g. Defense Contracting, Cybersecurity">
+          <input type="text" id="sc-industries" value="${esc(state.ui.scoutIndustries !== undefined ? state.ui.scoutIndustries : industries)}" placeholder="e.g. Defense Contracting, Cybersecurity">
           <p style="font-size:11px;color:#9ca3af;margin:4px 0 0">From your profile — edit here to refine</p>
         </div>
         <div class="field">
           <label class="field-label">Target Location</label>
-          <input type="text" id="sc-location" value="${esc(p.location || '')}" placeholder="e.g. Washington DC, Remote, Northern Virginia">
+          <input type="text" id="sc-location" value="${esc(state.ui.scoutLocation !== undefined ? state.ui.scoutLocation : (p.location || ''))}" placeholder="e.g. Northern Virginia, Washington DC, Nationwide">
+          <p style="font-size:11px;color:#9ca3af;margin:4px 0 0">City/region preference — separate from remote setting below</p>
         </div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
         <div class="field">
           <label class="field-label">Clearance Level</label>
-          <input type="text" id="sc-clearance" value="${esc(p.clearance || '')}" placeholder="e.g. TS/SCI">
+          <input type="text" id="sc-clearance" value="${esc(state.ui.scoutClearance !== undefined ? state.ui.scoutClearance : (p.clearance || ''))}" placeholder="e.g. TS/SCI">
         </div>
         <div class="field">
           <label class="field-label">Seniority Level</label>
@@ -110,7 +116,10 @@ async function runScout() {
   const keywords = document.getElementById('sc-keywords')?.value || '';
   const feedback = document.getElementById('sc-feedback')?.value || '';
 
-  setState({ ui: { ...state.ui, scoutBusy: true, scoutError: '', scoutResults: '' }});
+  // Persist scout-specific fields so they don't reset on re-render
+  setState({ ui: { ...state.ui, scoutBusy: true, scoutError: '', scoutResults: '',
+    scoutLocation: location, scoutIndustries: industries, scoutClearance: clearance,
+    scoutSeniority: seniority, scoutRemote: remote, scoutKeywords: keywords }});
 
   const prompt = `You are a veteran career specialist. Search the web RIGHT NOW for real, currently posted job openings that match this veteran's profile.
 

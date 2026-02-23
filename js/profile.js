@@ -328,62 +328,85 @@ function toggleIndustry(industryName) {
             <input type="checkbox" ${isChecked?'checked':''} onchange="toggleIndustry('${industry.name}')" style="width:auto;accent-color:#2563eb"> ${industry.name}
           </label>
           ${isChecked ? `
-            <div style="margin-left:32px;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
-              ${industry.subTypes.map(st => `
-                <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 8px;border:1px solid ${currentSubTypes.includes(st)?'#3b82f6':'#e5e7eb'};border-radius:6px;cursor:pointer;background:${currentSubTypes.includes(st)?'#eff6ff':'white'}">
-                  <input type="checkbox" ${currentSubTypes.includes(st)?'checked':''} onchange="toggleIndustrySubType('${industry.name}','${st}')" style="width:auto;accent-color:#2563eb"> ${st}
-                </label>`).join('')}
+            <div style="margin-left:32px;margin-top:4px">
+              <select multiple onchange="setIndustrySubTypes('${industry.name}', this)" 
+                style="width:100%;padding:4px;font-size:12px;border:1px solid #d1d5db;border-radius:6px;min-height:${Math.min(industry.subTypes.length, 5)*24}px">
+                ${industry.subTypes.map(st => `<option value="${st}" ${currentSubTypes.includes(st)?'selected':''}>${st}</option>`).join('')}
+              </select>
+              <p style="font-size:11px;color:#9ca3af;margin:3px 0 0">Hold Cmd (Mac) or Ctrl (Windows) to select multiple. Leave blank to include all.</p>
             </div>` : ''}
         </div>`;
     }).join('');
   }
 }
 
-function toggleIndustrySubType(industryName, subType) {
+// Called when user changes the multi-select dropdown for sub-types
+function setIndustrySubTypes(industryName, selectEl) {
+  const selected = Array.from(selectEl.selectedOptions).map(o => o.value);
   const inds = state.profile.targetIndustries || [];
   const updated = inds.map(i => {
     const entry = typeof i === 'string' ? { name: i, subTypes: [] } : { ...i };
     if (entry.name !== industryName) return entry;
-    // Migrate old single subType to array
-    if (!entry.subTypes) entry.subTypes = entry.subType ? [entry.subType] : [];
-    delete entry.subType;
-    // Toggle the clicked subType
-    if (entry.subTypes.includes(subType)) {
-      entry.subTypes = entry.subTypes.filter(s => s !== subType);
-    } else {
-      entry.subTypes = [...entry.subTypes, subType];
-    }
+    delete entry.subType; // migrate old format
+    entry.subTypes = selected;
     return entry;
   });
   state.profile = { ...state.profile, targetIndustries: updated };
   try { localStorage.setItem('vc_profile', JSON.stringify(state.profile)); } catch(e) {}
-  // Re-render just the industry section to update checkboxes
-  const container = document.getElementById('industry-checks');
-  if (container) {
-    const selectedIndustries = state.profile.targetIndustries || [];
-    container.innerHTML = INDUSTRIES.map(industry => {
-      const selected = selectedIndustries.find(s =>
-        (typeof s === 'string' && s === industry.name) ||
-        (typeof s === 'object' && s.name === industry.name)
-      );
-      const isChecked = !!selected;
-      const currentSubTypes = (typeof selected === 'object' && selected.subTypes) ? selected.subTypes :
-                              (typeof selected === 'object' && selected.subType) ? [selected.subType] : [];
-      return `
-        <div style="margin-bottom:8px">
-          <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid ${isChecked?'#3b82f6':'#e5e7eb'};border-radius:8px;cursor:pointer;font-size:13px;background:${isChecked?'#eff6ff':'white'}">
-            <input type="checkbox" ${isChecked?'checked':''} onchange="toggleIndustry('${industry.name}')" style="width:auto;accent-color:#2563eb"> ${industry.name}
-          </label>
-          ${isChecked ? `
-            <div style="margin-left:32px;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
-              ${industry.subTypes.map(st => `
-                <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 8px;border:1px solid ${currentSubTypes.includes(st)?'#3b82f6':'#e5e7eb'};border-radius:6px;cursor:pointer;background:${currentSubTypes.includes(st)?'#eff6ff':'white'}">
-                  <input type="checkbox" ${currentSubTypes.includes(st)?'checked':''} onchange="toggleIndustrySubType('${industry.name}','${st}')" style="width:auto;accent-color:#2563eb"> ${st}
-                </label>`).join('')}
-            </div>` : ''}
-        </div>`;
-    }).join('');
+}
+
+// Called when user selects a sub-type from dropdown before selecting parent
+// Auto-selects the parent industry
+function selectIndustryFromChild(industryName, subType) {
+  const inds = state.profile.targetIndustries || [];
+  const alreadySelected = inds.some(i =>
+    (typeof i === 'string' && i === industryName) ||
+    (typeof i === 'object' && i.name === industryName)
+  );
+  let updated;
+  if (!alreadySelected) {
+    updated = [...inds, { name: industryName, subTypes: [subType] }];
+  } else {
+    updated = inds.map(i => {
+      const entry = typeof i === 'string' ? { name: i, subTypes: [] } : { ...i };
+      if (entry.name !== industryName) return entry;
+      if (!entry.subTypes) entry.subTypes = [];
+      if (!entry.subTypes.includes(subType)) entry.subTypes = [...entry.subTypes, subType];
+      return entry;
+    });
   }
+  state.profile = { ...state.profile, targetIndustries: updated };
+  try { localStorage.setItem('vc_profile', JSON.stringify(state.profile)); } catch(e) {}
+  refreshIndustryUI();
+}
+
+function refreshIndustryUI() {
+  const container = document.getElementById('industry-checks');
+  if (!container) return;
+  const selectedIndustries = state.profile.targetIndustries || [];
+  container.innerHTML = INDUSTRIES.map(industry => {
+    const selected = selectedIndustries.find(s =>
+      (typeof s === 'string' && s === industry.name) ||
+      (typeof s === 'object' && s.name === industry.name)
+    );
+    const isChecked = !!selected;
+    const currentSubTypes = (typeof selected === 'object' && selected.subTypes) ? selected.subTypes :
+                            (typeof selected === 'object' && selected.subType) ? [selected.subType] : [];
+    return `
+      <div style="margin-bottom:8px">
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid ${isChecked?'#3b82f6':'#e5e7eb'};border-radius:8px;cursor:pointer;font-size:13px;background:${isChecked?'#eff6ff':'white'}">
+          <input type="checkbox" ${isChecked?'checked':''} onchange="toggleIndustry('${industry.name}')" style="width:auto;accent-color:#2563eb"> ${industry.name}
+        </label>
+        ${isChecked ? `
+          <div style="margin-left:32px;margin-top:4px">
+            <select multiple onchange="setIndustrySubTypes('${industry.name}', this)"
+              style="width:100%;padding:4px;font-size:12px;border:1px solid #d1d5db;border-radius:6px;min-height:${Math.min(industry.subTypes.length, 5)*24}px">
+              ${industry.subTypes.map(st => `<option value="${st}" ${currentSubTypes.includes(st)?'selected':''}>${st}</option>`).join('')}
+            </select>
+            <p style="font-size:11px;color:#9ca3af;margin:3px 0 0">Hold Cmd (Mac) or Ctrl (Windows) to select multiple. Leave blank to include all areas.</p>
+          </div>` : ''}
+      </div>`;
+  }).join('');
 }
 
 function addSkill(type) {
