@@ -41,7 +41,7 @@ function renderDocuments() {
     </div>` : ''}
     <p style="font-size:13px;color:#6b7280;margin:0 0 20px">Upload your DD-214, performance reports, award citations, civilian resumes — Claude reads them and auto-fills your profile and experience.</p>
 
-    ${!state.apiKey ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:20px;font-size:14px;color:#92400e">⚠️ <strong>API Key Required.</strong> Go to <strong>⚙ Settings</strong> to add your key before uploading.</div>` : ''}
+    
 
     <!-- Upload card -->
     <div class="card">
@@ -62,7 +62,7 @@ function renderDocuments() {
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-size:13px;color:#1e40af;margin-bottom:14px">
         💡 <strong>What happens:</strong> Claude reads your document and automatically extracts your assignments, rank, dates, awards, and accomplishments — then adds them directly to your Experience page.
       </div>
-      <button class="btn btn-primary" onclick="processUpload()" ${busy || !state.apiKey ? 'disabled' : ''}>
+      <button class="btn btn-primary" onclick="processUpload()" ${busy  ? 'disabled' : ''}>
         ${busy ? `<div class="spinner"></div> ${esc(status)}` : '🤖 Upload & Extract with AI'}
       </button>
     </div>
@@ -98,7 +98,7 @@ function renderDocuments() {
         <label class="field-label">Paste Document Text Here</label>
         <textarea id="dp-content" rows="10" placeholder="Paste the full text from your document..."></textarea>
       </div>
-      <button class="btn btn-primary" onclick="processPastedDoc()" ${busy || !state.apiKey ? 'disabled' : ''}>
+      <button class="btn btn-primary" onclick="processPastedDoc()" ${busy  ? 'disabled' : ''}>
         ${busy ? `<div class="spinner"></div> ${esc(status)}` : '🤖 Extract with AI'}
       </button>
     </div>
@@ -277,8 +277,7 @@ async function processUpload() {
   const docType = typeEl?.value;
   if (!file) { showToast('Please select a file', false); return; }
   if (!docType) { showToast('Please select a document type', false); return; }
-  if (!state.apiKey) { showToast('Add your API key in Settings first', false); return; }
-
+  
   setState({ ui: { ...state.ui, docBusy:true, docStatus:'🤖 Claude is reading your document...', docResult:null, docError:'' }});
   try {
     const base64 = await readFileAsBase64(file);
@@ -300,8 +299,7 @@ async function processPastedDoc() {
   const name = document.getElementById('dp-name')?.value?.trim() || docType || 'Document';
   if (!content) { showToast('Please paste document text', false); return; }
   if (!docType) { showToast('Please select a document type', false); return; }
-  if (!state.apiKey) { showToast('Add your API key in Settings first', false); return; }
-
+  
   setState({ ui: { ...state.ui, docBusy:true, docStatus:'🤖 Extracting information...', docResult:null, docError:'' }});
   try {
     const prompt = buildExtractionPrompt(docType) + '\n\nDOCUMENT TEXT:\n' + content;
