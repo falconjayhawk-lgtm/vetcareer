@@ -9,7 +9,7 @@ function renderScout() {
   const feedback = state.ui.scoutFeedback || {};
 
   const industries = (p.targetIndustries || [])
-    .map(i => typeof i === 'object' ? (i.subType ? `${i.name} – ${i.subType}` : i.name) : i)
+    .map(i => typeof i === 'object' ? (i.subTypes && i.subTypes.length ? `${i.name} – ${i.subTypes.join(', ')}` : i.subType ? `${i.name} – ${i.subType}` : i.name) : i)
     .join(', ') || 'Not specified';
 
   return `
@@ -88,7 +88,7 @@ function renderScout() {
         <h2 style="margin:0">Search Results</h2>
         <button class="btn btn-secondary btn-sm" onclick="copyScoutResults()">📋 Copy All</button>
       </div>
-      <div style="white-space:pre-wrap;font-size:14px;line-height:1.7;font-family:inherit">${esc(results)}</div>
+      <div style="font-size:14px;line-height:1.7">${renderMarkdown(results)}</div>
 
       <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e5e7eb">
         <h3 style="font-size:15px;font-weight:700;margin:0 0 8px">📝 Refine Next Search</h3>
