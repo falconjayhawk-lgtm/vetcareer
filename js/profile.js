@@ -3,28 +3,7 @@ function renderProfile() {
   const p = state.profile;
   const selectedIndustries = p.targetIndustries || [];
   
-  const indChecks = INDUSTRIES.map(industry => {
-    const selected = selectedIndustries.find(s => 
-      (typeof s === 'string' && s === industry.name) || 
-      (typeof s === 'object' && s.name === industry.name)
-    );
-    const isChecked = !!selected;
-    const currentSubType = (typeof selected === 'object') ? selected.subType : null;
-
-    return `
-      <div style="margin-bottom:8px">
-        <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid ${isChecked?'#3b82f6':'#e5e7eb'};border-radius:8px;cursor:pointer;font-size:13px;background:${isChecked?'#eff6ff':'white'}">
-          <input type="checkbox" ${isChecked?'checked':''} onchange="toggleIndustry('${industry.name}')" style="width:auto;accent-color:#2563eb"> ${industry.name}
-        </label>
-        ${isChecked ? `
-          <div style="margin-left:32px;margin-top:4px">
-            <select onchange="setIndustrySubType('${industry.name}', this.value)" style="width:100%;padding:6px 10px;font-size:12px;border:1px solid #d1d5db;border-radius:6px">
-              <option value="">What specific area?</option>
-              ${industry.subTypes.map(st => `<option value="${st}" ${currentSubType===st?'selected':''}>${st}</option>`).join('')}
-            </select>
-          </div>` : ''}
-      </div>`;
-  }).join('');
+  const indChecks = buildIndustryHTML(selectedIndustries);
   
   const techTags = (p.technicalSkills||[]).map((s,i)=>`<span class="tag tag-blue">${esc(s)} <button onclick="removeSkill('tech',${i})" style="background:none;border:none;cursor:pointer;color:inherit;padding:0;font-size:14px;line-height:1">×</button></span>`).join('');
   const softTags = (p.softSkills||[]).map((s,i)=>`<span class="tag tag-purple">${esc(s)} <button onclick="removeSkill('soft',${i})" style="background:none;border:none;cursor:pointer;color:inherit;padding:0;font-size:14px;line-height:1">×</button></span>`).join('');
@@ -148,7 +127,11 @@ function saveProfile() {
     const el = document.getElementById('p-' + f);
     if (el) updated[f] = el.value;
   });
-  setState({ profile: updated });
+  // Save directly to state + localStorage WITHOUT triggering full re-render
+  // (re-render would collapse the industry multi-select dropdowns)
+  state.profile = updated;
+  try { localStorage.setItem('vc_profile', JSON.stringify(state.profile)); } catch(e) {}
+  scheduleSync();
   showToast('Profile saved ✓');
 }
 
@@ -310,34 +293,7 @@ function toggleIndustry(industryName) {
   state.profile = { ...state.profile, targetIndustries: updated };
   try { localStorage.setItem('vc_profile', JSON.stringify(state.profile)); } catch(e) {}
   
-  // Only re-render the industry section, not the whole page
-  const container = document.getElementById('industry-checks');
-  if (container) {
-    const selectedIndustries = state.profile.targetIndustries || [];
-    container.innerHTML = INDUSTRIES.map(industry => {
-      const selected = selectedIndustries.find(s => 
-        (typeof s === 'string' && s === industry.name) || 
-        (typeof s === 'object' && s.name === industry.name)
-      );
-      const isChecked = !!selected;
-      const currentSubTypes = (typeof selected === 'object' && selected.subTypes) ? selected.subTypes :
-                              (typeof selected === 'object' && selected.subType) ? [selected.subType] : [];
-      return `
-        <div style="margin-bottom:8px">
-          <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid ${isChecked?'#3b82f6':'#e5e7eb'};border-radius:8px;cursor:pointer;font-size:13px;background:${isChecked?'#eff6ff':'white'}">
-            <input type="checkbox" ${isChecked?'checked':''} onchange="toggleIndustry('${industry.name}')" style="width:auto;accent-color:#2563eb"> ${industry.name}
-          </label>
-          ${isChecked ? `
-            <div style="margin-left:32px;margin-top:4px">
-              <select multiple onchange="setIndustrySubTypes('${industry.name}', this)" 
-                style="width:100%;padding:4px;font-size:12px;border:1px solid #d1d5db;border-radius:6px;min-height:${Math.min(industry.subTypes.length, 5)*24}px">
-                ${industry.subTypes.map(st => `<option value="${st}" ${currentSubTypes.includes(st)?'selected':''}>${st}</option>`).join('')}
-              </select>
-              <p style="font-size:11px;color:#9ca3af;margin:3px 0 0">Hold Cmd (Mac) or Ctrl (Windows) to select multiple. Leave blank to include all.</p>
-            </div>` : ''}
-        </div>`;
-    }).join('');
-  }
+  refreshIndustryUI();
 }
 
 // Called when user changes the multi-select dropdown for sub-types
@@ -380,11 +336,9 @@ function selectIndustryFromChild(industryName, subType) {
   refreshIndustryUI();
 }
 
-function refreshIndustryUI() {
-  const container = document.getElementById('industry-checks');
-  if (!container) return;
-  const selectedIndustries = state.profile.targetIndustries || [];
-  container.innerHTML = INDUSTRIES.map(industry => {
+// Single source of truth for industry HTML — used by renderProfile and refreshIndustryUI
+function buildIndustryHTML(selectedIndustries) {
+  return INDUSTRIES.map(industry => {
     const selected = selectedIndustries.find(s =>
       (typeof s === 'string' && s === industry.name) ||
       (typeof s === 'object' && s.name === industry.name)
@@ -392,6 +346,7 @@ function refreshIndustryUI() {
     const isChecked = !!selected;
     const currentSubTypes = (typeof selected === 'object' && selected.subTypes) ? selected.subTypes :
                             (typeof selected === 'object' && selected.subType) ? [selected.subType] : [];
+    const rowHeight = Math.min(industry.subTypes.length, 5) * 22 + 10;
     return `
       <div style="margin-bottom:8px">
         <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid ${isChecked?'#3b82f6':'#e5e7eb'};border-radius:8px;cursor:pointer;font-size:13px;background:${isChecked?'#eff6ff':'white'}">
@@ -400,13 +355,19 @@ function refreshIndustryUI() {
         ${isChecked ? `
           <div style="margin-left:32px;margin-top:4px">
             <select multiple onchange="setIndustrySubTypes('${industry.name}', this)"
-              style="width:100%;padding:4px;font-size:12px;border:1px solid #d1d5db;border-radius:6px;min-height:${Math.min(industry.subTypes.length, 5)*24}px">
+              style="width:100%;padding:4px;font-size:12px;border:1px solid #d1d5db;border-radius:6px;height:${rowHeight}px">
               ${industry.subTypes.map(st => `<option value="${st}" ${currentSubTypes.includes(st)?'selected':''}>${st}</option>`).join('')}
             </select>
-            <p style="font-size:11px;color:#9ca3af;margin:3px 0 0">Hold Cmd (Mac) or Ctrl (Windows) to select multiple. Leave blank to include all areas.</p>
+            <p style="font-size:11px;color:#9ca3af;margin:3px 0 0">Hold Cmd (Mac) or Ctrl to select multiple. Leave all unselected = include all areas.</p>
           </div>` : ''}
       </div>`;
   }).join('');
+}
+
+function refreshIndustryUI() {
+  const container = document.getElementById('industry-checks');
+  if (!container) return;
+  container.innerHTML = buildIndustryHTML(state.profile.targetIndustries || []);
 }
 
 function addSkill(type) {
