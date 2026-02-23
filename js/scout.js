@@ -173,34 +173,14 @@ async function runScout() {
     : remote === 'hybrid' ? 'hybrid positions (mix of remote and on-site)'
     : 'on-site positions';
 
-  const prompt = `You are a veteran career specialist. Search the web RIGHT NOW for real, currently posted job openings.
+  const prompt = `Find 6 real current job postings for this veteran. Search USAJobs, LinkedIn, Indeed, ClearanceJobs, and company career pages now.
 
-VETERAN PROFILE:
-- Name: ${p.fullName || 'Veteran'}
-- Branch/Rank: ${p.branch || ''} ${p.rank || ''}
-- MOS/Rate: ${p.mosRate || ''}
-- Security Clearance: ${clearance || p.clearance || 'None listed'}
-- Target Industries: ${industries || 'Defense, Government, Technology'}
-- Target Location: ${location || 'Nationwide'}
-- Work Arrangement: ${remoteInstruction}
-- Seniority: ${seniority}
-- Keywords: ${keywords || 'None'}
-${feedback ? `\nADJUSTMENTS FROM LAST SEARCH:\n${feedback}` : ''}
+Profile: ${p.rank || ''} ${p.branch || ''}, MOS ${p.mosRate || ''}, clearance: ${clearance || p.clearance || 'none'}, seeking ${seniority} ${industries || 'defense/gov'} roles, ${remoteInstruction}, near ${location || 'anywhere'}.${keywords ? ' Keywords: '+keywords+'.' : ''}${feedback ? ' Adjust: '+feedback : ''}
 
-Search LinkedIn, Indeed, USAJobs, ClearanceJobs, and company career pages (Workday, iCIMS, Greenhouse).
-Focus on veteran-friendly employers: Leidos, SAIC, Booz Allen, Raytheon, L3Harris, Northrop Grumman, General Dynamics, BAE Systems, ManTech, CACI, Peraton.
+Return ONLY this JSON (no other text):
+{"jobs":[{"title":"","company":"","location":"","reqId":"","posted":"","url":"","grade":8,"whyFits":"","pros":"","watchOut":""}]}
 
-Find 6-8 REAL, VERIFIED, CURRENTLY OPEN positions.
-
-CRITICAL: Your ENTIRE response must be ONLY the JSON below — no intro text, no explanation, no markdown fences, nothing else:
-
-{"jobs":[{"title":"exact job title","company":"company name","location":"city, state or Remote","reqId":"req ID or null","posted":"date or Recent","url":"direct URL","grade":8,"whyFits":"2-3 sentences why this fits their background","pros":"key strengths of this opportunity","watchOut":"any concern, commute issue, or null"}]}
-
-Rules:
-- grade = 1-10 profile match score
-- pros = why this role/company is attractive (compensation, growth, mission, etc.)
-- Only verified real postings with actual clickable URLs
-- Start your response with { and end with } — nothing else`;
+grade=1-10 match. Only real verified postings with working URLs.`;
 
   try {
     const token = await getClerkToken();
