@@ -149,6 +149,13 @@ function renderScout() {
       <h3 style="font-size:15px;font-weight:700;margin:0 0 8px">📝 Refine Next Search</h3>
       <textarea id="sc-new-feedback" rows="2" placeholder="e.g. Good results but too many in Texas. Find more remote. I want more SAIC. Skip anything requiring a move." style="width:100%;box-sizing:border-box"></textarea>
       <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="saveScoutFeedback()">Save Feedback & Search Again</button>
+    </div>` : rawText ? `
+    <div class="card" style="margin-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0;font-size:18px;font-weight:700">Search Results</h2>
+        <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(state.ui.scoutRawText||'').then(()=>showToast('Copied ✓'))">📋 Copy</button>
+      </div>
+      <div style="font-size:14px;line-height:1.7;white-space:pre-wrap">${renderMarkdown(rawText)}</div>
     </div>` : ''}
   `;
 }
@@ -199,22 +206,42 @@ grade=1-10 match. Only real verified postings with working URLs.`;
 
     const data = await res.json();
     const rawText = data.text || '';
+    console.log('Scout raw response length:', rawText.length, 'preview:', rawText.slice(0, 200));
 
-    // Parse JSON from response
+    // Try to parse structured JSON jobs
     let jobs = [];
+    let parseError = null;
     try {
-      const match = rawText.match(/\{[\s\S]*"jobs"[\s\S]*\}/);
-      if (match) {
-        const parsed = JSON.parse(match[0]);
+      // Try multiple JSON extraction strategies
+      let jsonStr = null;
+
+      // Strategy 1: find {"jobs":[...]} pattern
+      const m1 = rawText.match(/\{[\s\S]*?"jobs"\s*:\s*\[[\s\S]*?\]\s*\}/);
+      if (m1) jsonStr = m1[0];
+
+      // Strategy 2: find array directly
+      if (!jsonStr) {
+        const m2 = rawText.match(/\[[\s\S]*?"title"[\s\S]*?\]/);
+        if (m2) jsonStr = `{"jobs":${m2[0]}}`;
+      }
+
+      if (jsonStr) {
+        const parsed = JSON.parse(jsonStr);
         jobs = parsed.jobs || [];
+        console.log('Scout parsed', jobs.length, 'jobs');
       }
     } catch(e) {
-      // If JSON parse fails, fall back to showing raw text
-      setState({ ui: { ...state.ui, scoutBusy: false, scoutRawText: rawText, scoutResults: [], scoutError: '' }});
-      return;
+      parseError = e.message;
+      console.warn('Scout JSON parse failed:', e.message);
     }
 
-    setState({ ui: { ...state.ui, scoutBusy: false, scoutResults: jobs, scoutRawText: rawText, scoutError: '' }});
+    // Always update state — show raw text if no structured jobs
+    setState({ ui: { ...state.ui,
+      scoutBusy: false,
+      scoutResults: jobs,
+      scoutRawText: rawText,
+      scoutError: jobs.length === 0 && !rawText ? 'No results returned. Try adjusting your filters.' : ''
+    }});
 
   } catch (err) {
     setState({ ui: { ...state.ui, scoutBusy: false, scoutError: err.message }});
