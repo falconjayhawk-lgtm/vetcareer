@@ -158,6 +158,9 @@ function buildExtractionPrompt(docType) {
 }`;
 
   if (docType.includes('Civilian Resume')) return `Extract from this civilian resume and return ONLY this JSON (no markdown, no extra text):
+
+CRITICAL RULE: Any job where the employer is a military branch (U.S. Air Force, U.S. Army, U.S. Navy, U.S. Marine Corps, U.S. Coast Guard, U.S. Space Force, United States Air Force, etc.) must go in "militaryRoles", NOT in "civilianJobs". These are military assignments disguised as civilian job entries. Only truly civilian employers (private companies, government contractors, federal agencies as a civilian employee) go in "civilianJobs".
+
 {
   "docType": "civilianResume",
   "profile": {
@@ -165,9 +168,16 @@ function buildExtractionPrompt(docType) {
   },
   "civilianJobs": [
     {
-      "company": "", "title": "", "location": "", "startDate": "", "endDate": "",
+      "company": "civilian employer only — never a military branch",
+      "title": "", "location": "", "startDate": "", "endDate": "",
       "description": "role description",
-      "accomplishments": "bullet points with metrics — extract all achievement bullets from the resume"
+      "accomplishments": "bullet points with metrics — extract all achievement bullets"
+    }
+  ],
+  "militaryRoles": [
+    {
+      "note": "These were military service entries found in the document — already captured in military assignments, do not duplicate",
+      "employer": "", "title": "", "startDate": "", "endDate": ""
     }
   ],
   "skills": {
@@ -224,10 +234,41 @@ async function applyExtraction(rawJson, docType, fileName) {
     });
   }
 
-  // Apply civilian jobs (from civilian resume)
+  // Apply civilian jobs (from civilian resume) — skip any that are military employers or overlap existing assignments
   if (data.civilianJobs?.length) {
+    const MILITARY_EMPLOYERS = /\b(air force|army|navy|marine|coast guard|space force|united states military|u\.s\. military|armed forces|department of defense)\b/i;
+
+    // Build list of existing military date ranges to detect overlaps
+    const assignmentRanges = state.assignments.map(a => ({
+      start: a.startDate ? new Date(a.startDate).getFullYear() : null,
+      end: a.endDate ? new Date(a.endDate).getFullYear() : new Date().getFullYear()
+    })).filter(r => r.start);
+
     data.civilianJobs.forEach(j => {
-      if (j.title && j.company) newCivilianJobs.push({ id:id(), source:'AI:'+docType, ...j });
+      if (!j.title || !j.company) return;
+
+      // Skip if employer is a military branch
+      if (MILITARY_EMPLOYERS.test(j.company)) {
+        console.log(`Skipping military employer: ${j.company} - ${j.title}`);
+        return;
+      }
+
+      // Check for date overlap with existing military assignments
+      const jobStart = j.startDate ? new Date(j.startDate).getFullYear() : null;
+      const jobEnd = j.endDate ? new Date(j.endDate).getFullYear() : new Date().getFullYear();
+
+      if (jobStart) {
+        const overlaps = assignmentRanges.some(r =>
+          r.start && jobStart <= r.end && jobEnd >= r.start
+        );
+        if (overlaps) {
+          // Still add it — civilian contractor roles can overlap with AD service — but tag it
+          newCivilianJobs.push({ id:id(), source:'AI:'+docType, possibleOverlap: true, ...j });
+          return;
+        }
+      }
+
+      newCivilianJobs.push({ id:id(), source:'AI:'+docType, ...j });
     });
   }
 

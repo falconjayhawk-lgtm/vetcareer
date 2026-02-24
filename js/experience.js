@@ -97,7 +97,15 @@ function renderExperience() {
         </div>`;
     }
     return `
-      <div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:10px">
+      <div style="background:white;border:1px solid ${j.possibleOverlap ? '#fbbf24' : '#e5e7eb'};border-radius:8px;padding:14px;margin-bottom:10px">
+        ${j.possibleOverlap ? `
+        <div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:13px;display:flex;justify-content:space-between;align-items:center">
+          <span>⚠️ <strong>Possible duplicate</strong> — dates overlap with a military assignment. Is this a separate civilian role?</span>
+          <div style="display:flex;gap:6px;flex-shrink:0;margin-left:12px">
+            <button class="btn btn-sm" style="background:#d1fae5;color:#065f46;font-size:12px" onclick="clearOverlapFlag('${j.id}')">✓ Keep it</button>
+            <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b;font-size:12px" onclick="removeCivJob('${j.id}')">✕ Remove</button>
+          </div>
+        </div>` : ''}
         <div style="display:flex;justify-content:space-between;align-items:start">
           <div>
             <div style="font-weight:700;font-size:15px">${esc(j.title)}</div>
@@ -150,6 +158,11 @@ function renderExperience() {
         <h2 style="margin:0">💼 Civilian Work Experience</h2>
         <button class="btn btn-primary btn-sm" onclick="toggleUI('addCivJob')">+ Add Job</button>
       </div>
+      ${state.civilianJobs.some(j=>j.possibleOverlap) ? `
+      <div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;display:flex;justify-content:space-between;align-items:center">
+        <span>⚠️ <strong>${state.civilianJobs.filter(j=>j.possibleOverlap).length} entry(s)</strong> may duplicate your military assignments. Review below.</span>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b;font-size:12px" onclick="removeMilitaryDuplicates()">Remove All Duplicates</button>
+      </div>` : ''}
       ${state.ui.addCivJob?`
         <div style="padding:16px;background:#faf5ff;border:1px solid #ddd6fe;border-radius:8px;margin-bottom:16px">
           <div class="grid2">
@@ -273,6 +286,18 @@ function saveCivJob() {
 }
 
 function removeCivJob(jid) { setState({ civilianJobs: state.civilianJobs.filter(j=>j.id!==jid) }); }
+
+// Dismiss the overlap warning — user confirmed this is a legitimate separate role
+function clearOverlapFlag(jid) {
+  setState({ civilianJobs: state.civilianJobs.map(j => j.id === jid ? { ...j, possibleOverlap: false } : j) });
+}
+
+// Remove all flagged duplicates at once
+function removeMilitaryDuplicates() {
+  if (confirm('Remove all entries flagged as possible military duplicates?')) {
+    setState({ civilianJobs: state.civilianJobs.filter(j => !j.possibleOverlap) });
+  }
+}
 
 function updateCivJob(jid) {
   const company = document.getElementById('ec-company')?.value?.trim();
