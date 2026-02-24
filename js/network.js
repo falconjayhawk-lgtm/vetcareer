@@ -15,12 +15,12 @@ function renderNetwork() {
         <div class="field">
           <label class="field-label">Email Type *</label>
           <select id="net-type" onchange="toggleUI('networkType',this.value)">
-            <option value="cold-contact">Cold contact — someone you don't know at a target company</option>
-            <option value="referral-request">Referral request — asking a connection to refer you</option>
-            <option value="info-interview">Informational interview request</option>
-            <option value="reconnect">Reconnecting with an old colleague / contact</option>
-            <option value="follow-up">Follow-up after applying or meeting someone</option>
-            <option value="thank-you">Post-interview thank you</option>
+            <option value="cold-contact" ${(state.ui.networkType||'cold-contact')==='cold-contact'?'selected':''}>Cold contact — someone you don't know at a target company</option>
+            <option value="referral-request" ${(state.ui.networkType||'')==='referral-request'?'selected':''}>Referral request — asking a connection to refer you</option>
+            <option value="info-interview" ${(state.ui.networkType||'')==='info-interview'?'selected':''}>Informational interview request</option>
+            <option value="reconnect" ${(state.ui.networkType||'')==='reconnect'?'selected':''}>Reconnecting with an old colleague / contact</option>
+            <option value="follow-up" ${(state.ui.networkType||'')==='follow-up'?'selected':''}>Follow-up after applying or meeting someone</option>
+            <option value="thank-you" ${(state.ui.networkType||'')==='thank-you'?'selected':''}>Post-interview thank you</option>
           </select>
         </div>
         <div class="field">
@@ -85,7 +85,7 @@ async function generateNetworkEmail() {
   const job = selJob ? state.jobs.find(j=>j.id===selJob) : null;
   setState({ ui:{...state.ui, networkBusy:true, networkError:'', networkResult:null} });
   const p = state.profile;
-  const topExp = state.assignments.slice(0,2).map(a=>`${a.dutyTitle} at ${a.base} (${a.accomplishments||''})`).join('; ');
+  const topExp = state.assignments.slice(0,2).map(a=>`${a.dutyTitle} at ${a.base||''}: ${(a.accomplishments||'').slice(0,200)}`).join(' | ');
   try {
     const raw = await callClaude(
       `You are a career coach who writes networking emails for military veterans. Your emails get replies because they sound like a real person wrote them — specific, confident, brief, and respectful of the recipient's time. You never write generic templates. You never use: "I hope this email finds you well", "I am reaching out to...", "I wanted to touch base", "synergy", "leverage", "circle back", "I am passionate about", or any other hollow opener. Every email opens with something specific and interesting.`,
@@ -118,10 +118,9 @@ Return ONLY this JSON:
   "alternativeSubject": "A second subject line option with different angle",
   "body": "The full email body — plain text, no markdown. Sign off with veteran's name.",
   "followUpTip": "One specific tip on when and how to follow up if no response"
-}`
-    );
+}`, 'network');
     let result;
-    try { result = JSON.parse(raw.replace(/```json|```/g,'').trim()); } catch(e) { throw new Error('Could not parse result. Try again.'); }
+    try { result = extractJSON(raw); } catch(e) { throw new Error('Could not parse result. Try again.'); }
     setState({ ui:{...state.ui, networkBusy:false, networkResult:result} });
     showToast('✓ Email generated!');
   } catch(err) {

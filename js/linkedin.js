@@ -105,11 +105,11 @@ async function generateLinkedIn() {
   toggleUI('liAudience', audience); toggleUI('liEmphasis', emphasis);
   setState({ ui:{...state.ui, linkedinBusy:true, linkedinError:'', linkedinResult:null} });
   const p = state.profile;
-  const exp = state.assignments.slice(0,5).map(a=>{
-    let t=`${a.dutyTitle}${a.rank?' ('+a.rank+')':''} | ${a.unit||''} | ${a.base||''} | ${a.startDate||'?'}-${a.endDate||'Present'}\n${a.accomplishments||''}`;
-    if((a.roles||[]).length) t+='\nAdditional roles: '+a.roles.map(r=>r.title).join(', ');
-    return t;
-  }).join('\n---\n');
+  const cap = (t,n) => !t?'':(t.length>n?t.slice(0,n)+'...':t);
+  const exp = state.assignments.slice(0,3).map(a=>
+    `${a.dutyTitle} | ${a.unit||''} | ${a.startDate||'?'}-${a.endDate||'Present'}: ${cap(a.accomplishments,200)}`
+  ).join('\n');
+  const civExp = state.civilianJobs.slice(0,2).map(j=>`${j.title} at ${j.company}: ${cap(j.accomplishments,150)}`).join('\n');
   const awards = state.awards.map(a=>`${a.name}${a.civilianTranslation?' ('+a.civilianTranslation+')':''}`).join(', ');
   try {
     const raw = await callClaude(
@@ -166,17 +166,17 @@ ${exp||'None'}
 
 AWARDS: ${awards||'None'}
 
-Return ONLY this JSON (no markdown):
+Return ONLY this JSON (no markdown, no extra text):
 {
-  "headline": "A powerful 200-character headline — not just job title, but value proposition. Include clearance if visibility is prominent. Example: 'Retired USAF Colonel | TS/SCI | JADC2 & C2ISR | BD & Capture | Warfighting Technology'",
-  "about": "A 3-4 paragraph About section. Para 1: Hook — who they are, years of service, defining career moment. Para 2: Core expertise and what makes them different. Para 3: What they're looking for / how they help organizations. Optional Para 4: A line about life outside work if it humanizes them. Write in first person. Sound like a real person, not HR copy.",
-  "experience": "For each assignment, write a 3-4 bullet LinkedIn experience description. Format:\\n\\n[DUTY TITLE] | [UNIT] | [DATES]\\n• Bullet with number\\n• Bullet with number\\n• Bullet with number\\n\\nTranslate all military jargon. Every bullet needs a metric.",
-  "skills": "List 10 specific LinkedIn skills to add, comma-separated. Mix technical and leadership. Include clearance level as a skill if applicable.",
-  "tips": "3-4 specific LinkedIn optimization tips for this veteran — profile photo advice, connection strategy, who to follow, hashtags to use, etc."
+  "headline": "220-char max headline with value proposition and clearance if applicable",
+  "about": "3 paragraphs. Para 1: hook with years of service. Para 2: core expertise. Para 3: what they bring to employers. First person. Under 400 words total.",
+  "experience": "Top 3 roles only. Per role: TITLE | ORG | DATES then 2 bullets max with metrics. Translate military jargon. Under 250 words total.",
+  "skills": "10 LinkedIn skills, comma-separated",
+  "tips": "3 quick optimization tips for this veteran"
 }`
-    );
+    , 'linkedin');
     let result;
-    try { result = JSON.parse(raw.replace(/```json|```/g,'').trim()); } catch(e) { throw new Error('Could not parse result. Try again.'); }
+    try { result = extractJSON(raw); } catch(e) { throw new Error('Could not parse result. Try again.'); }
     setState({ ui:{...state.ui, linkedinBusy:false, linkedinResult:result} });
     showToast('✓ LinkedIn profile generated!');
   } catch(err) {

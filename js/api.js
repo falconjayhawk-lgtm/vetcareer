@@ -6,12 +6,12 @@
 const WORKER_URL = 'https://vetcareer-api.falconjayhawk.workers.dev';
 
 // ── Claude API via Worker ─────────────────────────────────────────────
-async function callClaude(system, user) {
+async function callClaude(system, user, feature) {
   const token = await getClerkToken();
 
-  // 45-second timeout — prevents indefinite hangs
+  // 60-second timeout — heavy features like LinkedIn and Interview need time
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 45000);
+  const timeout = setTimeout(() => controller.abort(), 60000);
 
   let res;
   try {
@@ -21,12 +21,12 @@ async function callClaude(system, user) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ system, user }),
+      body: JSON.stringify({ system, user, feature: feature || 'general' }),
       signal: controller.signal
     });
   } catch(e) {
     clearTimeout(timeout);
-    if (e.name === 'AbortError') throw new Error('Request timed out after 45 seconds. Try again.');
+    if (e.name === 'AbortError') throw new Error('Request timed out. Try again.');
     throw e;
   }
   clearTimeout(timeout);

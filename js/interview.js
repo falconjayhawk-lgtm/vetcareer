@@ -88,7 +88,7 @@ async function generateInterviewPrep() {
   const job = state.jobs.find(j=>j.id===selJob);
   if (!job) return;
   const stage = document.getElementById('iv-stage')?.value||'behavioral';
-  const count = document.getElementById('iv-count')?.value||'15';
+  const count = Math.min(parseInt(document.getElementById('iv-count')?.value||'6'), 6); // cap at 6 — keeps output under token limit
   const concern = document.getElementById('iv-concern')?.value?.trim()||'';
   setState({ ui:{...state.ui, interviewBusy:true, interviewError:'', interviewResult:null} });
   const p = state.profile;
@@ -117,21 +117,20 @@ INSTRUCTIONS:
 - Flag questions where military background is a strength vs where it needs bridging
 - Be direct — if an answer needs to address a potential gap, say so and coach around it
 
-Return ONLY this JSON:
+Return ONLY this JSON (no markdown, no extra text):
 {
-  "openingTip": "One tactical tip for this specific interview stage",
+  "openingTip": "One tactical tip for this interview stage",
   "questions": [
     {
       "question": "exact interview question",
       "type": "behavioral|technical|situational|curveball",
       "difficulty": "Expected|Tough|Curveball",
-      "answer": "Coached answer using veteran's real experience. 3-5 sentences. First person. Sound human. Include a specific metric from their background.",
-      "tip": "One tactical tip for this specific question — delivery, what to watch out for, or how to frame the military angle"
+      "answer": "Coached answer. 2-3 sentences. First person. One specific metric. No filler.",
+      "tip": "One delivery tip for this question"
     }
   ],
-  "closingQuestions": "5-6 smart questions the veteran should ask the interviewer, formatted as a numbered list"
-}`
-    );
+  "closingQuestions": "4 smart questions to ask, numbered list"
+}`, 'interview');
     let result;
     try { result = extractJSON(raw); } catch(e) { throw new Error('Could not parse results. Try again.'); }
     setState({ ui:{...state.ui, interviewBusy:false, interviewResult:result} });

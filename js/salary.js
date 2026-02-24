@@ -133,8 +133,7 @@ Return ONLY this JSON (no markdown):
   "negotiationScript": "Word-for-word script for when they ask 'What are your salary expectations?' — confident, specific, leaves room to negotiate. 3-4 sentences.",
   "totalComp": "Beyond base: what else to negotiate — signing bonus, equity/RSUs if startup, annual bonus target, clearance maintenance pay, remote flexibility, PTO, professional development budget. List as bullets.",
   "redFlags": "2-3 specific things to watch out for in this type of offer — common lowball tactics, benefits traps, title inflation, etc."
-}`
-    );
+}`, 'salary');
     let result;
     try { result = extractJSON(raw); } catch(e) { throw new Error('Could not parse salary data. Try again.'); }
     setState({ ui:{...state.ui, salaryBusy:false, salaryResult:result} });

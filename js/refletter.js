@@ -127,8 +127,7 @@ Return ONLY this JSON:
 {
   "letter": "The complete letter text — plain text, use \\n for line breaks. Include date placeholder at top, proper salutation, all 4 paragraphs, and signature block with [Phone] and [Email] placeholders.",
   "writerNotes": "3-4 bullet points of guidance for the letter writer: what to personalize, what to verify for accuracy, whether to add their letterhead, how to send it (email vs physical)."
-}`
-    );
+}`, 'refletter');
     let result;
     try { result = JSON.parse(raw.replace(/```json|```/g,'').trim()); } catch(e) { throw new Error('Could not parse result. Try again.'); }
     setState({ ui:{...state.ui, refBusy:false, refResult:result} });
