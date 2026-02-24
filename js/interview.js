@@ -133,7 +133,7 @@ Return ONLY this JSON:
 }`
     );
     let result;
-    try { result = JSON.parse(raw.replace(/```json|```/g,'').trim()); } catch(e) { throw new Error('Could not parse results. Try again.'); }
+    try { result = extractJSON(raw); } catch(e) { throw new Error('Could not parse results. Try again.'); }
     setState({ ui:{...state.ui, interviewBusy:false, interviewResult:result} });
     showToast('✓ Interview prep generated!');
   } catch(err) {

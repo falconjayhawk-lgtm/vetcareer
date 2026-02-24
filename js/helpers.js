@@ -7,3 +7,25 @@ function statusBadge(status) {
   return `<span class="badge" style="${cfg[status]||cfg.interested}">${status.charAt(0).toUpperCase()+status.slice(1)}</span>`;
 }
 
+
+// Robust JSON extractor — handles markdown fences, preamble text, and trailing commentary
+function extractJSON(raw) {
+  if (!raw) throw new Error('Empty response from AI');
+  // Strip markdown code fences
+  let cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  // Try direct parse first
+  try { return JSON.parse(cleaned); } catch(e) {}
+  // Find the outermost { } block
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    try { return JSON.parse(cleaned.slice(start, end + 1)); } catch(e) {}
+  }
+  // Find outermost [ ] block
+  const astart = cleaned.indexOf('[');
+  const aend = cleaned.lastIndexOf(']');
+  if (astart !== -1 && aend !== -1 && aend > astart) {
+    try { return JSON.parse(cleaned.slice(astart, aend + 1)); } catch(e) {}
+  }
+  throw new Error('Could not parse AI response. Try again.');
+}

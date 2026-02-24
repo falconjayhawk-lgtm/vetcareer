@@ -8,14 +8,28 @@ const WORKER_URL = 'https://vetcareer-api.falconjayhawk.workers.dev';
 // ── Claude API via Worker ─────────────────────────────────────────────
 async function callClaude(system, user) {
   const token = await getClerkToken();
-  const res = await fetch(`${WORKER_URL}/api/claude`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify({ system, user })
-  });
+
+  // 45-second timeout — prevents indefinite hangs
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
+
+  let res;
+  try {
+    res = await fetch(`${WORKER_URL}/api/claude`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ system, user }),
+      signal: controller.signal
+    });
+  } catch(e) {
+    clearTimeout(timeout);
+    if (e.name === 'AbortError') throw new Error('Request timed out after 45 seconds. Try again.');
+    throw e;
+  }
+  clearTimeout(timeout);
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

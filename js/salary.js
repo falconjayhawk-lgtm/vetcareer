@@ -29,13 +29,13 @@ function renderSalary() {
         </div>
         <div class="field">
           <label class="field-label">Company Type</label>
-          <select id="sal-company-type">
-            <option value="large-defense">Large Defense Contractor (Leidos, SAIC, Northrop)</option>
-            <option value="mid-defense">Mid-size Defense / GovCon</option>
-            <option value="startup-defense">Defense Tech Startup (Anduril, Shield AI, Palantir)</option>
-            <option value="federal">Federal Government (GS/SES)</option>
-            <option value="commercial">Commercial Tech / Private Sector</option>
-            <option value="consulting">Consulting Firm</option>
+          <select id="sal-company-type" onchange="toggleUI('salaryCompanyType',this.value)">
+            <option value="large-defense" ${(state.ui.salaryCompanyType||'large-defense')==='large-defense'?'selected':''}>Large Defense Contractor (Leidos, SAIC, Northrop)</option>
+            <option value="mid-defense" ${(state.ui.salaryCompanyType||'')==='mid-defense'?'selected':''}>Mid-size Defense / GovCon</option>
+            <option value="startup-defense" ${(state.ui.salaryCompanyType||'')==='startup-defense'?'selected':''}>Defense Tech Startup (Anduril, Shield AI, Palantir)</option>
+            <option value="federal" ${(state.ui.salaryCompanyType||'')==='federal'?'selected':''}>Federal Government (GS/SES)</option>
+            <option value="commercial" ${(state.ui.salaryCompanyType||'')==='commercial'?'selected':''}>Commercial Tech / Private Sector</option>
+            <option value="consulting" ${(state.ui.salaryCompanyType||'')==='consulting'?'selected':''}>Consulting Firm</option>
           </select>
         </div>
         <div class="field">
@@ -104,7 +104,7 @@ async function generateSalaryIntel() {
   const companyType = document.getElementById('sal-company-type')?.value||'';
   const current = document.getElementById('sal-current')?.value?.trim()||'';
   const worry = document.getElementById('sal-worry')?.value?.trim()||'';
-  toggleUI('salaryRole', manualRole); toggleUI('salaryLocation', location); toggleUI('salaryCurrent', current); toggleUI('salaryWorry', worry);
+  toggleUI('salaryRole', manualRole); toggleUI('salaryLocation', location); toggleUI('salaryCurrent', current); toggleUI('salaryWorry', worry); toggleUI('salaryCompanyType', companyType);
   const job = selJob ? state.jobs.find(j=>j.id===selJob) : null;
   const roleDescription = job ? `${job.title} at ${job.company} (${job.location||location||'location unknown'})` : manualRole;
   if (!roleDescription) { showToast('Select a job or enter a role', false); return; }
@@ -136,7 +136,7 @@ Return ONLY this JSON (no markdown):
 }`
     );
     let result;
-    try { result = JSON.parse(raw.replace(/```json|```/g,'').trim()); } catch(e) { throw new Error('Could not parse results. Try again.'); }
+    try { result = extractJSON(raw); } catch(e) { throw new Error('Could not parse salary data. Try again.'); }
     setState({ ui:{...state.ui, salaryBusy:false, salaryResult:result} });
     showToast('✓ Salary intelligence ready!');
   } catch(err) {

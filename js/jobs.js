@@ -76,6 +76,12 @@ function renderJobs() {
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
               <span style="font-weight:700;font-size:16px">${esc(j.title)}</span> ${statusBadge(j.status)}
+              ${j.fitScore ? (() => {
+                const s = j.fitScore;
+                const color = s >= 8 ? '#16a34a' : s >= 6 ? '#2563eb' : s >= 4 ? '#d97706' : '#dc2626';
+                const bg = s >= 8 ? '#f0fdf4' : s >= 6 ? '#eff6ff' : s >= 4 ? '#fffbeb' : '#fef2f2';
+                return `<span style="background:${bg};color:${color};border:1.5px solid ${color}60;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700">⭐ ${s}/10 ${j.fitLabel||''}</span>`;
+              })() : ''}
             </div>
             <div style="font-size:14px;color:#4b5563">${esc(j.company)}${j.location?' — '+esc(j.location):''}</div>
             ${j.salaryRange?`<div style="color:#16a34a;font-weight:600;font-size:14px">${esc(j.salaryRange)}</div>`:''}
@@ -175,6 +181,9 @@ function saveJob() {
     contactName:document.getElementById(pre+'-contactName')?.value,
     interviewDates:document.getElementById(pre+'-interviewDates')?.value,
     notes:document.getElementById(pre+'-notes')?.value,
+    // Carry over match score from job analysis if available
+    fitScore: state.ui.jobAnalysisResult?.fitScore || null,
+    fitLabel: state.ui.jobAnalysisResult?.fitLabel || null,
     // Activity log — auto-started with creation event
     activityLog: [{ date: now, type: 'status', from: null, to: status, note: 'Job added to tracker' }]
   };
