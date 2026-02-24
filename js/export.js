@@ -1,96 +1,121 @@
 // ── Export to Word ────────────────────────────────────────────────────
+// Uses docx.js library loaded from unpkg CDN (window.docx)
+
+async function waitForDocx(maxWaitMs = 5000) {
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    if (window.docx && window.docx.Document && window.docx.Packer) return true;
+    await new Promise(r => setTimeout(r, 200));
+  }
+  return false;
+}
+
 async function exportResumeToWord() {
-  const resumeText = document.getElementById('resume-text-output')?.innerText;
-  if (!resumeText) { showToast('Generate a resume first', false); return; }
-  showToast('Building Word document...', true);
+  const resumeEl = document.getElementById('resume-text-output');
+  const resumeText = resumeEl ? (resumeEl.innerText || resumeEl.textContent || '') : '';
+  if (resumeText.trim().length < 50) { showToast('Generate a resume first', false); return; }
+
+  showToast('Preparing Word export...', true);
+  const ready = await waitForDocx();
+  if (!ready) {
+    showToast('Word library failed to load. Try refreshing the page.', false);
+    return;
+  }
+
   try {
-    const { Document, Packer, Paragraph, TextRun, AlignmentType, LevelFormat, BorderStyle } = docx;
+    const D = window.docx;
     const p = state.profile;
     const lines = resumeText.split('\n');
     const children = [];
 
-    // Parse resume text into structured paragraphs
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) { children.push(new Paragraph({ spacing: { after: 60 } })); continue; }
+    function stripMd(t) {
+      return t
+        .replace(/^===\s*/,'').replace(/\s*===\s*$/,'')
+        .replace(/\*\*([^*]+)\*\*/g,'$1')
+        .replace(/^#+\s*/,'')
+        .trim();
+    }
 
-      // Name line (first non-empty line)
-      if (i === 0 || (i < 5 && line === (p.fullName||'').toUpperCase())) {
-        children.push(new Paragraph({
-          alignment: AlignmentType.CENTER,
+    let headerDone = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const raw = lines[i];
+      const line = raw.trim();
+      if (!line) { children.push(new D.Paragraph({ spacing: { after: 80 } })); continue; }
+      const clean = stripMd(line);
+      if (!clean) continue;
+
+      // === SECTION HEADERS ===
+      if (line.startsWith('===')) {
+        children.push(new D.Paragraph({
+          spacing: { before: 240, after: 80 },
+          border: { bottom: { style: D.BorderStyle.SINGLE, size: 6, color: '1d4ed8', space: 2 } },
+          children: [new D.TextRun({ text: clean.toUpperCase(), bold: true, size: 22, font: 'Calibri', color: '1d4ed8' })]
+        }));
+      }
+      // Name — first non-empty non-contact line
+      else if (!headerDone && !clean.includes('@') && !clean.includes('|') && clean.length > 2 && clean.length < 70) {
+        headerDone = true;
+        children.push(new D.Paragraph({
+          alignment: D.AlignmentType.CENTER,
+          spacing: { after: 60 },
+          children: [new D.TextRun({ text: clean, bold: true, size: 34, font: 'Calibri' })]
+        }));
+      }
+      // Contact lines
+      else if (clean.includes('@') || clean.includes('linkedin.com') || (clean.includes('|') && clean.length < 150)) {
+        children.push(new D.Paragraph({
+          alignment: D.AlignmentType.CENTER,
           spacing: { after: 40 },
-          children: [new TextRun({ text: line, bold: true, size: 32, font: 'Arial' })]
-        }));
-      }
-      // Contact line (has | separators or @ symbol)
-      else if (line.includes('|') || (line.includes('@') && line.length < 120)) {
-        children.push(new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 160 },
-          children: [new TextRun({ text: line, size: 18, font: 'Arial', color: '444444' })]
-        }));
-      }
-      // Section headers (ALL CAPS short lines)
-      else if (line === line.toUpperCase() && line.length < 50 && line.length > 2 && !line.match(/^\d/)) {
-        children.push(new Paragraph({
-          spacing: { before: 180, after: 60 },
-          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '1d4ed8', space: 1 } },
-          children: [new TextRun({ text: line, bold: true, size: 22, font: 'Arial', color: '1d4ed8' })]
+          children: [new D.TextRun({ text: clean, size: 18, font: 'Calibri', color: '555555' })]
         }));
       }
       // Bullet points
-      else if (line.startsWith('•') || line.startsWith('-') || line.startsWith('·')) {
-        children.push(new Paragraph({
-          numbering: { reference: 'resume-bullets', level: 0 },
-          spacing: { after: 40 },
-          children: [new TextRun({ text: line.replace(/^[•\-·]\s*/, ''), size: 20, font: 'Arial' })]
+      else if (/^[•\-·*]/.test(line)) {
+        children.push(new D.Paragraph({
+          spacing: { before: 0, after: 60 },
+          indent: { left: 360, hanging: 180 },
+          children: [new D.TextRun({ text: '• ' + clean.replace(/^[•\-·*]\s*/,''), size: 20, font: 'Calibri' })]
         }));
       }
-      // Job title lines (bold — contain dates or location indicators)
-      else if (line.match(/\d{4}/) || line.match(/Present/) || line.match(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/)) {
-        const parts = line.split(/(\s{2,}|\t)/);
-        children.push(new Paragraph({
-          spacing: { after: 40 },
-          children: parts.map((p, pi) => new TextRun({
-            text: p,
-            bold: pi === 0,
-            size: 20,
-            font: 'Arial',
-            color: pi === 0 ? '111827' : '6b7280'
-          }))
-        }));
+      // Role/job title lines (contain year range)
+      else if (/\d{4}/.test(clean) && /[|–\-—]/.test(clean)) {
+        const parts = clean.split(/\s*\|\s*/);
+        const runs = [];
+        parts.forEach((part, pi) => {
+          if (pi > 0) runs.push(new D.TextRun({ text: '  |  ', size: 19, font: 'Calibri', color: 'aaaaaa' }));
+          runs.push(new D.TextRun({ text: part.replace(/\*\*/g,''), bold: pi === 0, size: pi === 0 ? 21 : 19, font: 'Calibri', color: pi === 0 ? '111827' : '4b5563' }));
+        });
+        children.push(new D.Paragraph({ spacing: { before: 160, after: 40 }, children: runs }));
       }
-      // Normal text
+      // Everything else — body text
       else {
-        children.push(new Paragraph({
-          spacing: { after: 60 },
-          children: [new TextRun({ text: line, size: 20, font: 'Arial' })]
-        }));
+        // Handle inline **bold**
+        const segs = clean.split(/(\*\*[^*]+\*\*)/);
+        const runs = segs.map(seg =>
+          seg.startsWith('**') && seg.endsWith('**')
+            ? new D.TextRun({ text: seg.slice(2,-2), bold: true, size: 20, font: 'Calibri' })
+            : new D.TextRun({ text: seg, size: 20, font: 'Calibri' })
+        );
+        children.push(new D.Paragraph({ spacing: { after: 60 }, children: runs }));
       }
     }
 
-    const doc = new Document({
-      numbering: {
-        config: [{
-          reference: 'resume-bullets',
-          levels: [{ level: 0, format: LevelFormat.BULLET, text: '•', alignment: AlignmentType.LEFT,
-            style: { paragraph: { indent: { left: 360, hanging: 180 } } } }]
-        }]
-      },
+    const doc = new D.Document({
       sections: [{
         properties: {
           page: {
             size: { width: 12240, height: 15840 },
-            margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 }
+            margin: { top: 864, right: 1080, bottom: 864, left: 1080 }
           }
         },
         children
       }]
     });
 
-    const buffer = await Packer.toBuffer(doc);
+    const buffer = await D.Packer.toBuffer(doc);
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-    const name = (p.fullName || 'Resume').replace(/\s+/g, '_');
+    const name = ((state.profile?.fullName) || 'Resume').replace(/\s+/g,'_');
     saveAs(blob, `${name}_Resume.docx`);
     showToast('✓ Word document downloaded!');
   } catch(err) {
@@ -100,29 +125,29 @@ async function exportResumeToWord() {
 }
 
 async function exportLetterToWord(letterText, recipientName) {
-  if (!letterText) { showToast('Generate a letter first', false); return; }
-  showToast('Building Word document...', true);
+  if (!letterText) { showToast('No letter to export', false); return; }
+  showToast('Preparing Word export...', true);
+  const ready = await waitForDocx();
+  if (!ready) { showToast('Word library failed to load. Try refreshing the page.', false); return; }
   try {
-    const { Document, Packer, Paragraph, TextRun, AlignmentType } = docx;
-    const p = state.profile;
+    const D = window.docx;
     const lines = letterText.split('\n');
-    const children = lines.map(line => new Paragraph({
+    const children = lines.map(line => new D.Paragraph({
       spacing: { after: line.trim() ? 120 : 60 },
-      children: [new TextRun({ text: line, size: 22, font: 'Arial' })]
+      children: [new D.TextRun({ text: line, size: 22, font: 'Calibri' })]
     }));
-    const doc = new Document({
+    const doc = new D.Document({
       sections: [{
         properties: { page: { size: { width: 12240, height: 15840 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
         children
       }]
     });
-    const buffer = await Packer.toBuffer(doc);
+    const buffer = await D.Packer.toBuffer(doc);
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-    const name = (recipientName || 'Reference_Letter').replace(/\s+/g, '_');
+    const name = (recipientName || 'Reference_Letter').replace(/\s+/g,'_');
     saveAs(blob, `Reference_Letter_${name}.docx`);
     showToast('✓ Word document downloaded!');
   } catch(err) {
     showToast('Export failed: ' + err.message, false);
   }
 }
-

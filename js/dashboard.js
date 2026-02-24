@@ -13,7 +13,7 @@ function renderDashboard() {
     {label:'Complete your profile', autoDone:!!(p.fullName&&p.branch), view:'profile'},
     {label:'Review & edit your experience', autoDone:state.assignments.length>0 || state.civilianJobs.length>0, view:'experience'},
     {label:'Add jobs to tracker', autoDone:state.jobs.length>0, view:'jobs'},
-    {label:'Add your API key', autoDone:!!state.apiKey, view:'settings'},
+    {label:'You\'re connected! AI features are ready to use.', autoDone:true, view:'dashboard'},
     {label:'Generate your LinkedIn profile', autoDone:false, view:'linkedin', manualOnly:true},
     {label:'Generate a tailored resume', autoDone:false, view:'resume', manualOnly:true},
     {label:'Run interview prep for a target job', autoDone:false, view:'interview', manualOnly:true},

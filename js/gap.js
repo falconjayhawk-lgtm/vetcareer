@@ -75,6 +75,7 @@ function renderGap() {
   const allExperienceText = [
     ...(p.technicalSkills||[]),
     p.certifications||'',
+    p.training||'',
     p.mosRate||'',
     ...state.assignments.map(a=>{
       const roleText = (a.roles||[]).map(r=>`${r.title||''} ${r.accomplishments||''}`).join(' ');

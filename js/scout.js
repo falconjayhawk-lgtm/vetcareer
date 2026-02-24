@@ -38,7 +38,8 @@ function renderScout() {
   const jobCards = Array.isArray(results) ? results.map((job, i) => {
     const gradeColor = job.grade >= 8 ? '#16a34a' : job.grade >= 6 ? '#d97706' : '#dc2626';
     const gradeLabel = job.grade >= 8 ? 'Strong Match' : job.grade >= 6 ? 'Good Match' : 'Possible Match';
-    const tracked = (state.jobs || []).some(j => j.jobUrl === job.url);
+    const trackedJob = (state.jobs || []).find(j => j.jobUrl === job.url);
+    const tracked = !!trackedJob;
     return `
       <div class="card" style="margin-bottom:12px;border-left:4px solid ${gradeColor}">
         <div style="display:flex;justify-content:space-between;align-items:start;gap:12px">
@@ -50,11 +51,12 @@ function renderScout() {
             <div style="font-size:14px;color:#4b5563;margin-bottom:2px"><strong>${esc(job.company)}</strong> · ${esc(job.location)}</div>
             ${job.reqId ? `<div style="font-size:12px;color:#9ca3af">Req ID: ${esc(job.reqId)}</div>` : ''}
             ${job.posted ? `<div style="font-size:12px;color:#9ca3af">Posted: ${esc(job.posted)}</div>` : ''}
+            ${job.source ? `<div style="font-size:12px;color:#9ca3af">📌 Found on: ${esc(job.source)}</div>` : ''}
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
             ${job.url ? `<a href="${esc(job.url)}" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;text-align:center">Apply →</a>` : ''}
-            <button class="btn btn-secondary btn-sm" onclick="trackScoutJob(${i})" ${tracked ? 'disabled' : ''}>
-              ${tracked ? '✓ Tracked' : '+ Track'}
+            <button class="btn ${tracked ? 'btn-danger' : 'btn-secondary'} btn-sm" onclick="${tracked ? `untrackScoutJob('${trackedJob ? trackedJob.id : ''}')` : `trackScoutJob(${i})`}">
+              ${tracked ? '✕ Untrack' : '+ Track'}
             </button>
           </div>
         </div>
@@ -178,7 +180,7 @@ async function runScout() {
 Profile: ${p.rank || ''} ${p.branch || ''}, MOS ${p.mosRate || ''}, clearance: ${clearance || p.clearance || 'none'}, seeking ${seniority} ${industries || 'defense/gov'} roles, ${remoteInstruction}, near ${location || 'anywhere'}.${keywords ? ' Keywords: '+keywords+'.' : ''}${feedback ? ' Adjust: '+feedback : ''}
 
 Return ONLY this JSON (no other text):
-{"jobs":[{"title":"","company":"","location":"","reqId":"","posted":"","url":"","grade":8,"whyFits":"","pros":"","watchOut":""}]}
+{"jobs":[{"title":"","company":"","location":"","reqId":"","posted":"","url":"","source":"LinkedIn / Indeed / USAJobs / company name careers page","grade":8,"whyFits":"","pros":"","watchOut":""}]}
 
 grade=1-10 match. Only real verified postings with working URLs.`;
 
@@ -241,6 +243,11 @@ function trackScoutJob(index) {
   };
   setState({ jobs: [...state.jobs, newJob] });
   showToast(`${job.title} added to Job Tracker ✓`);
+}
+
+function untrackScoutJob(jobId) {
+  setState({ jobs: state.jobs.filter(j => j.id !== jobId) });
+  showToast('Removed from Job Tracker');
 }
 
 function saveScoutFeedback() {

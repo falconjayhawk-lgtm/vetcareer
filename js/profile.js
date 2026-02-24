@@ -66,6 +66,10 @@ function renderProfile() {
       <h2>Education & Certifications</h2>
       <div class="field"><label class="field-label">Education</label><textarea id="p-education" rows="3" placeholder="B.S. Criminal Justice, University of Maryland, 2018">${esc(p.education)}</textarea></div>
       <div class="field"><label class="field-label">Certifications</label><textarea id="p-certifications" rows="2" placeholder="PMP (2022), Security+ (2021)...">${esc(p.certifications)}</textarea></div>
+      <div class="field"><label class="field-label">Training, Methodologies & Professional Development</label>
+        <textarea id="p-training" rows="3" placeholder="e.g. Sandler Sales Methodology (practiced 5+ years), Agile/Scrum, Six Sigma Green Belt training, Harvard Leadership Program...">${esc(p.training||'')}</textarea>
+        <p style="font-size:11px;color:#9ca3af;margin:4px 0 0">Add formal training, sales methodologies, leadership programs — anything not captured in certifications. This feeds directly into resume and gap analysis.</p>
+      </div>
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -121,7 +125,7 @@ function renderProfile() {
 }
 
 function saveProfile() {
-  const fields = ['fullName','email','phone','location','linkedin','branch','rank','yearsOfService','mosRate','clearance','clearanceStatus','workPreference','willingToRelocate','targetLocations','education','certifications','elevatorPitch'];
+  const fields = ['fullName','email','phone','location','linkedin','branch','rank','yearsOfService','mosRate','clearance','clearanceStatus','workPreference','willingToRelocate','targetLocations','education','certifications','training','elevatorPitch'];
   const updated = { ...state.profile };
   fields.forEach(f => {
     const el = document.getElementById('p-' + f);
