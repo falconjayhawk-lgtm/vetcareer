@@ -1,62 +1,53 @@
-// ── Job Scout ─────────────────────────────────────────────────────────
-// Uses Claude with real-time web search to find actual job postings
+// ── Job Scout v2 ──────────────────────────────────────────────────────
+// Real jobs from USAJobs API + curated civilian board search links
+// No more AI hallucinated listings
 
 function renderScout() {
   const p = state.profile;
   const busy = state.ui.scoutBusy || false;
   const results = state.ui.scoutResults || [];
-  const rawText = state.ui.scoutRawText || '';
   const error = state.ui.scoutError || '';
+  const tab = state.ui.scoutTab || 'federal';
 
-  const industries = (p.targetIndustries || [])
-    .map(i => {
-      if (typeof i === 'string') return i;
-      if (i.subTypes && i.subTypes.length) return `${i.name} (${i.subTypes.join(', ')})`;
-      if (i.subType) return `${i.name} (${i.subType})`;
-      return `${i.name} (all areas)`;
-    })
-    .join(', ') || 'Not specified';
-
-  const savedLocation = state.ui.scoutLocation !== undefined ? state.ui.scoutLocation : (p.location || '');
-  // Map profile workPreference (capitalized) to scout remoteOpts (lowercase)
-  const wpMap = {'Remote':'remote','Hybrid':'hybrid','On-Site':'onsite','Flexible':'any'};
-  const savedRemote = state.ui.scoutRemote !== undefined ? state.ui.scoutRemote : (wpMap[p.workPreference] || 'any');
-  const savedIndustries = state.ui.scoutIndustries !== undefined ? state.ui.scoutIndustries : industries;
+  const savedLocation   = state.ui.scoutLocation   !== undefined ? state.ui.scoutLocation   : (p.location || '');
+  const savedKeywords   = state.ui.scoutKeywords   || '';
   const savedClearance  = state.ui.scoutClearance  !== undefined ? state.ui.scoutClearance  : (p.clearance || '');
   const savedSeniority  = state.ui.scoutSeniority  || 'mid-senior';
-  const savedKeywords   = state.ui.scoutKeywords   || '';
+  const savedRemote     = state.ui.scoutRemote     || 'any';
 
-  const remoteOpts = ['any','remote','hybrid','onsite'];
   const seniorOpts = [
-    {v:'entry',    l:'Entry / Junior'},
-    {v:'mid-senior',l:'Mid / Senior'},
-    {v:'senior',   l:'Senior / Director'},
-    {v:'manager',  l:'Manager / Lead'},
-    {v:'executive',l:'Executive / VP'},
+    {v:'entry',    l:'Entry / Junior (GS-5 to GS-9)'},
+    {v:'mid-senior',l:'Mid / Senior (GS-11 to GS-13)'},
+    {v:'senior',   l:'Senior / Director (GS-14 to GS-15)'},
+    {v:'executive',l:'Executive / SES'},
   ];
 
-  const jobCards = Array.isArray(results) ? results.map((job, i) => {
-    const gradeColor = job.grade >= 8 ? '#16a34a' : job.grade >= 6 ? '#d97706' : '#dc2626';
-    const gradeLabel = job.grade >= 8 ? 'Strong Match' : job.grade >= 6 ? 'Good Match' : 'Possible Match';
+  const federalResults = results.filter(j => j.source === 'USAJobs');
+  const jobCards = results.map((job, i) => {
+    const grade = job.grade || 5;
+    const gradeColor = grade >= 8 ? '#16a34a' : grade >= 6 ? '#2563eb' : '#6b7280';
+    const gradeLabel = grade >= 8 ? 'Strong Match' : grade >= 6 ? 'Good Match' : 'Possible Match';
+    const tracked = !!(state.jobs || []).find(j => j.jobUrl === job.url);
     const trackedJob = (state.jobs || []).find(j => j.jobUrl === job.url);
-    const tracked = !!trackedJob;
     return `
       <div class="card" style="margin-bottom:12px;border-left:4px solid ${gradeColor}">
         <div style="display:flex;justify-content:space-between;align-items:start;gap:12px">
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
               <span style="font-weight:700;font-size:16px">${esc(job.title)}</span>
-              <span style="background:${gradeColor}18;color:${gradeColor};border:1px solid ${gradeColor}40;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700">${job.grade}/10 — ${gradeLabel}</span>
+              <span style="background:${gradeColor}18;color:${gradeColor};border:1px solid ${gradeColor}40;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700">${grade}/10 — ${gradeLabel}</span>
+              ${job.veteranPreference ? `<span style="background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700">🎖 Vet Pref</span>` : ''}
             </div>
-            <div style="font-size:14px;color:#4b5563;margin-bottom:2px"><strong>${esc(job.company)}</strong> · ${esc(job.location)}</div>
-            ${job.reqId ? `<div style="font-size:12px;color:#9ca3af">Req ID: ${esc(job.reqId)}</div>` : ''}
-            ${job.posted ? `<div style="font-size:12px;color:#9ca3af">Posted: ${esc(job.posted)}</div>` : ''}
-            ${job.source ? `<div style="font-size:12px;color:#9ca3af">📌 Found on: ${esc(job.source)}</div>` : ''}
+            <div style="font-size:14px;color:#4b5563;margin-bottom:4px"><strong>${esc(job.agency || job.company)}</strong> · ${esc(job.location)}</div>
+            ${job.salary ? `<div style="font-size:13px;color:#16a34a;font-weight:600">${esc(job.salary)}</div>` : ''}
+            ${job.gsGrade ? `<div style="font-size:12px;color:#6b7280">${esc(job.gsGrade)}</div>` : ''}
+            ${job.closeDate ? `<div style="font-size:12px;color:#dc2626;font-weight:600">⏰ Closes: ${esc(job.closeDate)}</div>` : ''}
+            <div style="font-size:11px;color:#9ca3af;margin-top:2px">Source: ${esc(job.source)}</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-            ${job.url ? `<a href="${esc(job.url)}" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;text-align:center">Apply →</a>` : ''}
+            ${job.url ? `<a href="${esc(job.url)}" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;text-align:center">View →</a>` : ''}
             <button class="btn ${tracked ? 'btn-danger' : 'btn-secondary'} btn-sm" onclick="${tracked ? `untrackScoutJob('${trackedJob ? trackedJob.id : ''}')` : `trackScoutJob(${i})`}">
-              ${tracked ? '✕ Untrack' : '+ Track'}
+              ${tracked ? '✕ Remove' : '+ Track'}
             </button>
           </div>
         </div>
@@ -64,139 +55,115 @@ function renderScout() {
         <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px;margin-top:10px;font-size:13px;color:#0c4a6e">
           <strong>✅ Why it fits:</strong> ${esc(job.whyFits)}
         </div>` : ''}
-        ${job.pros ? `
-        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px;margin-top:6px;font-size:13px;color:#14532d">
-          <strong>👍 Pros:</strong> ${esc(job.pros)}
-        </div>` : ''}
-        ${job.watchOut ? `
-        <div style="background:#fffbeb;border:1px solid #fed7aa;border-radius:8px;padding:10px;margin-top:6px;font-size:13px;color:#92400e">
-          <strong>⚠️ Watch out:</strong> ${esc(job.watchOut)}
+        ${job.duties ? `
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-top:6px;font-size:12px;color:#374151">
+          <strong>Role summary:</strong> ${esc(job.duties)}
         </div>` : ''}
       </div>`;
-  }).join('') : '';
+  }).join('');
+
+  // Build civilian search links based on current filters
+  const kw = encodeURIComponent(savedKeywords || 'program manager defense');
+  const loc = encodeURIComponent(savedLocation || '');
+  const civilianLinks = [
+    { name: 'LinkedIn Jobs', icon: '💼', url: `https://www.linkedin.com/jobs/search/?keywords=${kw}&location=${loc}`, color: '#0077b5' },
+    { name: 'ClearanceJobs', icon: '🔐', url: `https://www.clearancejobs.com/jobs?query=${kw}&location=${loc}`, color: '#1d4ed8' },
+    { name: 'Indeed', icon: '🔍', url: `https://www.indeed.com/jobs?q=${kw}&l=${loc}`, color: '#2164f3' },
+    { name: 'Handshake (Vet)', icon: '🤝', url: `https://joinhandshake.com/career-advice/job-search/`, color: '#e85d26' },
+    { name: 'USAF Civilian', icon: '✈️', url: `https://www.usajobs.gov/Search/Results?a=AF&k=${kw}`, color: '#003087' },
+    { name: 'DoD STEM Jobs', icon: '🛡️', url: `https://www.usajobs.gov/Search/Results?a=DD&k=${kw}`, color: '#4b5563' },
+  ];
 
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">🔍 Job Scout</h1>
-    <p style="color:#6b7280;font-size:14px;margin:0 0 20px">Real-time job search powered by live web browsing</p>
-
-    <div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px;margin-bottom:20px;font-size:13px;color:#92400e">
-      <strong>⚠️ Important:</strong> Job Scout searches the web in real time, but AI can still make mistakes.
-      Always verify postings directly on the company's career site before applying.
-    </div>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px">Real federal job listings from USAJobs + direct links to civilian boards</p>
 
     <div class="card">
-      <h2>Search Filters</h2>
-
+      <h2 style="margin:0 0 16px">Search Filters</h2>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
         <div class="field">
-          <label class="field-label">Target Industries</label>
-          <input type="text" id="sc-industries" value="${esc(savedIndustries)}" placeholder="e.g. Defense Contracting, Cybersecurity">
-          <p style="font-size:11px;color:#9ca3af;margin:4px 0 0">From your profile — edit to refine</p>
+          <label class="field-label">Keywords / Role</label>
+          <input id="sc-keywords" value="${esc(savedKeywords)}" placeholder="e.g. program manager, cybersecurity, logistics">
         </div>
         <div class="field">
-          <label class="field-label">Target Location</label>
-          <input type="text" id="sc-location" value="${esc(savedLocation)}" placeholder="e.g. Northern Virginia, Washington DC">
-          <p style="font-size:11px;color:#9ca3af;margin:4px 0 0">City/region — separate from remote preference below</p>
+          <label class="field-label">Location</label>
+          <input id="sc-location" value="${esc(savedLocation)}" placeholder="e.g. Kansas City, Washington DC, Remote">
         </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
         <div class="field">
           <label class="field-label">Clearance Level</label>
-          <input type="text" id="sc-clearance" value="${esc(savedClearance)}" placeholder="e.g. TS/SCI">
+          <input id="sc-clearance" value="${esc(savedClearance)}" placeholder="e.g. TS/SCI, Secret">
         </div>
         <div class="field">
-          <label class="field-label">Seniority Level</label>
+          <label class="field-label">Seniority / Grade</label>
           <select id="sc-seniority">
             ${seniorOpts.map(o => `<option value="${o.v}" ${savedSeniority===o.v?'selected':''}>${o.l}</option>`).join('')}
           </select>
         </div>
-        <div class="field">
-          <label class="field-label">Work Preference</label>
-          <select id="sc-remote">
-            ${remoteOpts.map(o => `<option value="${o}" ${savedRemote===o?'selected':''}>${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join('')}
-          </select>
-          <p style="font-size:11px;color:#9ca3af;margin:4px 0 0">Filters jobs by remote/on-site</p>
-        </div>
       </div>
-
-      <div class="field" style="margin-bottom:16px">
-        <label class="field-label">Additional Keywords / Notes</label>
-        <input type="text" id="sc-keywords" value="${esc(savedKeywords)}" placeholder="e.g. program manager, B-21, logistics, no travel required">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="runScout()" ${busy?'disabled':''} style="padding:10px 24px">
+          ${busy ? '<div class="spinner"></div> Searching USAJobs...' : '🏛️ Search Federal Jobs'}
+        </button>
+        <button class="btn btn-secondary" onclick="updateCivilianLinks()" style="padding:10px 24px">
+          🔗 Update Civilian Links
+        </button>
       </div>
-
-      <div class="field" style="margin-bottom:20px">
-        <label class="field-label">Feedback / Refinements (optional)</label>
-        <textarea id="sc-feedback" rows="2" placeholder="e.g. Too many junior roles. Focus on GS-13+ equivalents. More Raytheon/L3Harris. Skip staffing firms.">${esc(state.ui.scoutLastFeedback || '')}</textarea>
-        <p style="font-size:11px;color:#9ca3af;margin:4px 0 0">Tell Scout what to adjust from last time</p>
-      </div>
-
-      <button class="btn btn-primary" onclick="runScout()" ${busy ? 'disabled' : ''} style="padding:12px 28px;font-size:15px">
-        ${busy ? '🔍 Searching the web...' : '🔍 Find Real Jobs'}
-      </button>
-      ${busy ? `<p style="font-size:13px;color:#6b7280;margin:12px 0 0">Browsing job boards live — this takes 20–40 seconds...</p>` : ''}
+      ${busy ? `<div style="background:#eff6ff;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;color:#1e40af">
+        Fetching real listings from USAJobs... this takes a few seconds.</div>` : ''}
+      ${error ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-top:12px;color:#dc2626;font-size:13px">❌ ${esc(error)}</div>` : ''}
     </div>
 
-    ${error ? `<div class="card" style="background:#fef2f2;border-color:#fecaca"><p style="color:#dc2626;margin:0">❌ ${esc(error)}</p></div>` : ''}
+    <!-- Civilian job board links — always visible -->
+    <div class="card" style="margin-top:16px">
+      <h2 style="margin:0 0 4px">🔗 Civilian Job Boards</h2>
+      <p style="color:#6b7280;font-size:13px;margin:0 0 14px">Click to search these boards with your current filters. These are real job boards — results are always current.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="civilian-links-grid">
+        ${civilianLinks.map(l => `
+          <a href="${l.url}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;text-decoration:none;color:#111827;font-weight:600;font-size:13px;transition:all 0.15s" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='#f9fafb'">
+            <span style="font-size:20px">${l.icon}</span>
+            <span>${l.name}</span>
+          </a>`).join('')}
+      </div>
+    </div>
 
-    ${Array.isArray(results) && results.length > 0 ? `
+    ${results.length > 0 ? `
     <div style="display:flex;justify-content:space-between;align-items:center;margin:20px 0 12px">
-      <h2 style="margin:0;font-size:18px;font-weight:700">Search Results (${results.length} jobs found)</h2>
+      <h2 style="margin:0;font-size:18px;font-weight:700">🏛️ Federal Listings (${results.length} found on USAJobs)</h2>
       <button class="btn btn-secondary btn-sm" onclick="copyScoutResults()">📋 Copy All</button>
     </div>
-    ${jobCards}
-    <div class="card" style="margin-top:4px">
-      <h3 style="font-size:15px;font-weight:700;margin:0 0 8px">📝 Refine Next Search</h3>
-      <textarea id="sc-new-feedback" rows="2" placeholder="e.g. Good results but too many in Texas. Find more remote. I want more SAIC. Skip anything requiring a move." style="width:100%;box-sizing:border-box"></textarea>
-      <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="saveScoutFeedback()">Save Feedback & Search Again</button>
-    </div>` : rawText ? `
-    <div class="card" style="margin-top:20px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h2 style="margin:0;font-size:18px;font-weight:700">Search Results</h2>
-        <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(state.ui.scoutRawText||'').then(()=>showToast('Copied ✓'))">📋 Copy</button>
-      </div>
-      <div style="font-size:14px;line-height:1.7;white-space:pre-wrap">${renderMarkdown(rawText)}</div>
-    </div>` : ''}
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#0c4a6e">
+      ✅ These are <strong>real, verified listings</strong> pulled directly from USAJobs right now. Closing dates are live.
+    </div>
+    ${jobCards}` : ''}
   `;
 }
 
 async function runScout() {
-  const p = state.profile;
-  const industries = document.getElementById('sc-industries')?.value || '';
-  const location   = document.getElementById('sc-location')?.value || '';
-  const clearance  = document.getElementById('sc-clearance')?.value || '';
-  const seniority  = document.getElementById('sc-seniority')?.value || 'mid-senior';
-  const remote     = document.getElementById('sc-remote')?.value || 'any';
-  const keywords   = document.getElementById('sc-keywords')?.value || '';
-  const feedback   = document.getElementById('sc-feedback')?.value || '';
+  // Read all values before any state changes
+  const keywords  = document.getElementById('sc-keywords')?.value?.trim() || '';
+  const location  = document.getElementById('sc-location')?.value?.trim() || '';
+  const clearance = document.getElementById('sc-clearance')?.value?.trim() || '';
+  const seniority = document.getElementById('sc-seniority')?.value || 'mid-senior';
 
-  // Persist all filter values so they survive re-renders
   setState({ ui: { ...state.ui,
-    scoutBusy: true, scoutError: '', scoutResults: [], scoutRawText: '',
-    scoutLocation: location, scoutIndustries: industries, scoutClearance: clearance,
-    scoutSeniority: seniority, scoutRemote: remote, scoutKeywords: keywords
+    scoutBusy: true, scoutError: '', scoutResults: [],
+    scoutKeywords: keywords, scoutLocation: location,
+    scoutClearance: clearance, scoutSeniority: seniority
   }});
-
-  const remoteInstruction = remote === 'any' ? 'any work arrangement'
-    : remote === 'remote' ? 'REMOTE positions only — do not include on-site or hybrid'
-    : remote === 'hybrid' ? 'hybrid positions (mix of remote and on-site)'
-    : 'on-site positions';
-
-  const prompt = `Find 6 real current job postings for this veteran. Search USAJobs, LinkedIn, Indeed, ClearanceJobs, and company career pages now.
-
-Profile: ${p.rank || ''} ${p.branch || ''}, MOS ${p.mosRate || ''}, clearance: ${clearance || p.clearance || 'none'}, seeking ${seniority} ${industries || 'defense/gov'} roles, ${remoteInstruction}, near ${location || 'anywhere'}.${keywords ? ' Keywords: '+keywords+'.' : ''}${feedback ? ' Adjust: '+feedback : ''}
-
-Return ONLY this JSON (no other text):
-{"jobs":[{"title":"","company":"","location":"","reqId":"","posted":"","url":"","source":"LinkedIn / Indeed / USAJobs / company name careers page","grade":8,"whyFits":"","pros":"","watchOut":""}]}
-
-grade=1-10 match. Only real verified postings with working URLs.`;
 
   try {
     const token = await getClerkToken();
     const res = await fetch(`${WORKER_URL}/api/scout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ mode: 'usajobs', keywords, location, clearance, seniority,
+        veteranProfile: {
+          branch: state.profile.branch,
+          rank: state.profile.rank,
+          mosRate: state.profile.mosRate,
+          targetIndustries: (state.profile.targetIndustries||[]).map(i=>typeof i==='object'?i.name:i).join(', ')
+        }
+      })
     });
 
     if (!res.ok) {
@@ -205,68 +172,32 @@ grade=1-10 match. Only real verified postings with working URLs.`;
     }
 
     const data = await res.json();
-    const rawText = data.text || '';
-    console.log('Scout raw response length:', rawText.length, 'preview:', rawText.slice(0, 200));
+    setState({ ui: { ...state.ui, scoutBusy: false, scoutResults: data.jobs || [], scoutError: data.jobs?.length === 0 ? 'No listings found. Try broader keywords or a different location.' : '' }});
 
-    // Try to parse structured JSON jobs
-    let jobs = [];
-    let parseError = null;
-    try {
-      // Try multiple JSON extraction strategies
-      let jsonStr = null;
-
-      // Strategy 1: find {"jobs":[...]} pattern
-      const m1 = rawText.match(/\{[\s\S]*?"jobs"\s*:\s*\[[\s\S]*?\]\s*\}/);
-      if (m1) jsonStr = m1[0];
-
-      // Strategy 2: find array directly
-      if (!jsonStr) {
-        const m2 = rawText.match(/\[[\s\S]*?"title"[\s\S]*?\]/);
-        if (m2) jsonStr = `{"jobs":${m2[0]}}`;
-      }
-
-      if (jsonStr) {
-        const parsed = JSON.parse(jsonStr);
-        jobs = parsed.jobs || [];
-        console.log('Scout parsed', jobs.length, 'jobs');
-      }
-    } catch(e) {
-      parseError = e.message;
-      console.warn('Scout JSON parse failed:', e.message);
-    }
-
-    // Always update state — show raw text if no structured jobs
-    setState({ ui: { ...state.ui,
-      scoutBusy: false,
-      scoutResults: jobs,
-      scoutRawText: rawText,
-      scoutError: jobs.length === 0 && !rawText ? 'No results returned. Try adjusting your filters.' : ''
-    }});
-
-  } catch (err) {
+  } catch(err) {
     setState({ ui: { ...state.ui, scoutBusy: false, scoutError: err.message }});
   }
 }
 
+function updateCivilianLinks() {
+  const keywords = document.getElementById('sc-keywords')?.value?.trim() || '';
+  const location = document.getElementById('sc-location')?.value?.trim() || '';
+  setState({ ui: { ...state.ui, scoutKeywords: keywords, scoutLocation: location }});
+  showToast('Civilian links updated with your filters ✓');
+}
+
 function trackScoutJob(index) {
-  const jobs = state.ui.scoutResults || [];
-  const job = jobs[index];
+  const job = (state.ui.scoutResults || [])[index];
   if (!job) return;
   const now = new Date().toISOString();
   const newJob = {
-    id: id(),
-    title: job.title,
-    company: job.company,
-    location: job.location,
-    jobUrl: job.url,
-    status: 'interested',
-    dateAdded: now.split('T')[0],
-    dateApplied: '',
-    contactName: '',
-    salaryRange: '',
-    interviewDates: '',
-    notes: `Req ID: ${job.reqId || 'N/A'} | Match: ${job.grade}/10 — ${job.whyFits || ''}`,
-    activityLog: [{ date: now, type: 'status', from: null, to: 'interested', note: 'Added from Job Scout' }]
+    id: id(), title: job.title, company: job.agency || job.company || '',
+    location: job.location, jobUrl: job.url, status: 'interested',
+    dateAdded: now.split('T')[0], dateApplied: '', contactName: '',
+    salaryRange: job.salary || '', interviewDates: '',
+    notes: `${job.gsGrade ? job.gsGrade+' | ' : ''}Closes: ${job.closeDate || 'N/A'} | Match: ${job.grade}/10\n${job.whyFits || ''}`,
+    fitScore: job.grade, fitLabel: job.grade >= 8 ? 'Strong Match' : job.grade >= 6 ? 'Good Match' : 'Possible Match',
+    activityLog: [{ date: now, type: 'status', from: null, to: 'interested', note: 'Added from Job Scout (USAJobs)' }]
   };
   setState({ jobs: [...state.jobs, newJob] });
   showToast(`${job.title} added to Job Tracker ✓`);
@@ -277,17 +208,10 @@ function untrackScoutJob(jobId) {
   showToast('Removed from Job Tracker');
 }
 
-function saveScoutFeedback() {
-  const feedback = document.getElementById('sc-new-feedback')?.value || '';
-  setState({ ui: { ...state.ui, scoutLastFeedback: feedback }});
-  showToast('Feedback saved — searching...');
-  setTimeout(runScout, 300);
-}
-
 function copyScoutResults() {
   const jobs = state.ui.scoutResults || [];
   const text = jobs.map(j =>
-    `${j.title} at ${j.company}\n${j.location} | Match: ${j.grade}/10\nReq ID: ${j.reqId||'N/A'}\nURL: ${j.url||'N/A'}\n${j.whyFits||''}`
+    `${j.title} — ${j.agency || j.company}\n${j.location} | ${j.gsGrade || ''} | ${j.salary || ''}\nCloses: ${j.closeDate || 'N/A'} | Match: ${j.grade}/10\n${j.url || ''}`
   ).join('\n\n---\n\n');
-  navigator.clipboard.writeText(text).then(() => showToast('Results copied ✓'));
+  navigator.clipboard.writeText(text).then(() => showToast('Copied ✓'));
 }
