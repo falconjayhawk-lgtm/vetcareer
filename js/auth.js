@@ -17,6 +17,7 @@ async function initClerk() {
     if (clerk.user) {
       syncClerkUserToState(clerk.user);
       setState({ loggedIn: true });
+      if (typeof initFeedback === 'function') initFeedback();
     } else {
       setState({ loggedIn: false });
     }

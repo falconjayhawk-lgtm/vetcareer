@@ -39,9 +39,26 @@ function renderDocuments() {
         <strong>Don't have documents?</strong> That's okay — you can skip to Profile and fill everything in manually.
       </div>
     </div>` : ''}
-    <p style="font-size:13px;color:#6b7280;margin:0 0 20px">Upload your DD-214, performance reports, award citations, civilian resumes — Claude reads them and auto-fills your profile and experience.</p>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 16px">Upload your DD-214, performance reports, award citations, civilian resumes — Claude reads them and auto-fills your profile and experience.</p>
 
-    
+    <!-- PII / Privacy notice -->
+    <div style="background:#f0fdf4;border:2px solid #22c55e;border-radius:12px;padding:16px 18px;margin-bottom:20px">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="font-size:22px;flex-shrink:0">🔒</div>
+        <div>
+          <div style="font-weight:800;color:#15803d;font-size:14px;margin-bottom:6px">Your documents are never stored — here's exactly what happens</div>
+          <div style="font-size:13px;color:#166534;line-height:1.65">
+            <strong>1.</strong> Your file is read in your browser and sent to Claude for analysis.<br>
+            <strong>2.</strong> Claude extracts career data only — duty titles, dates, assignments, awards.<br>
+            <strong>3.</strong> That structured data is saved to your profile. <strong>The original file is discarded immediately.</strong><br>
+            <strong>4.</strong> We never store, sell, or share your documents or PII.
+          </div>
+          <div style="margin-top:10px;padding:8px 12px;background:rgba(255,255,255,0.6);border-radius:7px;font-size:12px;color:#166534">
+            💡 <strong>Recommended:</strong> Before uploading your DD-214, consider redacting Box 3 (SSN) and Box 5 (DOB) with a PDF editor or marker — VetCareer only needs your career history, not those fields. Questions? See the <button onclick="setState({view:'faq'})" style="background:none;border:none;color:#15803d;font-weight:700;cursor:pointer;padding:0;font-size:12px;text-decoration:underline">Help & FAQ</button> page.
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Upload card -->
     <div class="card">

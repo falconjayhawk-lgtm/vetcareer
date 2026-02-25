@@ -67,6 +67,7 @@ function renderSidebar() {
     {id:'sf86',label:'&#128272; SF-86 Prep'},
     {id:'gap',label:'&#128202; Gap Analysis'},
     {id:'settings',label:'&#9881; Settings'},
+    {id:'faq',label:'&#10067; Help & FAQ'},
   ];
 
   const displayName = getDisplayName();
@@ -104,6 +105,7 @@ function renderView() {
     case 'sf86': return renderSF86();
     case 'gap': return renderGap();
     case 'settings': return renderSettings();
+    case 'faq': return renderFAQ();
     default: return renderDashboard();
   }
 }
