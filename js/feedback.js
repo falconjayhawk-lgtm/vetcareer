@@ -129,7 +129,7 @@ function submitFeedback() {
   const body = encodeURIComponent(
     `Category: ${context.category}\nPage: ${context.currentView}\nTime: ${context.timestamp}\n\n${text}`
   );
-  const mailtoLink = `mailto:feedback@vetcareer.com?subject=${subject}&body=${body}`;
+  const mailtoLink = `mailto:falconjayhawk@gmail.com?subject=${subject}&body=${body}`;
 
   // Also copy to clipboard as backup
   navigator.clipboard?.writeText(
