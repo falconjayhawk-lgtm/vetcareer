@@ -108,6 +108,7 @@ async function generateSalaryIntel() {
 
   const job = selJob ? state.jobs.find(j=>j.id===selJob) : null;
   const roleDescription = job ? `${job.title} at ${job.company} (${job.location||location||'location unknown'})` : manualRole;
+  console.log('[Salary] roleDescription:', roleDescription, 'companyType:', companyType);
   if (!roleDescription) { showToast('Select a job or enter a role', false); return; }
 
   // Save state + set busy in ONE setState call to avoid multiple re-renders
@@ -147,6 +148,7 @@ Return ONLY this JSON (no markdown):
     setState({ ui:{...state.ui, salaryBusy:false, salaryResult:result} });
     showToast('✓ Salary intelligence ready!');
   } catch(err) {
+    console.error('[Salary] ERROR:', err.message, err);
     setState({ ui:{...state.ui, salaryBusy:false, salaryError:err.message} });
   }
 }

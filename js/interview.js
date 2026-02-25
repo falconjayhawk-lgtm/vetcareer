@@ -97,13 +97,15 @@ async function generateInterviewPrep() {
   const manualRole = document.getElementById('iv-manual-role')?.value?.trim()||'';
   const manualCompany = document.getElementById('iv-manual-company')?.value?.trim()||'';
   
+  console.log('[Interview] selJob:', selJob, 'job:', job?.title, 'manualRole:', manualRole);
   if (!job && !manualRole) { 
     showToast('Select a job or enter a role to prep for', false); 
     return; 
   }
   const stage = document.getElementById('iv-stage')?.value||'behavioral';
-  const count = Math.min(parseInt(document.getElementById('iv-count')?.value||'6'), 6); // cap at 6 — keeps output under token limit
+  const count = Math.min(parseInt(document.getElementById('iv-count')?.value||'6'), 6);
   const concern = document.getElementById('iv-concern')?.value?.trim()||'';
+  console.log('[Interview] stage:', stage, 'count:', count, 'starting API call...');
   setState({ ui:{...state.ui, interviewBusy:true, interviewError:'', interviewResult:null} });
   const p = state.profile;
   const exp = state.assignments.slice(0,4).map(a=>`${a.dutyTitle} at ${a.base}: ${(a.accomplishments||'').slice(0,300)}`).join('\n');
@@ -150,6 +152,7 @@ Return ONLY this JSON (no markdown, no extra text):
     setState({ ui:{...state.ui, interviewBusy:false, interviewResult:result} });
     showToast('✓ Interview prep generated!');
   } catch(err) {
+    console.error('[Interview] ERROR:', err.message, err);
     setState({ ui:{...state.ui, interviewBusy:false, interviewError:err.message} });
   }
 }
