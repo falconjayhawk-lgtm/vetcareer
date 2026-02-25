@@ -1,11 +1,12 @@
 // ── Interview Prep ────────────────────────────────────────────────────
 function renderInterview() {
-  const jobs = state.jobs.filter(j=>['interested','applied','interviewing'].includes(j.status));
+  const jobs = state.jobs; // show ALL jobs, not just certain statuses
   const selJob = state.ui.interviewJob||'';
   const busy = state.ui.interviewBusy||false;
   const result = state.ui.interviewResult||null;
   const error = state.ui.interviewError||'';
   const jobOptions = jobs.map(j=>`<option value="${j.id}" ${selJob===j.id?'selected':''}>${esc(j.title)} — ${esc(j.company)}</option>`).join('');
+  const hasInput = selJob || (state.ui.interviewManualRole||'');
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">🎤 Interview Prep</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px">Claude reads the job and your background, then generates the questions you're most likely to face — with coached answers drawn from your actual experience.</p>
@@ -14,10 +15,18 @@ function renderInterview() {
       <h2>Configure Interview Prep</h2>
       <div class="grid2">
         <div class="field">
-          <label class="field-label">Target Job *</label>
+          <label class="field-label">Target Job (from tracker)</label>
           <select id="iv-job" onchange="toggleUI('interviewJob',this.value)">
-            <option value="">Select a job from your tracker...</option>${jobOptions}
+            <option value="">Select a tracked job...</option>${jobOptions}
           </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Or enter role manually</label>
+          <input id="iv-manual-role" placeholder="e.g., Program Manager — Defense" value="${esc(state.ui.interviewManualRole||'')}" oninput="toggleUI('interviewManualRole',this.value)">
+        </div>
+        <div class="field">
+          <label class="field-label">Company (if entering manually)</label>
+          <input id="iv-manual-company" placeholder="e.g., Leidos, Anduril..." value="${esc(state.ui.interviewManualCompany||'')}" oninput="toggleUI('interviewManualCompany',this.value)">
         </div>
         <div class="field">
           <label class="field-label">Interview Stage</label>
@@ -32,9 +41,8 @@ function renderInterview() {
         <div class="field">
           <label class="field-label">Number of Questions</label>
           <select id="iv-count">
-            <option value="8">8 questions — quick prep</option>
-            <option value="15" selected>15 questions — thorough</option>
-            <option value="20">20 questions — full deep-dive</option>
+            <option value="5">5 questions — quick prep</option>
+            <option value="6" selected>6 questions — standard</option>
           </select>
         </div>
         <div class="field">
@@ -42,11 +50,10 @@ function renderInterview() {
           <input id="iv-concern" placeholder="e.g., gaps in technical background, explaining my clearance, salary question...">
         </div>
       </div>
-      <button class="btn btn-primary" onclick="generateInterviewPrep()" ${busy||!selJob?'disabled':''} style="padding:12px 24px">
+      <button class="btn btn-primary" onclick="generateInterviewPrep()" ${busy?'disabled':''} style="padding:12px 24px">
         ${busy?'<div class="spinner"></div> Generating...':'🎤 Generate Interview Prep'}
       </button>
-      ${!jobs.length?`<p style="font-size:13px;color:#f59e0b;margin-top:10px">💡 Add jobs to your tracker first — <button onclick="setState({view:'jobs'})" style="background:none;border:none;color:#2563eb;cursor:pointer;font-size:13px;font-weight:600;padding:0">go to Job Tracker</button>.</p>`:''}
-      ${busy?`<div style="background:#eff6ff;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;color:#1e40af;display:flex;align-items:center;gap:10px"><div class="spinner"></div> Generating questions and coached answers — takes about 30 seconds...</div>`:''}
+      ${busy?`<div style="background:#eff6ff;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;color:#1e40af;display:flex;align-items:center;gap:10px"><div class="spinner"></div> Generating questions and coached answers...</div>`:''}
       ${error?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;color:#dc2626">${esc(error)}</div>`:''}
     </div>
     ${result?renderInterviewResult(result):''}`;
@@ -84,9 +91,16 @@ function renderInterviewResult(result) {
 
 async function generateInterviewPrep() {
   const selJob = state.ui.interviewJob;
-  if (!selJob) return;
-  const job = state.jobs.find(j=>j.id===selJob);
-  if (!job) return;
+  const job = selJob ? state.jobs.find(j=>j.id===selJob) : null;
+  
+  // Allow manual role entry if no job selected
+  const manualRole = document.getElementById('iv-manual-role')?.value?.trim()||'';
+  const manualCompany = document.getElementById('iv-manual-company')?.value?.trim()||'';
+  
+  if (!job && !manualRole) { 
+    showToast('Select a job or enter a role to prep for', false); 
+    return; 
+  }
   const stage = document.getElementById('iv-stage')?.value||'behavioral';
   const count = Math.min(parseInt(document.getElementById('iv-count')?.value||'6'), 6); // cap at 6 — keeps output under token limit
   const concern = document.getElementById('iv-concern')?.value?.trim()||'';
@@ -107,8 +121,8 @@ Skills: ${[...(p.technicalSkills||[]),(p.softSkills||[])].slice(0,10).join(', ')
 Experience: ${exp}
 Awards: ${awards||'None'}
 
-TARGET JOB: ${job.title} at ${job.company}
-Requirements/Notes: ${job.notes||'Not specified'}
+TARGET JOB: ${job ? job.title+' at '+job.company : manualRole+(manualCompany?' at '+manualCompany:'')}
+Requirements/Notes: ${job?.notes||'Not specified'}
 
 INSTRUCTIONS:
 - Mix question types: behavioral (STAR format), technical/role-specific, situational, and 1-2 curveballs

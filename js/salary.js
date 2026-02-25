@@ -98,17 +98,25 @@ function renderSalary() {
 }
 
 async function generateSalaryIntel() {
-    const selJob = state.ui.salaryJob;
+  // Read ALL DOM values first, before any state changes that trigger re-renders
+  const selJob = state.ui.salaryJob;
   const manualRole = document.getElementById('sal-role')?.value?.trim()||'';
   const location = document.getElementById('sal-location')?.value?.trim()||'';
-  const companyType = document.getElementById('sal-company-type')?.value||'';
+  const companyType = document.getElementById('sal-company-type')?.value || state.ui.salaryCompanyType || 'large-defense';
   const current = document.getElementById('sal-current')?.value?.trim()||'';
   const worry = document.getElementById('sal-worry')?.value?.trim()||'';
-  toggleUI('salaryRole', manualRole); toggleUI('salaryLocation', location); toggleUI('salaryCurrent', current); toggleUI('salaryWorry', worry); toggleUI('salaryCompanyType', companyType);
+
   const job = selJob ? state.jobs.find(j=>j.id===selJob) : null;
   const roleDescription = job ? `${job.title} at ${job.company} (${job.location||location||'location unknown'})` : manualRole;
   if (!roleDescription) { showToast('Select a job or enter a role', false); return; }
-  setState({ ui:{...state.ui, salaryBusy:true, salaryError:'', salaryResult:null} });
+
+  // Save state + set busy in ONE setState call to avoid multiple re-renders
+  setState({ ui:{...state.ui,
+    salaryRole: manualRole, salaryLocation: location,
+    salaryCurrent: current, salaryWorry: worry,
+    salaryCompanyType: companyType,
+    salaryBusy: true, salaryError: '', salaryResult: null
+  }});
   const p = state.profile;
   try {
     const raw = await callClaude(
