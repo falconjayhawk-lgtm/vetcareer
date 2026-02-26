@@ -55,7 +55,7 @@ async function _sendAnalyticEvent(type, key) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${await getAuthToken()}`
+        'Authorization': `Bearer ${await getClerkToken()}`
       },
       body: JSON.stringify({ type, key, date: today })
     });

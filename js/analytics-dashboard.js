@@ -21,7 +21,7 @@ async function loadStats() {
   if (!container) return;
 
   try {
-    const token = await getAuthToken();
+    const token = await getClerkToken();
     const res = await fetch(`${API_BASE}/api/analytics`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
