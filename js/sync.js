@@ -59,7 +59,7 @@ async function syncToSupabase(showFeedback = true) {
       updated_at: new Date().toISOString(),
     };
     // Use upsert: POST with merge-duplicates resolves INSERT vs UPDATE based on primary key
-    await supabaseFetch('vetcareer_data', 'POST', payload, {
+    await supabaseFetch('afteraction_data', 'POST', payload, {
       'Prefer': 'resolution=merge-duplicates,return=representation',
     });
     const now = new Date().toLocaleTimeString();
@@ -81,7 +81,7 @@ async function loadFromSupabase() {
   state.supabase = { ...state.supabase, syncing: true, syncError: '' };
   render();
   try {
-    const rows = await supabaseFetch(`vetcareer_data?user_id=eq.${encodeURIComponent(userId)}&limit=1`);
+    const rows = await supabaseFetch(`afteraction_data?user_id=eq.${encodeURIComponent(userId)}&limit=1`);
     console.log('[Supabase] Load rows:', JSON.stringify(rows).slice(0, 500));
     if (!rows || rows.length === 0) {
       state.supabase = { ...state.supabase, syncing: false, syncError: 'No data found for this User ID' };
@@ -126,11 +126,11 @@ async function testSupabaseConnection() {
   showToast('Testing connection...', true);
   try {
     // Test 1: Can we reach the table at all?
-    const rows = await supabaseFetch(`vetcareer_data?limit=1`);
+    const rows = await supabaseFetch(`afteraction_data?limit=1`);
     console.log('[Test] Table accessible, rows:', rows?.length);
     
     // Test 2: Does a row exist for this user_id?
-    const myRows = await supabaseFetch(`vetcareer_data?user_id=eq.${encodeURIComponent(userId)}&limit=1`);
+    const myRows = await supabaseFetch(`afteraction_data?user_id=eq.${encodeURIComponent(userId)}&limit=1`);
     console.log('[Test] My rows:', myRows?.length, myRows);
     
     if (!myRows || myRows.length === 0) {
@@ -177,7 +177,7 @@ function renderSettings() {
         1. Go to <strong>supabase.com</strong> → Create a free account → New Project<br>
         2. Once created, go to <strong>Settings → API</strong> — copy your <strong>Project URL</strong> and <strong>anon public</strong> key<br>
         3. Go to <strong>SQL Editor</strong> and run this one-time setup query:<br>
-        <pre style="background:#dcfce7;padding:10px;border-radius:6px;margin-top:8px;font-size:12px;overflow-x:auto">CREATE TABLE IF NOT EXISTS vetcareer_data (
+        <pre style="background:#dcfce7;padding:10px;border-radius:6px;margin-top:8px;font-size:12px;overflow-x:auto">CREATE TABLE IF NOT EXISTS afteraction_data (
   user_id TEXT PRIMARY KEY,
   profile JSONB,
   assignments JSONB,
@@ -190,12 +190,12 @@ function renderSettings() {
   sf86 JSONB,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-ALTER TABLE vetcareer_data ENABLE ROW LEVEL SECURITY;
-CREATE POLICY &quot;anon full access&quot; ON vetcareer_data FOR ALL USING (true) WITH CHECK (true);</pre>
+ALTER TABLE afteraction_data ENABLE ROW LEVEL SECURITY;
+CREATE POLICY &quot;anon full access&quot; ON afteraction_data FOR ALL USING (true) WITH CHECK (true);</pre>
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px 10px;margin-top:8px;font-size:12px;color:#92400e">
           <strong>Already have the table?</strong> Run this to add new columns:<br>
-          <code style="background:#fef9c3;padding:2px 6px;border-radius:4px">ALTER TABLE vetcareer_data ADD COLUMN IF NOT EXISTS documents JSONB;</code><br>
-          <code style="background:#fef9c3;padding:2px 6px;border-radius:4px;margin-top:4px;display:inline-block">ALTER TABLE vetcareer_data ADD COLUMN IF NOT EXISTS sf86 JSONB;</code>
+          <code style="background:#fef9c3;padding:2px 6px;border-radius:4px">ALTER TABLE afteraction_data ADD COLUMN IF NOT EXISTS documents JSONB;</code><br>
+          <code style="background:#fef9c3;padding:2px 6px;border-radius:4px;margin-top:4px;display:inline-block">ALTER TABLE afteraction_data ADD COLUMN IF NOT EXISTS sf86 JSONB;</code>
         </div>
         4. Choose any <strong>User ID</strong> — a nickname, email, or any unique string you'll remember<br>
         5. Paste all three below and click Save
@@ -224,7 +224,7 @@ CREATE POLICY &quot;anon full access&quot; ON vetcareer_data FOR ALL USING (true
           ${sb.syncError?`<div style="color:#dc2626;background:#fef2f2;border-radius:6px;padding:8px;margin-bottom:6px">❌ ${esc(sb.syncError)}</div>`:''}
           ${sb.lastSync&&!sb.syncError?`<div style="color:#16a34a;margin-bottom:6px">✅ Last synced: ${esc(sb.lastSync)} — changes auto-sync within 2 seconds</div>`:''}
           ${!sb.lastSync&&!sb.syncError?`<div style="color:#6b7280;margin-bottom:6px">⬆ Click "Sync Now" to push your local data to the cloud for the first time.</div>`:''}
-          <div style="color:#6b7280">🔎 Verify your data: <a href="https://supabase.com/dashboard" target="_blank" style="color:#2563eb">Open Supabase Dashboard ↗</a> → your project → Table Editor → <strong>vetcareer_data</strong></div>
+          <div style="color:#6b7280">🔎 Verify your data: <a href="https://supabase.com/dashboard" target="_blank" style="color:#2563eb">Open Supabase Dashboard ↗</a> → your project → Table Editor → <strong>afteraction_data</strong></div>
         </div>
       `:`<div style="margin-top:12px;font-size:13px;color:#9ca3af">Configure and save Supabase credentials above to enable cloud sync.</div>`}
     </div>
@@ -249,7 +249,7 @@ CREATE POLICY &quot;anon full access&quot; ON vetcareer_data FOR ALL USING (true
       <div style="font-size:13px;color:#4b5563">
         <p>🔒 Your Claude API key is stored only in your browser — never on any server.</p>
         <p>🔒 Resume generation calls go directly from your browser to Anthropic — no third parties.</p>
-        <p>☁️ If Supabase sync is enabled, your profile and job data is stored in your own Supabase project — not on VetCareer servers.</p>
+        <p>☁️ If Supabase sync is enabled, your profile and job data is stored in your own Supabase project — not on AfterAction servers.</p>
         <p>⚠️ Your Supabase anon key is stored in your browser. Anyone with your User ID and anon key could read your data — keep them private.</p>
       </div>
     </div>`;
@@ -273,7 +273,7 @@ function exportData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `VetCareer_Backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `AfterAction_Backup_${new Date().toISOString().split('T')[0]}.json`;
   a.click();
   URL.revokeObjectURL(url);
   showToast('✓ Data exported! Check your downloads folder.');
@@ -311,7 +311,7 @@ function importData(event) {
 
       showToast('✓ Data imported successfully!');
     } catch (err) {
-      alert('Error importing data: ' + err.message + '. Make sure you selected a valid VetCareer backup file.');
+      alert('Error importing data: ' + err.message + '. Make sure you selected a valid AfterAction backup file.');
     }
   };
   reader.readAsText(file);

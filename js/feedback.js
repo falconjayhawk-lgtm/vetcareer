@@ -65,7 +65,7 @@ function initFeedback() {
     <div id="fb-modal">
       <div id="fb-form-view">
         <h3>Send Feedback</h3>
-        <p class="sub">Help us improve VetCareer — every note goes directly to the team.</p>
+        <p class="sub">Help us improve AfterAction — every note goes directly to the team.</p>
         <div class="fb-cats">
           <button class="fb-cat active" data-cat="Bug Report" onclick="fbSetCat(this)">🐛 Bug Report</button>
           <button class="fb-cat" data-cat="Feature Request" onclick="fbSetCat(this)">💡 Feature Request</button>
@@ -125,7 +125,7 @@ function submitFeedback() {
   };
 
   // Primary: mailto (opens email client pre-filled)
-  const subject = encodeURIComponent(`VetCareer Feedback: ${_fbCat}`);
+  const subject = encodeURIComponent(`AfterAction Feedback: ${_fbCat}`);
   const body = encodeURIComponent(
     `Category: ${context.category}\nPage: ${context.currentView}\nTime: ${context.timestamp}\n\n${text}`
   );
@@ -133,7 +133,7 @@ function submitFeedback() {
 
   // Also copy to clipboard as backup
   navigator.clipboard?.writeText(
-    `VetCareer Feedback\nCategory: ${context.category}\nPage: ${context.currentView}\n\n${text}`
+    `AfterAction Feedback\nCategory: ${context.category}\nPage: ${context.currentView}\n\n${text}`
   ).catch(() => {});
 
   // Open mailto

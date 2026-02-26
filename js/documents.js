@@ -54,7 +54,7 @@ function renderDocuments() {
             <strong>4.</strong> We never store, sell, or share your documents or PII.
           </div>
           <div style="margin-top:10px;padding:8px 12px;background:rgba(255,255,255,0.6);border-radius:7px;font-size:12px;color:#166534">
-            💡 <strong>Recommended:</strong> Before uploading your DD-214, consider redacting Box 3 (SSN) and Box 5 (DOB) with a PDF editor or marker — VetCareer only needs your career history, not those fields. Questions? See the <button onclick="setState({view:'faq'})" style="background:none;border:none;color:#15803d;font-weight:700;cursor:pointer;padding:0;font-size:12px;text-decoration:underline">Help & FAQ</button> page.
+            💡 <strong>Recommended:</strong> Before uploading your DD-214, consider redacting Box 3 (SSN) and Box 5 (DOB) with a PDF editor or marker — AfterAction only needs your career history, not those fields. Questions? See the <button onclick="setState({view:'faq'})" style="background:none;border:none;color:#15803d;font-weight:700;cursor:pointer;padding:0;font-size:12px;text-decoration:underline">Help & FAQ</button> page.
           </div>
         </div>
       </div>
