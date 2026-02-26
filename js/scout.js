@@ -327,7 +327,7 @@ async function runScout() {
     const jobs = await fetchScoutJobs({ keywords, location, clearance, seniority });
     if (typeof trackAction==='function') trackAction('scout_search');
     setState({ ui: { ...state.ui, scoutBusy: false, scoutResults: jobs,
-      scoutError: jobs.length === 0 ? 'No listings found. Try broader keywords or a different location.' : ''
+      scoutError: jobs.length === 0 ? 'No federal listings found for those criteria. Job Scout searches USAJobs.gov (federal positions only). Try broader keywords, remove the location, or change the seniority level.' : ''
     }});
   } catch(err) {
     setState({ ui: { ...state.ui, scoutBusy: false, scoutError: err.message }});

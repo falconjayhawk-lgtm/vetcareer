@@ -48,7 +48,7 @@ function saveKey(k) {
   try { localStorage.setItem('vc_' + k, JSON.stringify(state[k])); } catch(e) {}
 }
 
-function setState(updates) {
+function setState(updates, shouldRender=true) {
   Object.assign(state, updates);
   if (updates.profile !== undefined) { saveKey('profile'); scheduleSync(); }
   if (updates.assignments !== undefined) { saveKey('assignments'); scheduleSync(); }
@@ -61,7 +61,7 @@ function setState(updates) {
   if (updates.scoutFilters !== undefined) { saveKey('scoutFilters'); scheduleSync(); }
   if (updates.sf86 !== undefined) { saveKey('sf86'); scheduleSync(); }
   if (updates.supabase !== undefined) saveKey('supabase');
-  render();
+  if (shouldRender) render();
 }
 
 // Debounced sync — waits 2s after last change before syncing to avoid hammering Supabase

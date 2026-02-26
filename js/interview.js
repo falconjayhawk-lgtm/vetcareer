@@ -22,11 +22,15 @@ function renderInterview() {
         </div>
         <div class="field">
           <label class="field-label">Or enter role manually</label>
-          <input id="iv-manual-role" placeholder="e.g., Program Manager — Defense" value="${esc(state.ui.interviewManualRole||'')}" oninput="toggleUI('interviewManualRole',this.value)">
+          <input id="iv-manual-role" placeholder="e.g., Program Manager — Defense" 
+            value="${esc(state.ui.interviewManualRole||'')}"
+            oninput="setState({ui:{...state.ui, interviewManualRole:this.value}}, false)">
         </div>
         <div class="field">
           <label class="field-label">Company (if entering manually)</label>
-          <input id="iv-manual-company" placeholder="e.g., Leidos, Anduril..." value="${esc(state.ui.interviewManualCompany||'')}" oninput="toggleUI('interviewManualCompany',this.value)">
+          <input id="iv-manual-company" placeholder="e.g., Leidos, Anduril..." 
+            value="${esc(state.ui.interviewManualCompany||'')}"
+            oninput="setState({ui:{...state.ui, interviewManualCompany:this.value}}, false)">
         </div>
         <div class="field">
           <label class="field-label">Interview Stage</label>
@@ -47,7 +51,9 @@ function renderInterview() {
         </div>
         <div class="field">
           <label class="field-label">Your biggest concern going in?</label>
-          <input id="iv-concern" placeholder="e.g., gaps in technical background, explaining my clearance, salary question...">
+          <input id="iv-concern" placeholder="e.g., gaps in technical background, explaining my clearance, salary question..."
+            value="${esc(state.ui.interviewConcern||'')}"
+            oninput="setState({ui:{...state.ui, interviewConcern:this.value}}, false)">
         </div>
       </div>
       <button class="btn btn-primary" onclick="generateInterviewPrep()" ${busy?'disabled':''} style="padding:12px 24px">
@@ -93,9 +99,9 @@ async function generateInterviewPrep() {
   const selJob = state.ui.interviewJob;
   const job = selJob ? state.jobs.find(j=>j.id===selJob) : null;
   
-  // Allow manual role entry if no job selected
-  const manualRole = document.getElementById('iv-manual-role')?.value?.trim()||'';
-  const manualCompany = document.getElementById('iv-manual-company')?.value?.trim()||'';
+  // Read from state (more reliable than DOM after re-renders)
+  const manualRole = state.ui.interviewManualRole?.trim()||document.getElementById('iv-manual-role')?.value?.trim()||'';
+  const manualCompany = state.ui.interviewManualCompany?.trim()||document.getElementById('iv-manual-company')?.value?.trim()||'';
   
   console.log('[Interview] selJob:', selJob, 'job:', job?.title, 'manualRole:', manualRole);
   if (!job && !manualRole) { 
@@ -104,7 +110,7 @@ async function generateInterviewPrep() {
   }
   const stage = document.getElementById('iv-stage')?.value||'behavioral';
   const count = Math.min(parseInt(document.getElementById('iv-count')?.value||'6'), 6);
-  const concern = document.getElementById('iv-concern')?.value?.trim()||'';
+  const concern = state.ui.interviewConcern?.trim()||document.getElementById('iv-concern')?.value?.trim()||'';
   console.log('[Interview] stage:', stage, 'count:', count, 'starting API call...');
   setState({ ui:{...state.ui, interviewBusy:true, interviewError:'', interviewResult:null} });
   const p = state.profile;
