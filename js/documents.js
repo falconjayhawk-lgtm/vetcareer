@@ -177,7 +177,11 @@ function buildExtractionPrompt(docType) {
 
   if (docType.includes('Civilian Resume')) return `Extract from this civilian resume and return ONLY this JSON (no markdown, no extra text):
 
-CRITICAL RULE: Any job where the employer is a military branch (U.S. Air Force, U.S. Army, U.S. Navy, U.S. Marine Corps, U.S. Coast Guard, U.S. Space Force, United States Air Force, etc.) must go in "militaryRoles", NOT in "civilianJobs". These are military assignments disguised as civilian job entries. Only truly civilian employers (private companies, government contractors, federal agencies as a civilian employee) go in "civilianJobs".
+CRITICAL RULE: Classify jobs carefully based on BOTH the employer AND the job title format:
+- If the employer is a military branch (U.S. Air Force, U.S. Army, Navy, Marines, Coast Guard, Space Force) AND the job title uses military jargon or rank-based titles (e.g., "Flight Commander", "Squadron Commander", "Operations Officer") → put in "militaryRoles"
+- If the employer is a Reserve or National Guard unit (Air Force Reserve, Army Reserve, Air National Guard, Army National Guard, etc.) AND the job title is already civilian-style (e.g., "Director", "Manager", "Analyst", "Program Lead") → put in "civilianJobs" — these are real professional roles performed by part-time military members
+- If the employer is a military unit but the person clearly held a civilian-titled role with business-style accomplishments → put in "civilianJobs"
+- Only truly civilian employers (private companies, government contractors, federal agencies as a civilian employee) AND Reserve/Guard roles with civilian titles go in "civilianJobs"
 
 {
   "docType": "civilianResume",
@@ -254,6 +258,9 @@ async function applyExtraction(rawJson, docType, fileName) {
 
   // Apply civilian jobs (from civilian resume) — skip any that are military employers or overlap existing assignments
   if (data.civilianJobs?.length) {
+    // Block pure active-duty military employers — but ALLOW Reserve/Guard units
+    // Reservists and Guard members hold real civilian-titled roles that should be captured
+    const RESERVE_GUARD = /\b(reserve|national guard|ang|afrc|usar|usnr|usmcr)\b/i;
     const MILITARY_EMPLOYERS = /\b(air force|army|navy|marine|coast guard|space force|united states military|u\.s\. military|armed forces|department of defense)\b/i;
 
     // Build list of existing military date ranges to detect overlaps
@@ -265,9 +272,13 @@ async function applyExtraction(rawJson, docType, fileName) {
     data.civilianJobs.forEach(j => {
       if (!j.title || !j.company) return;
 
-      // Skip if employer is a military branch
-      if (MILITARY_EMPLOYERS.test(j.company)) {
-        console.log(`Skipping military employer: ${j.company} - ${j.title}`);
+      // Skip if employer is a military branch — UNLESS it's a Reserve/Guard unit
+      // Reserve and Guard members hold civilian-titled roles that are real work experience
+      const isReserveOrGuard = RESERVE_GUARD.test(j.company);
+      const hasCivilianTitle = /\b(director|manager|analyst|engineer|specialist|coordinator|lead|chief|head|supervisor|officer(?! of)|advisor|consultant|developer|administrator)\b/i.test(j.title);
+      
+      if (MILITARY_EMPLOYERS.test(j.company) && !isReserveOrGuard && !hasCivilianTitle) {
+        console.log(`Skipping active-duty military employer: ${j.company} - ${j.title}`);
         return;
       }
 
