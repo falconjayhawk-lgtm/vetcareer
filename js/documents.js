@@ -72,8 +72,9 @@ function renderDocuments() {
           </select>
         </div>
         <div class="field">
-          <label class="field-label">File (PDF or image)</label>
-          <input type="file" id="d-file" accept=".pdf,.png,.jpg,.jpeg" style="padding:6px;font-size:13px">
+          <label class="field-label">File <span style="color:#dc2626">*</span> — PDF only recommended</label>
+          <input type="file" id="d-file" accept=".pdf" style="padding:6px;font-size:13px">
+          <div style="font-size:11px;color:#9ca3af;margin-top:3px">PDF format required for best results. Image files (JPG/PNG) may produce errors.</div>
         </div>
       </div>
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-size:13px;color:#1e40af;margin-bottom:14px">
@@ -115,8 +116,8 @@ function renderDocuments() {
         <label class="field-label">Paste Document Text Here</label>
         <textarea id="dp-content" rows="10" placeholder="Paste the full text from your document..."></textarea>
       </div>
-      <button class="btn btn-primary" onclick="processPastedDoc()" ${busy  ? 'disabled' : ''}>
-        ${busy ? `<div class="spinner"></div> ${esc(status)}` : '🤖 Extract with AI'}
+      <button class="btn btn-primary" onclick="processPastedDoc()" ${state.ui.pasteBusy ? 'disabled' : ''}>
+        ${state.ui.pasteBusy ? `<div class="spinner"></div> ${esc(state.ui.pasteStatus||'Processing...')}` : '🤖 Extract with AI'}
       </button>
     </div>
 
@@ -348,7 +349,12 @@ async function processUpload() {
     );
     await applyExtraction(raw, docType, file.name);
   } catch(err) {
-    setState({ ui: { ...state.ui, docBusy:false, docStatus:'', docError:'Error: ' + err.message + '. Try the paste option below instead.' }});
+    const msg = err.message || 'Unknown error';
+    const hint = msg.includes('rate') ? 'Daily limit reached — try again tomorrow.' 
+               : msg.includes('size') || msg.includes('large') ? 'File may be too large — try compressing the PDF or use the paste option below.'
+               : msg.includes('type') || msg.includes('format') ? 'File format not supported — please use PDF only.'
+               : 'Try the paste option below, or check your file is a valid PDF.';
+    setState({ ui: { ...state.ui, docBusy:false, docStatus:'', docError:`Error: ${msg}. ${hint}` }});
   }
 }
 
@@ -358,8 +364,9 @@ async function processPastedDoc() {
   const name = document.getElementById('dp-name')?.value?.trim() || docType || 'Document';
   if (!content) { showToast('Please paste document text', false); return; }
   if (!docType) { showToast('Please select a document type', false); return; }
+  if (state.ui.pasteBusy) { showToast('Already processing, please wait...', false); return; }
   
-  setState({ ui: { ...state.ui, docBusy:true, docStatus:'🤖 Extracting information...', docResult:null, docError:'' }});
+  setState({ ui: { ...state.ui, pasteBusy:true, pasteStatus:'🤖 Extracting information...', docResult:null, docError:'' }});
   try {
     const prompt = buildExtractionPrompt(docType) + '\n\nDOCUMENT TEXT:\n' + content;
     const raw = await callClaude(
@@ -367,8 +374,9 @@ async function processPastedDoc() {
       prompt
     );
     await applyExtraction(raw, docType, name);
+    setState({ ui: { ...state.ui, pasteBusy:false, pasteStatus:'' }});
   } catch(err) {
-    setState({ ui: { ...state.ui, docBusy:false, docStatus:'', docError:'Error: ' + err.message }});
+    setState({ ui: { ...state.ui, pasteBusy:false, pasteStatus:'', docError:'Error: ' + err.message + '. Try shortening the pasted text if it is very long.' }});
   }
 }
 
