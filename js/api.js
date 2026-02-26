@@ -3,7 +3,7 @@
 // The Worker verifies the user's session, enforces rate limits,
 // and forwards the request to Anthropic using our secret API key.
 // Users never need their own API key.
-const WORKER_URL = 'https://afteraction-api.falconjayhawk.workers.dev';
+const WORKER_URL = 'https://vetcareer-api.falconjayhawk.workers.dev';
 
 // ── Claude API via Worker ─────────────────────────────────────────────
 async function callClaude(system, user, feature) {
