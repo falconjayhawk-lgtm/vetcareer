@@ -22,7 +22,7 @@ async function loadStats() {
 
   try {
     const token = await getClerkToken();
-    const res = await fetch(`https://afteraction-api.falconjayhawk.workers.dev/api/analytics`, {
+    const res = await fetch(`https://vetcareer-api.falconjayhawk.workers.dev/api/analytics`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();

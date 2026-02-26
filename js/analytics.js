@@ -51,7 +51,7 @@ function trackAction(actionId) {
 async function _sendAnalyticEvent(type, key) {
   try {
     const today = new Date().toISOString().split('T')[0];
-    await fetch(`https://afteraction-api.falconjayhawk.workers.dev/api/analytics`, {
+    await fetch(`https://vetcareer-api.falconjayhawk.workers.dev/api/analytics`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
