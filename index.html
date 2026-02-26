@@ -3,15 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AfterAction — Veteran Career Transition</title>
+  <title>VetCareer - Career Transition Platform</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <!-- Clerk: handles authentication (sign up, sign in, sessions) -->
-  <script async crossorigin="anonymous"
-    data-clerk-publishable-key="pk_test_dW5iaWFzZWQtYmx1ZWpheS0zMS5jbGVyay5hY2NvdW50cy5kZXYk"
-    src="https://unbiased-bluejay-31.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
-    type="text/javascript">
-  </script>
   <style>
     * { box-sizing: border-box; }
     body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f8fafc; }
@@ -63,10 +56,9 @@
     .login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1d4ed8, #4338ca); }
     .login-card { background: white; border-radius: 20px; padding: 40px; width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
     /* Mobile nav */
-    #mobile-bar { display: none; position: fixed; top: 0; left: 0; right: 0; height: 52px; background: #1e3a8a; align-items: center; padding: 0 12px; gap: 8px; z-index: 200; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-    #mobile-bar span { color: white; font-weight: 700; font-size: 16px; flex: 1; }
+    #mobile-bar { display: none; position: fixed; top: 0; left: 0; right: 0; height: 52px; background: #1e3a8a; align-items: center; padding: 0 16px; gap: 12px; z-index: 200; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    #mobile-bar span { color: white; font-weight: 700; font-size: 16px; }
     #hamburger { background: none; border: none; color: white; font-size: 26px; cursor: pointer; padding: 4px; line-height: 1; }
-    #mobile-back { background: rgba(255,255,255,0.15); border: none; color: white; font-size: 13px; font-weight: 600; cursor: pointer; padding: 5px 10px; border-radius: 6px; white-space: nowrap; }
     #nav-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 150; }
     @media (max-width: 700px) {
       .grid2 { grid-template-columns: 1fr; }
@@ -83,52 +75,2092 @@
 <!-- Mobile top bar -->
 <div id="mobile-bar">
   <button id="hamburger" onclick="openNav()">&#9776;</button>
-  <span>&#9876; AfterAction</span>
-  <button id="mobile-back" onclick="setState({view:'dashboard'})" style="display:none">🏠 Home</button>
+  <span>&#9876; VetCareer</span>
 </div>
 <!-- Overlay to close nav on mobile -->
 <div id="nav-overlay" onclick="closeNav()"></div>
 <div id="app"></div>
 
-<!-- Core -->
-<script src="js/state.js"></script>
-<script src="js/api.js"></script>
-<script src="js/helpers.js"></script>
-<script src="js/auth.js"></script>
-
-<!-- Sync & Settings -->
-<script src="js/sync.js"></script>
-
-<!-- Views -->
-<script src="js/dashboard.js"></script>
-<script src="js/profile.js"></script>
-<script src="js/experience.js"></script>
-<script src="js/documents.js"></script>
-<script src="js/jobs.js"></script>
-<script src="js/resume.js"></script>
-<script src="js/export.js"></script>
-<script src="js/scout.js"></script>
-<script src="js/linkedin.js"></script>
-<script src="js/interview.js"></script>
-<script src="js/salary.js"></script>
-<script src="js/network.js"></script>
-<script src="js/refletter.js"></script>
-<script src="js/sf86.js"></script>
-<script src="js/gap.js"></script>
-<script src="js/analytics.js"></script>
-<script src="js/analytics-dashboard.js"></script>
-<script src="js/faq.js"></script>
-<script src="js/feedback.js"></script>
-
-<!-- Render engine (last — depends on all views) -->
-<script src="js/render.js"></script>
-
-<!-- Utilities & Init -->
-<script src="js/utils.js"></script>
 <script>
-  loadState();
+// ── State ─────────────────────────────────────────────────────────────
+let state = {
+  loggedIn: false,
+  view: 'dashboard',
+  profile: { fullName:'', email:'', phone:'', location:'', branch:'', rank:'', yearsOfService:'', mosRate:'', clearance:'', clearanceStatus:'', workPreference:'', willingToRelocate:'', targetLocations:'', targetIndustries:[], technicalSkills:[], softSkills:[], education:'', certifications:'', elevatorPitch:'', reserveGuard:false },
+  assignments: [],
+  civilianJobs: [],
+  awards: [],
+  documents: [],
+  jobs: [],
+  apiKey: '',
+  checklist: {}, // Stores user-checked items: { 'Generate a tailored resume': true, ... }
+  // UI state
+  ui: {}
+};
+
+function loadState() {
+  try {
+    const keys = ['profile','assignments','civilianJobs','awards','documents','jobs','apiKey','checklist'];
+    keys.forEach(k => {
+      const v = localStorage.getItem('vc_' + k);
+      if (v) state[k] = JSON.parse(v);
+    });
+  } catch(e) {}
+}
+
+function saveKey(k) {
+  try { localStorage.setItem('vc_' + k, JSON.stringify(state[k])); } catch(e) {}
+}
+
+function setState(updates) {
+  Object.assign(state, updates);
+  if (updates.profile !== undefined) saveKey('profile');
+  if (updates.assignments !== undefined) saveKey('assignments');
+  if (updates.civilianJobs !== undefined) saveKey('civilianJobs');
+  if (updates.awards !== undefined) saveKey('awards');
+  if (updates.documents !== undefined) saveKey('documents');
+  if (updates.jobs !== undefined) saveKey('jobs');
+  if (updates.apiKey !== undefined) saveKey('apiKey');
+  if (updates.checklist !== undefined) saveKey('checklist');
   render();
-  initClerk();
+}
+
+// ── Claude API ────────────────────────────────────────────────────────
+async function callClaude(system, user) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': state.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 4000, system, messages: [{ role: 'user', content: user }] })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'API error'); }
+  const data = await res.json();
+  return data.content[0].text;
+}
+
+// ── Claude with file (PDF/image) ─────────────────────────────────────
+async function callClaudeWithFile(system, user, base64Data, mimeType) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': state.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4000,
+      system,
+      messages: [{ role: 'user', content: [
+        { type: 'document', source: { type: 'base64', media_type: mimeType, data: base64Data } },
+        { type: 'text', text: user }
+      ]}]
+    })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'API error'); }
+  return (await res.json()).content[0].text;
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+const INDUSTRIES = [
+  { name: 'Defense Contracting', subTypes: ['Business Development', 'Capture Management', 'Program Management', 'Strategic Accounts', 'Engineering', 'Operations', 'Consulting', 'Partnerships & Alliances', 'Other'] },
+  { name: 'Aerospace & Aviation', subTypes: ['Engineering', 'Manufacturing', 'Operations', 'Quality Assurance', 'Maintenance', 'Flight Operations', 'Other'] },
+  { name: 'Cybersecurity', subTypes: ['Security Operations', 'Penetration Testing', 'Compliance & Governance', 'Security Engineering', 'Incident Response', 'Threat Intelligence', 'Other'] },
+  { name: 'Intelligence & Analytics', subTypes: ['Intelligence Analysis', 'GEOINT', 'SIGINT', 'HUMINT', 'Data Analytics', 'Fusion Analysis', 'Other'] },
+  { name: 'Project Management', subTypes: ['IT Project Management', 'Construction PM', 'Program Management', 'Agile/Scrum', 'Portfolio Management', 'Other'] },
+  { name: 'Logistics & Supply Chain', subTypes: ['Operations', 'Procurement', 'Planning', 'Distribution', 'Inventory Management', 'Transportation', 'Other'] },
+  { name: 'Healthcare', subTypes: ['Clinical', 'Administration', 'Emergency Services', 'Medical Devices', 'Healthcare IT', 'Telemedicine', 'Other'] },
+  { name: 'Information Technology', subTypes: ['Software Engineering', 'Systems Administration', 'Cloud/DevOps', 'Data/Analytics', 'IT Support', 'Network Engineering', 'Other'] },
+  { name: 'Construction', subTypes: ['Project Management', 'Estimating', 'Site Management', 'Safety', 'Civil Engineering', 'Other'] },
+  { name: 'Manufacturing', subTypes: ['Operations', 'Quality', 'Process Engineering', 'Maintenance', 'Production Planning', 'Other'] },
+  { name: 'Emergency Services', subTypes: ['Fire', 'EMS', 'Emergency Management', 'Disaster Response', 'Crisis Management', 'Other'] },
+  { name: 'Transportation', subTypes: ['Fleet Management', 'Logistics', 'Safety', 'Operations', 'Aviation', 'Maritime', 'Other'] },
+  { name: 'Finance & Accounting', subTypes: ['Financial Analysis', 'Accounting', 'Risk Management', 'Investment', 'Auditing', 'Other'] },
+  { name: 'Government/Federal', subTypes: ['Program Management', 'Policy', 'Contracting', 'Operations', 'Intelligence', 'Diplomacy', 'Other'] },
+  { name: 'Law Enforcement & Security', subTypes: ['Criminal Investigation', 'Patrol', 'Administration', 'Training', 'Physical Security', 'Other'] },
+  { name: 'Education & Training', subTypes: ['Instructional Design', 'Training & Development', 'Curriculum', 'Administration', 'E-Learning', 'Other'] },
+  { name: 'Energy & Utilities', subTypes: ['Power Generation', 'Renewable Energy', 'Oil & Gas', 'Safety', 'Nuclear', 'Other'] },
+  { name: 'Consulting & Advisory', subTypes: ['Management Consulting', 'Strategy', 'Operations', 'Technology', 'Human Capital', 'Other'] },
+  { name: 'Sales & Business Development', subTypes: ['Enterprise Sales', 'Account Management', 'Channel Sales', 'Inside Sales', 'Sales Engineering', 'Other'] },
+  { name: 'Human Resources', subTypes: ['Talent Acquisition', 'Employee Relations', 'Benefits & Compensation', 'Training', 'HR Operations', 'Other'] }
+];
+const SKILL_RECS = { 
+  'Defense Contracting':['Security Clearance','ITAR','FAR/DFARS','Program Management','Capture Management'], 
+  'Aerospace & Aviation':['FAA Regulations','Quality Systems','Six Sigma','Safety Management'],
+  'Cybersecurity':['Security+','CISSP','Network Security','SIEM','Risk Assessment'], 
+  'Intelligence & Analytics':['Security Clearance','Intelligence Analysis','Data Visualization','GEOINT','SIGINT'],
+  'Project Management':['PMP','Agile','Scrum','Risk Management','MS Project'], 
+  'Logistics & Supply Chain':['SAP','Lean','Six Sigma','Inventory Management','Procurement'], 
+  'Healthcare':['HIPAA','BLS/ACLS','Medical Terminology','EHR','Patient Safety'], 
+  'Information Technology':['AWS','Azure','Python','SQL','ITIL','Networking'], 
+  'Construction':['OSHA 30','Blueprint Reading','Cost Estimation','MS Project','Quality Control'], 
+  'Manufacturing':['Lean Manufacturing','Six Sigma','ISO 9001','OSHA','Process Improvement'], 
+  'Emergency Services':['ICS/NIMS','EMT','Crisis Management','Incident Command','FEMA'], 
+  'Transportation':['DOT Regulations','Fleet Management','Safety Management','Logistics'], 
+  'Finance & Accounting':['Financial Analysis','Excel','Budget Management','GAAP','QuickBooks'], 
+  'Government/Federal':['Security Clearance','Policy Writing','Government Contracting','FAR'], 
+  'Law Enforcement & Security':['Crisis Negotiation','Criminal Law','Community Policing','Physical Security'], 
+  'Education & Training':['Curriculum Development','Instructional Design','ADDIE','E-Learning'], 
+  'Energy & Utilities':['OSHA','NERC CIP','Safety Management','Electrical Systems'],
+  'Consulting & Advisory':['Problem Solving','Strategy','Change Management','Stakeholder Management'],
+  'Sales & Business Development':['Salesforce','Relationship Management','Pipeline Management','Negotiation'],
+  'Human Resources':['SHRM','Talent Acquisition','Employee Relations','HRIS','Compliance']
+};
+const STATUS_COLORS = { interested:'#e5e7eb:#374151', applied:'#dbeafe:#1d4ed8', interviewing:'#ede9fe:#6d28d9', offered:'#dcfce7:#15803d', rejected:'#fee2e2:#dc2626', withdrawn:'#fef9c3:#a16207' };
+function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',year:'numeric'}) : ''; }
+function id() { return Date.now() + Math.random().toString(36).slice(2); }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function statusBadge(status) {
+  const cfg = { interested:'background:#e5e7eb;color:#374151', applied:'background:#dbeafe;color:#1d4ed8', interviewing:'background:#ede9fe;color:#6d28d9', offered:'background:#dcfce7;color:#15803d', rejected:'background:#fee2e2;color:#dc2626', withdrawn:'background:#fef9c3;color:#a16207' };
+  return `<span class="badge" style="${cfg[status]||cfg.interested}">${status.charAt(0).toUpperCase()+status.slice(1)}</span>`;
+}
+
+// ── Render engine ─────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  if (!state.loggedIn) { app.innerHTML = renderLogin(); return; }
+  app.innerHTML = `
+    <div style="display:flex;min-height:100vh">
+      ${renderSidebar()}
+      <div class="main">${renderView()}</div>
+    </div>`;
+  bindEvents();
+}
+
+function renderLogin() {
+  return `
+    <div class="login-page">
+      <div class="login-card">
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="font-size:48px;margin-bottom:8px">⚔</div>
+          <h1 style="font-size:24px;font-weight:800;margin:0">VetCareer</h1>
+          <p style="color:#6b7280;font-size:14px;margin:4px 0 0">Your transition to civilian success</p>
+        </div>
+        <div class="field">
+          <label class="field-label">Email Address</label>
+          <input type="email" id="login-email" placeholder="veteran@email.com" />
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="doLogin()">Sign In →</button>
+        <p style="text-align:center;font-size:12px;color:#9ca3af;margin-top:16px">Demo — enter any email to continue</p>
+      </div>
+    </div>`;
+}
+
+function doLogin() {
+  const email = document.getElementById('login-email')?.value;
+  if (!email) return;
+  setState({ loggedIn: true, view: 'dashboard' });
+}
+
+function renderSidebar() {
+  const items = [
+    {id:'dashboard',label:'🏠 Dashboard'},
+    {id:'documents',label:'📤 Upload Docs',highlight:true}, // First step
+    {id:'profile',label:'👤 Profile'},
+    {id:'experience',label:'🗺 Experience'},
+    {id:'jobs',label:'💼 Job Tracker'},
+    {id:'resume',label:'📄 Resume Builder'},
+    {id:'gap',label:'📊 Gap Analysis'},
+    {id:'settings',label:'⚙ Settings'},
+  ];
+  return `
+    <div class="sidebar">
+      <div style="padding:16px;border-bottom:1px solid #f3f4f6">
+        <div style="font-weight:800;color:#1d4ed8;font-size:18px">⚔ VetCareer</div>
+        <div style="font-size:11px;color:#9ca3af">Career Transition</div>
+      </div>
+      <nav style="flex:1;padding:8px;overflow-y:auto">
+        ${items.map(i=>`<button class="nav-btn${state.view===i.id?' active':''}${i.highlight&&state.documents.length===0?' start-here':''}" onclick="setState({view:'${i.id}'}); closeNav()">${i.label}${i.highlight&&state.documents.length===0?' <span style="font-size:10px;background:#22c55e;color:white;padding:2px 6px;border-radius:999px;margin-left:4px">START</span>':''}</button>`).join('')}
+      </nav>
+      <div style="padding:8px;border-top:1px solid #f3f4f6">
+        <button class="nav-btn" style="color:#ef4444" onclick="setState({loggedIn:false,view:'dashboard'})">🚪 Sign Out</button>
+      </div>
+    </div>`;
+}
+
+function renderView() {
+  switch(state.view) {
+    case 'dashboard': return renderDashboard();
+    case 'profile': return renderProfile();
+    case 'experience': return renderExperience();
+    case 'documents': return renderDocuments();
+    case 'jobs': return renderJobs();
+    case 'resume': return renderResume();
+    case 'gap': return renderGap();
+    case 'settings': return renderSettings();
+    default: return renderDashboard();
+  }
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────
+function renderDashboard() {
+  const p = state.profile;
+  const active = state.jobs.filter(j=>['applied','interviewing'].includes(j.status)).length;
+  const total = state.jobs.length;
+  
+  const checks = [
+    {label:'Upload your documents (DD-214, performance reports, resume)', autoDone:state.documents.length>0, view:'documents', priority:true},
+    {label:'Complete your profile', autoDone:!!(p.fullName&&p.branch), view:'profile'},
+    {label:'Review & edit your experience', autoDone:state.assignments.length>0 || state.civilianJobs.length>0, view:'experience'},
+    {label:'Add jobs to tracker', autoDone:state.jobs.length>0, view:'jobs'},
+    {label:'Add your API key', autoDone:!!state.apiKey, view:'settings'},
+    {label:'Generate a tailored resume', autoDone:false, view:'resume', manualOnly:true},
+    {label:'Review gap analysis', autoDone:false, view:'gap', manualOnly:true},
+  ];
+
+  // Merge auto-done status with manual checks
+  const checksWithStatus = checks.map(c => ({
+    ...c,
+    done: c.autoDone || !!state.checklist[c.label]
+  }));
+
+  const pct = Math.round(checksWithStatus.filter(c=>c.done).length/checksWithStatus.length*100);
+  const name = p.fullName ? ', ' + p.fullName.split(' ')[0] : '';
+  const isNewUser = state.documents.length === 0 && !p.fullName && state.assignments.length === 0;
+  
+  return `
+    <h1 style="font-size:24px;font-weight:800;margin:0 0 20px">Welcome back${name}! 👋</h1>
+    
+    ${isNewUser ? `
+    <div class="card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #3b82f6">
+      <h2 style="color:#1e40af">🚀 Get Started in 3 Steps</h2>
+      <div style="font-size:14px;color:#1e3a8a;line-height:1.7">
+        <strong>1. Upload Documents</strong> — Start with your DD-214, performance reports, or civilian resume. Claude will auto-fill everything.<br>
+        <strong>2. Review & Fill Gaps</strong> — Check your Profile and Experience pages, add anything missing.<br>
+        <strong>3. Build Resumes</strong> — Add jobs to your tracker, then let Claude write tailored resumes for each one.
+      </div>
+      <button class="btn btn-primary" onclick="setState({view:'documents'})" style="margin-top:12px;padding:10px 20px">📤 Start: Upload Documents</button>
+    </div>` : ''}
+    
+    <div class="grid3" style="margin-bottom:20px">
+      ${[['Active Applications',active+'/'+total,'#2563eb'],['Profile Complete',pct+'%',pct===100?'#16a34a':'#ca8a04'],['Documents',state.documents.length,'#7c3aed']].map(([l,v,c])=>`
+        <div class="card" style="margin-bottom:0;text-align:center">
+          <div style="font-size:32px;font-weight:800;color:${c}">${v}</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:4px">${l}</div>
+        </div>`).join('')}
+    </div>
+    <div class="card">
+      <h2>Getting Started Checklist</h2>
+      ${checksWithStatus.map(c=>`
+        <div class="checklist-item${c.done?' done':''}" onclick="${c.done?'':''}${c.manualOnly?`toggleChecklistItem('${c.label}')`:c.done?'':`setState({view:'${c.view}'})`}">
+          <div class="check-circle${c.done?' done':' todo'}" ${c.manualOnly&&!c.done?`onclick="event.stopPropagation();toggleChecklistItem('${c.label}')"`:''}>${c.done?'✓':''}</div>
+          <span style="${c.done?'text-decoration:line-through;color:#9ca3af':''}">${c.label}</span>
+          ${!c.done&&!c.manualOnly?'<span style="margin-left:auto;color:#93c5fd;font-size:12px">→ Go</span>':''}
+          ${c.manualOnly&&!c.done?'<span style="margin-left:auto;color:#9ca3af;font-size:11px;font-style:italic">Click to mark done</span>':''}
+        </div>`).join('')}
+    </div>`;
+}
+
+function toggleChecklistItem(label) {
+  const current = state.checklist[label] || false;
+  setState({ checklist: { ...state.checklist, [label]: !current } });
+}
+
+// ── Profile ───────────────────────────────────────────────────────────
+function renderProfile() {
+  const p = state.profile;
+  const selectedIndustries = p.targetIndustries || [];
+  
+  const indChecks = INDUSTRIES.map(industry => {
+    const selected = selectedIndustries.find(s => 
+      (typeof s === 'string' && s === industry.name) || 
+      (typeof s === 'object' && s.name === industry.name)
+    );
+    const isChecked = !!selected;
+    const selectedSubTypes = (typeof selected === 'object' && selected.subTypes) ? selected.subTypes : [];
+
+    return `
+      <div style="margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid ${isChecked?'#3b82f6':'#e5e7eb'};border-radius:8px;cursor:pointer;font-size:13px;background:${isChecked?'#eff6ff':'white'}">
+          <input type="checkbox" ${isChecked?'checked':''} onchange="toggleIndustry('${industry.name}')" style="width:auto;accent-color:#2563eb"> ${industry.name}
+        </label>
+        ${isChecked ? `
+          <div style="margin-left:32px;margin-top:6px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:8px">
+            <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Select specific areas (multiple allowed):</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:4px">
+              ${industry.subTypes.map(st => `
+                <label style="display:flex;align-items:center;gap:6px;padding:4px 6px;cursor:pointer;font-size:12px;border-radius:4px;hover:background:#eff6ff">
+                  <input type="checkbox" ${selectedSubTypes.includes(st)?'checked':''} onchange="toggleIndustrySubType('${industry.name}','${st}')" style="width:auto;accent-color:#2563eb">
+                  <span>${st}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>` : ''}
+      </div>`;
+  }).join('');
+  
+  const techTags = (p.technicalSkills||[]).map((s,i)=>`<span class="tag tag-blue">${esc(s)} <button onclick="removeSkill('tech',${i})" style="background:none;border:none;cursor:pointer;color:inherit;padding:0;font-size:14px;line-height:1">×</button></span>`).join('');
+  const softTags = (p.softSkills||[]).map((s,i)=>`<span class="tag tag-purple">${esc(s)} <button onclick="removeSkill('soft',${i})" style="background:none;border:none;cursor:pointer;color:inherit;padding:0;font-size:14px;line-height:1">×</button></span>`).join('');
+  const awardList = state.awards.map(a=>`
+    <div style="display:flex;align-items:start;gap:10px;padding:10px;background:#fffbeb;border-radius:8px;margin-bottom:8px">
+      <span style="font-size:20px">🏅</span>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${esc(a.name)}${a.date?` <span style="font-weight:400;color:#9ca3af;font-size:12px">· ${fmtDate(a.date)}</span>`:''}</div>
+        ${a.civilianTranslation?`<div style="font-size:12px;color:#6b7280;font-style:italic;margin-top:2px">${esc(a.civilianTranslation)}</div>`:''}
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="removeAward('${a.id}')">✕</button>
+    </div>`).join('');
+
+  return `
+    <h1 style="font-size:24px;font-weight:800;margin:0 0 20px">Your Profile</h1>
+    <div class="card">
+      <h2>Personal Information</h2>
+      <div class="grid2">
+        <div class="field"><label class="field-label">Full Name</label><input id="p-fullName" value="${esc(p.fullName)}" placeholder="First Last"></div>
+        <div class="field"><label class="field-label">Email</label><input type="email" id="p-email" value="${esc(p.email)}"></div>
+        <div class="field"><label class="field-label">Phone</label><input id="p-phone" value="${esc(p.phone)}"></div>
+        <div class="field"><label class="field-label">City, State</label><input id="p-location" value="${esc(p.location)}" placeholder="San Diego, CA"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Military Background</h2>
+      <div class="grid2">
+        <div class="field"><label class="field-label">Branch *</label>
+          <select id="p-branch"><option value="">Select...</option>${['Army','Navy','Air Force','Marine Corps','Coast Guard','Space Force'].map(b=>`<option ${p.branch===b?'selected':''}>${b}</option>`).join('')}</select></div>
+        <div class="field"><label class="field-label">Final Rank</label><input id="p-rank" value="${esc(p.rank)}" placeholder="E-7, O-4..."></div>
+        <div class="field"><label class="field-label">Years of Service</label><input type="number" id="p-yearsOfService" value="${esc(p.yearsOfService)}"></div>
+        <div class="field"><label class="field-label">MOS / Rate / AFSC</label><input id="p-mosRate" value="${esc(p.mosRate)}" placeholder="11B, IS, 3D1X2..."></div>
+      </div>
+      <div style="margin-top:12px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
+          <input type="checkbox" id="p-reserveGuard" ${p.reserveGuard?'checked':''} style="width:auto;accent-color:#2563eb">
+          <span>I served/am serving in the <strong>Reserve or National Guard</strong></span>
+        </label>
+        <p style="font-size:12px;color:#6b7280;margin:4px 0 0 28px">Check this if you had concurrent military and civilian employment</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Security Clearance</h2>
+      <div class="grid2">
+        <div class="field"><label class="field-label">Clearance Level</label>
+          <select id="p-clearance"><option value="">Select...</option>${['None','Confidential','Secret','Top Secret','TS/SCI'].map(c=>`<option ${p.clearance===c?'selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="field"><label class="field-label">Status</label>
+          <select id="p-clearanceStatus"><option value="">Select...</option>${['Active','Eligible - Needs Update','Expired','Never Had'].map(c=>`<option ${p.clearanceStatus===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Work Preferences</h2>
+      <div class="grid2">
+        <div class="field"><label class="field-label">Work Type</label>
+          <select id="p-workPreference"><option value="">Select...</option>${['Remote','Hybrid','On-Site','Flexible'].map(c=>`<option ${p.workPreference===c?'selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="field"><label class="field-label">Willing to Relocate?</label>
+          <select id="p-willingToRelocate"><option value="">Select...</option>${['Yes - Anywhere','Yes - Specific Locations','No','Depends on Role'].map(c=>`<option ${p.willingToRelocate===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      </div>
+      <div class="field"><label class="field-label">Target Locations (if relocating)</label><input id="p-targetLocations" value="${esc(p.targetLocations)}" placeholder="Washington DC, Tampa FL..."></div>
+    </div>
+    <div class="card">
+      <h2>Target Industries</h2>
+      <div class="grid2" id="industry-checks">${indChecks}</div>
+    </div>
+    <div class="card">
+      <h2>Education & Certifications</h2>
+      <div class="field"><label class="field-label">Education</label><textarea id="p-education" rows="3" placeholder="B.S. Criminal Justice, University of Maryland, 2018">${esc(p.education)}</textarea></div>
+      <div class="field"><label class="field-label">Certifications</label><textarea id="p-certifications" rows="2" placeholder="PMP (2022), Security+ (2021)...">${esc(p.certifications)}</textarea></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0">Skills Inventory</h2>
+        ${state.apiKey && (state.assignments.length > 0 || state.civilianJobs.length > 0) ? `<button class="btn btn-secondary btn-sm" onclick="extractSkillsFromExperience()">🤖 Auto-Extract from Experience</button>` : ''}
+      </div>
+      ${state.apiKey && (state.assignments.length > 0 || state.civilianJobs.length > 0) ? `<p style="font-size:12px;color:#6b7280;margin:-8px 0 12px">Claude can read your assignments and jobs to automatically pull out technical and leadership skills you've demonstrated.</p>` : ''}
+      <div class="grid2">
+        <div>
+          <label class="field-label">Technical Skills</label>
+          <div style="display:flex;gap:6px;margin-bottom:8px"><input id="new-tech-skill" placeholder="Python, AutoCAD..." onkeydown="if(event.key==='Enter'){addSkill('tech');event.preventDefault()}"><button class="btn btn-secondary btn-sm" onclick="addSkill('tech')">+ Add</button></div>
+          <div>${techTags||'<span style="color:#9ca3af;font-size:13px">None added yet</span>'}</div>
+        </div>
+        <div>
+          <label class="field-label">Leadership / Soft Skills</label>
+          <div style="display:flex;gap:6px;margin-bottom:8px"><input id="new-soft-skill" placeholder="Team Leadership..." onkeydown="if(event.key==='Enter'){addSkill('soft');event.preventDefault()}"><button class="btn btn-secondary btn-sm" onclick="addSkill('soft')">+ Add</button></div>
+          <div>${softTags||'<span style="color:#9ca3af;font-size:13px">None added yet</span>'}</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0">Professional Summary (Elevator Pitch)</h2>
+        ${state.apiKey && state.assignments.length > 0 ? `<button class="btn btn-primary btn-sm" onclick="generateElevatorPitch()">🤖 AI Generate</button>` : ''}
+      </div>
+      <p style="font-size:13px;color:#6b7280;margin:-8px 0 12px">This is your baseline. AI will tailor it for each specific job during resume generation.</p>
+      <div class="field"><label class="field-label">30-second summary for resume header & cover letters</label>
+        <textarea id="p-elevatorPitch" rows="4" placeholder="Results-driven operations leader with 12 years directing teams of 50+, managing $5M budgets, and delivering mission-critical outcomes. Seeking to bring proven leadership to a civilian management role.">${esc(p.elevatorPitch)}</textarea></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+      <button class="btn btn-primary" style="padding:12px 24px" onclick="saveProfile()">💾 Save Profile</button>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="margin:0">Awards & Decorations</h2>
+        <button class="btn btn-secondary btn-sm" onclick="toggleUI('addAward')">+ Add Award</button>
+      </div>
+      ${state.ui.addAward?`
+        <div style="padding:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-bottom:16px">
+          <div class="grid2">
+            <div class="field"><label class="field-label">Award Name *</label><input id="award-name" placeholder="Army Commendation Medal"></div>
+            <div class="field"><label class="field-label">Date</label><input type="date" id="award-date"></div>
+          </div>
+          <div class="field"><label class="field-label">Civilian Translation</label>
+            <textarea id="award-trans" rows="2" placeholder="Recognized for saving $200K through process redesign that improved efficiency 35%"></textarea></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" onclick="saveAward()">Save Award</button>
+            <button class="btn btn-secondary btn-sm" onclick="toggleUI('addAward')">Cancel</button>
+          </div>
+        </div>`:'' }
+      ${awardList||'<p style="color:#9ca3af;font-size:14px">No awards yet. Military decorations translate powerfully to civilian achievement recognition.</p>'}
+    </div>`;
+}
+
+function saveProfile() {
+  const fields = ['fullName','email','phone','location','branch','rank','yearsOfService','mosRate','clearance','clearanceStatus','workPreference','willingToRelocate','targetLocations','education','certifications','elevatorPitch'];
+  const p = { ...state.profile };
+  fields.forEach(f => { const el = document.getElementById('p-'+f); if(el) p[f] = el.value; });
+  
+  // Handle checkbox separately
+  const reserveGuardEl = document.getElementById('p-reserveGuard');
+  if (reserveGuardEl) p.reserveGuard = reserveGuardEl.checked;
+  
+  setState({ profile: p });
+  showToast('Profile saved! ✓');
+}
+
+async function generateElevatorPitch() {
+  if (!state.apiKey) { showToast('Add your API key in Settings first', false); return; }
+  if (state.assignments.length === 0) { showToast('Add some assignments first', false); return; }
+  
+  showToast('🤖 Generating your professional summary...', true);
+  
+  try {
+    const p = state.profile;
+    const topAssignments = [...state.assignments]
+      .sort((a,b) => new Date(b.startDate||0) - new Date(a.startDate||0))
+      .slice(0, 4)
+      .map(a => `${a.dutyTitle} at ${a.base}: ${(a.accomplishments||'').slice(0, 150)}`)
+      .join(' | ');
+    
+    const targetIndustries = (p.targetIndustries||[])
+      .map(i => typeof i === 'object' ? (i.subTypes?.length ? `${i.name} (${i.subTypes.join(', ')})` : i.name) : i)
+      .join(', ') || 'Not specified';
+    
+    const prompt = `Write a compelling 3-sentence professional summary for this veteran. This will appear at the top of a resume.
+
+VETERAN DATA:
+- ${p.branch || 'Military'} veteran, ${p.rank || 'N/A'} rank, ${p.yearsOfService || 'N/A'} years of service
+- MOS/Rate: ${p.mosRate || 'N/A'}
+- Clearance: ${p.clearance || 'None'} (${p.clearanceStatus || 'N/A'})
+- Target industries: ${targetIndustries}
+- Technical skills: ${(p.technicalSkills||[]).join(', ') || 'None'}
+
+RECENT EXPERIENCE:
+${topAssignments || 'None'}
+
+AWARDS: ${state.awards.length > 0 ? state.awards.map(a => a.name).join(', ') : 'None'}
+
+WRITING RULES — follow every one:
+- Write exactly 3 sentences
+- Sentence 1: Who they are and how much experience (use years, rank if helpful in civilian context)
+- Sentence 2: A specific accomplishment with a real number — team size, budget, percentage, outcome
+- Sentence 3: What unique value they bring to their target field
+- ZERO military jargon — translate everything to plain business language
+- NO generic filler phrases: "results-driven", "proven track record", "dynamic", "passionate", "leverage", "synergy", "strategic thinker"
+- Vary sentence length — don't make all three sentences the same structure
+- Sound like a real human wrote it, not a resume template
+- Be specific and concrete — vague summaries get skipped
+- Plain text only, no bullet points or headers`;
+
+
+
+    const result = await callClaude(
+      'You are a senior career coach who specializes in military-to-civilian transitions. You write professional summaries that sound like a real, confident human wrote them — not a resume template. You never use buzzwords or filler phrases. Every sentence earns its place with specificity and clarity.',
+      prompt
+    );
+    
+    const el = document.getElementById('p-elevatorPitch');
+    if (el) {
+      el.value = result.trim();
+      showToast('Summary generated! Review and edit as needed.');
+    }
+  } catch(err) {
+    showToast('Error: ' + err.message, false);
+  }
+}
+
+async function extractSkillsFromExperience() {
+  if (!state.apiKey) { showToast('Add your API key in Settings first', false); return; }
+  if (state.assignments.length === 0 && state.civilianJobs.length === 0) { 
+    showToast('Add some assignments or jobs first', false); 
+    return; 
+  }
+  
+  showToast('🤖 Extracting skills from your experience...', true);
+  
+  try {
+    const experienceText = [
+      ...state.assignments.map(a => `${a.dutyTitle || 'Assignment'}: ${a.description || ''} ${a.accomplishments || ''}`),
+      ...state.civilianJobs.map(j => `${j.title || 'Job'} at ${j.company || ''}: ${j.description || ''} ${j.accomplishments || ''}`)
+    ].join('\n---\n');
+
+    const currentTech = state.profile.technicalSkills || [];
+    const currentSoft = state.profile.softSkills || [];
+
+    const prompt = `Analyze this veteran's work experience and extract skills they've demonstrated.
+
+EXPERIENCE:
+${experienceText}
+
+ALREADY LISTED:
+Technical: ${currentTech.join(', ') || 'None'}
+Leadership/Soft: ${currentSoft.join(', ') || 'None'}
+
+Return ONLY this JSON (no markdown, no extra text):
+{
+  "technicalSkills": ["list of NEW technical skills not already listed - tools, systems, certifications, technical abilities"],
+  "softSkills": ["list of NEW leadership/soft skills not already listed - communication, leadership, management, problem-solving abilities"]
+}
+
+Rules:
+- Only include skills that are clearly demonstrated in the experience
+- Don't duplicate skills already listed
+- Be specific (e.g., "Project Management" not just "Management", "Python" not just "Coding")
+- Limit to 8-10 NEW skills per category
+- If no new skills found, return empty arrays`;
+
+    const result = await callClaude(
+      'You are a career coach analyzing work experience to identify demonstrated skills. Be specific and accurate. Only extract skills that are clearly shown in the experience. Return valid JSON only.',
+      prompt
+    );
+
+    let extracted;
+    try {
+      extracted = JSON.parse(result.replace(/```json|```/g, '').trim());
+    } catch(e) {
+      throw new Error('Could not parse skill extraction results');
+    }
+
+    const newTech = extracted.technicalSkills || [];
+    const newSoft = extracted.softSkills || [];
+    
+    if (newTech.length === 0 && newSoft.length === 0) {
+      showToast('No new skills found — your profile already covers what Claude could extract.');
+      return;
+    }
+
+    const mergedTech = [...currentTech, ...newTech];
+    const mergedSoft = [...currentSoft, ...newSoft];
+
+    setState({ 
+      profile: { 
+        ...state.profile, 
+        technicalSkills: mergedTech,
+        softSkills: mergedSoft
+      } 
+    });
+    
+    const total = newTech.length + newSoft.length;
+    showToast(`✓ Added ${total} skill${total===1?'':'s'}: ${newTech.length} technical, ${newSoft.length} leadership`);
+  } catch(err) {
+    showToast('Error: ' + err.message, false);
+  }
+}
+
+function toggleIndustry(industryName) {
+  const inds = state.profile.targetIndustries || [];
+  
+  // Check if this industry is already selected
+  const existingIdx = inds.findIndex(i => 
+    (typeof i === 'string' && i === industryName) || 
+    (typeof i === 'object' && i.name === industryName)
+  );
+  
+  let updated;
+  if (existingIdx !== -1) {
+    // Remove it
+    updated = inds.filter((_, idx) => idx !== existingIdx);
+  } else {
+    // Add it as an object with empty subTypes array
+    updated = [...inds, { name: industryName, subTypes: [] }];
+  }
+  
+  state.profile = { ...state.profile, targetIndustries: updated };
+  try { localStorage.setItem('vc_profile', JSON.stringify(state.profile)); } catch(e) {}
+  render();
+}
+
+function toggleIndustrySubType(industryName, subType) {
+  const inds = state.profile.targetIndustries || [];
+  const updated = inds.map(i => {
+    // Find the matching industry
+    const isMatch = (typeof i === 'string' && i === industryName) || 
+                    (typeof i === 'object' && i.name === industryName);
+    
+    if (!isMatch) return i;
+    
+    // Convert string to object if needed
+    const industry = typeof i === 'string' ? { name: i, subTypes: [] } : i;
+    const currentSubTypes = industry.subTypes || [];
+    
+    // Toggle the subType
+    const newSubTypes = currentSubTypes.includes(subType)
+      ? currentSubTypes.filter(st => st !== subType)
+      : [...currentSubTypes, subType];
+    
+    return { ...industry, subTypes: newSubTypes };
+  });
+  
+  state.profile = { ...state.profile, targetIndustries: updated };
+  try { localStorage.setItem('vc_profile', JSON.stringify(state.profile)); } catch(e) {}
+  // No need to re-render — the checkbox updates in place
+}
+
+function addSkill(type) {
+  const el = document.getElementById('new-'+type+'-skill');
+  const val = el?.value?.trim();
+  if (!val) return;
+  const key = type === 'tech' ? 'technicalSkills' : 'softSkills';
+  setState({ profile: { ...state.profile, [key]: [...(state.profile[key]||[]), val] } });
+}
+
+function removeSkill(type, idx) {
+  const key = type === 'tech' ? 'technicalSkills' : 'softSkills';
+  const arr = (state.profile[key]||[]).filter((_,i)=>i!==idx);
+  setState({ profile: { ...state.profile, [key]: arr } });
+}
+
+function saveAward() {
+  const name = document.getElementById('award-name')?.value?.trim();
+  if (!name) return;
+  const award = { id:id(), name, date: document.getElementById('award-date')?.value, civilianTranslation: document.getElementById('award-trans')?.value };
+  setState({ awards: [...state.awards, award], ui: { ...state.ui, addAward: false } });
+}
+
+function removeAward(aid) { setState({ awards: state.awards.filter(a=>a.id!==aid) }); }
+
+// ── Experience ────────────────────────────────────────────────────────
+function renderExperience() {
+  const assignList = [...state.assignments].sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0)).map(a=>`
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font-weight:700;font-size:15px">${esc(a.dutyTitle)}</span>
+              ${a.rank?`<span style="background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:600">${esc(a.rank)}</span>`:''}
+              ${a.employmentType && a.employmentType !== 'Active Duty'?`<span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:600">${esc(a.employmentType)}</span>`:''}
+            </div>
+            <div style="color:#2563eb;font-size:13px;font-weight:500">${a.unit?esc(a.unit)+' — ':''}${esc(a.base)}</div>
+            <div style="color:#9ca3af;font-size:12px">${fmtDate(a.startDate)} – ${a.endDate?fmtDate(a.endDate):'Present'}${a.location?' · '+esc(a.location):''}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="btn btn-secondary btn-sm" onclick="editAssignment('${a.id}')">✏ Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="removeAssignment('${a.id}')">✕</button>
+          </div>
+        </div>
+        ${a.description?`<p style="font-size:13px;color:#4b5563;margin:8px 0 4px">${esc(a.description)}</p>`:''}
+        ${a.accomplishments?`<div style="background:#f0fdf4;border-radius:6px;padding:8px;font-size:12px;color:#166534;margin-top:6px;white-space:pre-line">${esc(a.accomplishments)}</div>`:''}
+      </div>
+    </div>`).join('');
+
+  const civList = [...state.civilianJobs].sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0)).map(j=>`
+    <div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div>
+          <div style="font-weight:700;font-size:15px">${esc(j.title)}</div>
+          <div style="color:#7c3aed;font-size:13px;font-weight:500">${esc(j.company)}${j.location?' — '+esc(j.location):''}</div>
+          <div style="color:#9ca3af;font-size:12px">${fmtDate(j.startDate)} – ${j.endDate?fmtDate(j.endDate):'Present'}</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="removeCivJob('${j.id}')">✕</button>
+      </div>
+      ${j.accomplishments?`<div style="background:#faf5ff;border-radius:6px;padding:8px;font-size:12px;margin-top:6px;white-space:pre-line">${esc(j.accomplishments)}</div>`:''}
+    </div>`).join('');
+
+  return `
+    <h1 style="font-size:24px;font-weight:800;margin:0 0 20px">Experience</h1>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h2 style="margin:0">🎖 Military Assignment Timeline</h2>
+        <button class="btn btn-primary btn-sm" onclick="toggleUI('addAssignment')">+ Add Assignment</button>
+      </div>
+      <p style="font-size:12px;color:#6b7280;margin:0 0 12px">List assignments in reverse order — most recent first</p>
+      ${state.ui.addAssignment?`
+        <div style="padding:16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:16px">
+          <div class="grid2">
+            <div class="field"><label class="field-label">Installation / Base *</label><input id="a-base" placeholder="Fort Bragg, NC"></div>
+            <div class="field"><label class="field-label">Unit</label><input id="a-unit" placeholder="1st BCT, 82nd ABN DIV"></div>
+            <div class="field"><label class="field-label">Duty Title *</label><input id="a-dutyTitle" placeholder="Platoon Sergeant, S3 Operations Officer"></div>
+            <div class="field"><label class="field-label">Rank During This Assignment</label><input id="a-rank" placeholder="SSG, CPT, MAJ..."></div>
+            <div class="field"><label class="field-label">Location</label><input id="a-location" placeholder="Fayetteville, NC"></div>
+            <div class="field"><label class="field-label">Employment Type</label>
+              <select id="a-employmentType">
+                <option value="Active Duty">Active Duty</option>
+                <option value="Reserve">Reserve</option>
+                <option value="National Guard">National Guard</option>
+              </select>
+            </div>
+            <div class="field"><label class="field-label">Start Date</label><input type="date" id="a-startDate"></div>
+            <div class="field"><label class="field-label">End Date (blank = current)</label><input type="date" id="a-endDate"></div>
+          </div>
+          <div class="field"><label class="field-label">Role Description</label><textarea id="a-description" rows="2" placeholder="Describe role in plain language"></textarea></div>
+          <div class="field"><label class="field-label">Key Accomplishments (use bullet points with numbers!)</label>
+            <textarea id="a-accomplishments" rows="4" placeholder="• Led team of 24 soldiers to 100% readiness&#10;• Reduced maintenance backlog by 40% in 90 days&#10;• Managed $2.3M in equipment with zero losses"></textarea></div>
+          <div id="assignment-form-actions" style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm save-btn" onclick="saveAssignment()">Save Assignment</button>
+            <button class="btn btn-secondary btn-sm" onclick="toggleUI('addAssignment');toggleUI('editAssignmentId',null)">Cancel</button>
+          </div>
+        </div>`:'' }
+      ${state.assignments.length===0&&!state.ui.addAssignment?'<p style="color:#9ca3af;font-size:14px;text-align:center;padding:20px">No assignments yet. This is the core of your resume!</p>':''}
+      <div style="position:relative">${state.assignments.length>0?'<div class="timeline-line"></div>':''} ${assignList}</div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h2 style="margin:0">💼 Civilian Work Experience</h2>
+        <button class="btn btn-primary btn-sm" onclick="toggleUI('addCivJob')">+ Add Job</button>
+      </div>
+      ${state.ui.addCivJob?`
+        <div style="padding:16px;background:#faf5ff;border:1px solid #ddd6fe;border-radius:8px;margin-bottom:16px">
+          <div class="grid2">
+            <div class="field"><label class="field-label">Company *</label><input id="c-company" placeholder="Company Name"></div>
+            <div class="field"><label class="field-label">Job Title *</label><input id="c-title" placeholder="Your Title"></div>
+            <div class="field"><label class="field-label">Location</label><input id="c-location" placeholder="City, State or Remote"></div>
+            <div></div>
+            <div class="field"><label class="field-label">Start Date</label><input type="date" id="c-startDate"></div>
+            <div class="field"><label class="field-label">End Date (blank = current)</label><input type="date" id="c-endDate"></div>
+          </div>
+          <div class="field"><label class="field-label">Role Description</label><textarea id="c-description" rows="2"></textarea></div>
+          <div class="field"><label class="field-label">Key Accomplishments</label>
+            <textarea id="c-accomplishments" rows="4" placeholder="• Increased team output by 25%&#10;• Managed $500K project on time and under budget"></textarea></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" onclick="saveCivJob()">Save Job</button>
+            <button class="btn btn-secondary btn-sm" onclick="toggleUI('addCivJob')">Cancel</button>
+          </div>
+        </div>`:'' }
+      ${state.civilianJobs.length===0&&!state.ui.addCivJob?'<p style="color:#9ca3af;font-size:14px;text-align:center;padding:20px">No civilian jobs yet.</p>':''}
+      ${civList}
+    </div>`;
+}
+
+function saveAssignment() {
+  const base = document.getElementById('a-base')?.value?.trim();
+  const duty = document.getElementById('a-dutyTitle')?.value?.trim();
+  if (!base||!duty) { alert('Base and Duty Title required'); return; }
+  const a = { 
+    id:id(), 
+    base, 
+    unit:document.getElementById('a-unit')?.value, 
+    dutyTitle:duty, 
+    rank:document.getElementById('a-rank')?.value, 
+    location:document.getElementById('a-location')?.value, 
+    employmentType:document.getElementById('a-employmentType')?.value || 'Active Duty',
+    startDate:document.getElementById('a-startDate')?.value, 
+    endDate:document.getElementById('a-endDate')?.value, 
+    description:document.getElementById('a-description')?.value, 
+    accomplishments:document.getElementById('a-accomplishments')?.value 
+  };
+  setState({ assignments:[...state.assignments,a], ui:{...state.ui,addAssignment:false} });
+}
+
+function removeAssignment(aid) { setState({ assignments: state.assignments.filter(a=>a.id!==aid) }); }
+
+function editAssignment(aid) {
+  // Open the add form pre-filled with this assignment's data
+  const a = state.assignments.find(x => x.id === aid);
+  if (!a) return;
+  setState({ ui: { ...state.ui, addAssignment: true, editAssignmentId: aid } });
+  // Pre-fill after render
+  setTimeout(() => {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    set('a-base', a.base); set('a-unit', a.unit); set('a-dutyTitle', a.dutyTitle);
+    set('a-rank', a.rank); set('a-location', a.location);
+    set('a-employmentType', a.employmentType || 'Active Duty');
+    set('a-startDate', a.startDate); set('a-endDate', a.endDate);
+    set('a-description', a.description); set('a-accomplishments', a.accomplishments);
+    // Swap Save button to Update
+    const saveBtn = document.querySelector('#assignment-form-actions .save-btn');
+    if (saveBtn) { saveBtn.textContent = 'Update Assignment'; saveBtn.onclick = () => updateAssignment(aid); }
+  }, 50);
+}
+
+function updateAssignment(aid) {
+  const base = document.getElementById('a-base')?.value?.trim();
+  const duty = document.getElementById('a-dutyTitle')?.value?.trim();
+  if (!base||!duty) { alert('Base and Duty Title required'); return; }
+  const updated = { 
+    id:aid, 
+    base, 
+    unit:document.getElementById('a-unit')?.value, 
+    dutyTitle:duty, 
+    rank:document.getElementById('a-rank')?.value, 
+    location:document.getElementById('a-location')?.value, 
+    employmentType:document.getElementById('a-employmentType')?.value || 'Active Duty',
+    startDate:document.getElementById('a-startDate')?.value, 
+    endDate:document.getElementById('a-endDate')?.value, 
+    description:document.getElementById('a-description')?.value, 
+    accomplishments:document.getElementById('a-accomplishments')?.value 
+  };
+  setState({ assignments: state.assignments.map(a => a.id === aid ? updated : a), ui: { ...state.ui, addAssignment: false, editAssignmentId: null } });
+  showToast('Assignment updated! ✓');
+}
+
+function saveCivJob() {
+  const company = document.getElementById('c-company')?.value?.trim();
+  const title = document.getElementById('c-title')?.value?.trim();
+  if (!company||!title) { alert('Company and Title required'); return; }
+  const j = { id:id(), company, title, location:document.getElementById('c-location')?.value, startDate:document.getElementById('c-startDate')?.value, endDate:document.getElementById('c-endDate')?.value, description:document.getElementById('c-description')?.value, accomplishments:document.getElementById('c-accomplishments')?.value };
+  setState({ civilianJobs:[...state.civilianJobs,j], ui:{...state.ui,addCivJob:false} });
+}
+
+function removeCivJob(jid) { setState({ civilianJobs: state.civilianJobs.filter(j=>j.id!==jid) }); }
+
+// ── Documents ─────────────────────────────────────────────────────────
+function renderDocuments() {
+  const busy = state.ui.docBusy || false;
+  const status = state.ui.docStatus || '';
+  const result = state.ui.docResult || null;
+  const error = state.ui.docError || '';
+
+  // Document type options — generic names covering all service branches
+  const DOC_TYPES = [
+    'DD-214 (Discharge Document)',
+    'Annual Performance Report',
+    'Award / Decoration Citation',
+    'Civilian Resume',
+    'Letter of Recommendation',
+    'Training / Course Certificate',
+    'Other'
+  ];
+
+  const docList = state.documents.map(d=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px;background:white">
+      <div>
+        <div style="font-weight:600;font-size:14px">📄 ${esc(d.name)}</div>
+        <div style="font-size:12px;color:#6b7280">${esc(d.type)} · ${new Date(d.uploadDate).toLocaleDateString()}</div>
+        ${d.processed ? '<span style="background:#dcfce7;color:#15803d;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600;margin-top:4px;display:inline-block">✓ AI Processed</span>' : ''}
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="removeDoc('${d.id}')">✕</button>
+    </div>`).join('');
+
+  return `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <h1 style="font-size:24px;font-weight:800;margin:0">📤 Upload Documents</h1>
+      ${state.documents.length === 0 ? `<span style="background:#22c55e;color:white;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700">STEP 1 — START HERE</span>` : ''}
+    </div>
+    ${state.documents.length === 0 ? `
+    <div style="background:#eff6ff;border:2px solid #3b82f6;border-radius:12px;padding:16px;margin-bottom:20px">
+      <div style="font-weight:700;color:#1e40af;font-size:15px;margin-bottom:8px">👋 Welcome! Start by uploading your documents</div>
+      <div style="font-size:13px;color:#1e40af;line-height:1.6">
+        <strong>The fastest way to get started:</strong> Upload your DD-214, performance reports, or civilian resume. Claude will read them and automatically fill in your profile, assignments, and skills. You can then review and fill any gaps.<br><br>
+        <strong>Don't have documents?</strong> That's okay — you can skip to Profile and fill everything in manually.
+      </div>
+    </div>` : ''}
+    <p style="font-size:13px;color:#6b7280;margin:0 0 20px">Upload your DD-214, performance reports, award citations, civilian resumes — Claude reads them and auto-fills your profile and experience.</p>
+
+    ${!state.apiKey ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:20px;font-size:14px;color:#92400e">⚠️ <strong>API Key Required.</strong> Go to <strong>⚙ Settings</strong> to add your key before uploading.</div>` : ''}
+
+    <!-- Upload card -->
+    <div class="card">
+      <h2>Upload & Extract with AI</h2>
+      <div class="grid2">
+        <div class="field">
+          <label class="field-label">Document Type *</label>
+          <select id="d-type">
+            <option value="">Select type...</option>
+            ${DOC_TYPES.map(t=>`<option>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">File (PDF or image)</label>
+          <input type="file" id="d-file" accept=".pdf,.png,.jpg,.jpeg" style="padding:6px;font-size:13px">
+        </div>
+      </div>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-size:13px;color:#1e40af;margin-bottom:14px">
+        💡 <strong>What happens:</strong> Claude reads your document and automatically extracts your assignments, rank, dates, awards, and accomplishments — then adds them directly to your Experience page.
+      </div>
+      <button class="btn btn-primary" onclick="processUpload()" ${busy || !state.apiKey ? 'disabled' : ''}>
+        ${busy ? `<div class="spinner"></div> ${esc(status)}` : '🤖 Upload & Extract with AI'}
+      </button>
+    </div>
+
+    <!-- Result card -->
+    ${result ? `
+    <div style="background:#f0fdf4;border:2px solid #22c55e;border-radius:12px;padding:20px;margin-bottom:20px">
+      <div style="font-weight:700;color:#16a34a;font-size:16px;margin-bottom:10px">✅ Extraction Complete!</div>
+      <div style="white-space:pre-line;font-size:13px;color:#374151;line-height:1.7;margin-bottom:14px">${esc(result)}</div>
+      <button class="btn btn-primary btn-sm" onclick="setState({view:'experience'})">→ Review Your Experience Page</button>
+    </div>` : ''}
+
+    ${error ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:#dc2626">${esc(error)}</div>` : ''}
+
+    <!-- Paste fallback -->
+    <div class="card">
+      <h2>Or Paste Document Text</h2>
+      <p style="font-size:13px;color:#6b7280;margin:-8px 0 14px">Can't upload a file? Paste the text content here instead.</p>
+      <div class="grid2">
+        <div class="field">
+          <label class="field-label">Document Type *</label>
+          <select id="dp-type">
+            <option value="">Select type...</option>
+            ${DOC_TYPES.map(t=>`<option>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Document Name</label>
+          <input id="dp-name" placeholder="e.g., FY2023 Performance Report">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Paste Document Text Here</label>
+        <textarea id="dp-content" rows="10" placeholder="Paste the full text from your document..."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="processPastedDoc()" ${busy || !state.apiKey ? 'disabled' : ''}>
+        ${busy ? `<div class="spinner"></div> ${esc(status)}` : '🤖 Extract with AI'}
+      </button>
+    </div>
+
+    <!-- Uploaded docs list -->
+    <div class="card">
+      <h2>Uploaded Documents (${state.documents.length})</h2>
+      ${state.documents.length === 0 ? '<p style="color:#9ca3af;font-size:14px;text-align:center;padding:20px">No documents yet. Start with your DD-214 — it will auto-fill most of your profile.</p>' : docList}
+    </div>`;
+}
+
+// ── Document processing ───────────────────────────────────────────────
+
+function buildExtractionPrompt(docType) {
+  if (docType.includes('DD-214')) return `Extract from this DD-214 and return ONLY this JSON (no markdown, no extra text):
+{
+  "docType": "DD-214",
+  "profile": {
+    "fullName": "", "branch": "", "rank": "", "mosRate": "",
+    "yearsOfService": "", "separationDate": "", "characterOfService": "", "clearance": ""
+  },
+  "assignments": [
+    { "base":"", "unit":"", "dutyTitle":"", "rank":"", "startDate":"", "endDate":"",
+      "location":"", "description":"role description in civilian terms",
+      "accomplishments":"bullet points with metrics", "civilianSummary":"" }
+  ],
+  "awards": [
+    { "name":"", "date":"", "citation":"", "civilianTranslation":"business impact translation" }
+  ],
+  "education": "",
+  "summary": "Plain English summary of what was extracted and added to the profile"
+}`;
+
+  if (docType.includes('Performance')) return `Extract from this military performance evaluation and return ONLY this JSON:
+{
+  "docType": "evaluation",
+  "assignment": {
+    "dutyTitle":"", "rank":"", "unit":"", "base":"", "startDate":"", "endDate":"", "location":"",
+    "description": "civilian-friendly role description",
+    "accomplishments": "extracted bullet points translated to civilian language with metrics and outcomes",
+    "civilianSummary": "2-3 sentence civilian summary of performance and achievements"
+  },
+  "keyAccomplishments": ["list of key accomplishments with metrics"],
+  "awards": [],
+  "summary": "Plain English summary of what was extracted"
+}`;
+
+  if (docType.includes('Award') || docType.includes('Decoration')) return `Extract from this award citation and return ONLY this JSON:
+{
+  "docType": "award",
+  "award": {
+    "name": "", "date": "",
+    "citation": "full citation text",
+    "civilianTranslation": "translate to civilian business impact — what was accomplished, what metrics, what outcome?"
+  },
+  "summary": "Plain English summary of what was extracted"
+}`;
+
+  if (docType.includes('Civilian Resume')) return `Extract from this resume and return ONLY this JSON (no markdown, no extra text).
+
+IMPORTANT: This resume may contain BOTH civilian jobs AND military assignments written in resume format. Extract ALL work experience regardless of whether it's from a company or military organization.
+
+{
+  "docType": "civilianResume",
+  "profile": {
+    "fullName": "", "email": "", "phone": "", "location": ""
+  },
+  "civilianJobs": [
+    {
+      "company": "company name OR military organization (e.g., 'Air Force Reserve Command', '73rd Airlift Squadron')",
+      "title": "job title as written on resume",
+      "location": "city, state OR base name",
+      "startDate": "YYYY or MM/YYYY format",
+      "endDate": "YYYY or MM/YYYY format, or 'Present'",
+      "description": "brief role description if provided",
+      "accomplishments": "Extract ALL bullet points with metrics. Keep them as separate bullets with line breaks."
+    }
+  ],
+  "skills": {
+    "technical": ["list of technical skills mentioned - tools, languages, systems, certifications"],
+    "soft": ["list of leadership/soft skills mentioned - communication, leadership, project management"]
+  },
+  "education": "all degrees with institutions",
+  "certifications": "all certifications and professional credentials listed",
+  "summary": "Plain English summary of what was extracted and added"
+}
+
+Extract EVERY job listed in the Professional Experience section. If a job is at a military base or unit, that's fine - put it in civilianJobs anyway.`;
+
+  return `Extract all military career information from this document and return ONLY this JSON:
+{
+  "docType": "${docType}",
+  "profile": {}, "assignments": [], "awards": [], "education": "",
+  "summary": "Plain English summary of what was extracted"
+}`;
+}
+
+async function applyExtraction(rawJson, docType, fileName) {
+  let data;
+  try {
+    data = JSON.parse(rawJson.replace(/```json|```/g, '').trim());
+  } catch(e) {
+    throw new Error('Could not parse AI response. Try again or use the paste option.');
+  }
+
+  const newAssignments = [...state.assignments];
+  const newCivilianJobs = [...state.civilianJobs];
+  const newAwards = [...state.awards];
+  let profileUpdates = {};
+
+  // Apply profile fields (from DD-214 or civilian resume)
+  if (data.profile) {
+    const p = data.profile;
+    const profileFields = ['fullName','branch','rank','mosRate','yearsOfService','separationDate','characterOfService','clearance','email','phone','location'];
+    profileFields.forEach(f => { if (p[f]) profileUpdates[f] = p[f]; });
+    if (p.education) profileUpdates.education = p.education;
+  }
+
+  // Apply single assignment (performance report)
+  if (data.assignment) {
+    const a = data.assignment;
+    const accs = data.keyAccomplishments?.length
+      ? data.keyAccomplishments.map(k => '• ' + k).join('\n')
+      : a.accomplishments;
+    newAssignments.unshift({ id:id(), source:'AI:'+docType, ...a, accomplishments: accs });
+  }
+
+  // Apply multiple assignments (DD-214)
+  if (data.assignments?.length) {
+    data.assignments.forEach(a => {
+      if (a.dutyTitle || a.base) newAssignments.push({ id:id(), source:'AI:'+docType, ...a });
+    });
+  }
+
+  // Apply civilian jobs (from civilian resume)
+  if (data.civilianJobs?.length) {
+    data.civilianJobs.forEach(j => {
+      if (j.title && j.company) newCivilianJobs.push({ id:id(), source:'AI:'+docType, ...j });
+    });
+  }
+
+  // Apply skills (from civilian resume)
+  if (data.skills) {
+    const currentTech = state.profile.technicalSkills || [];
+    const currentSoft = state.profile.softSkills || [];
+    const newTech = data.skills.technical || [];
+    const newSoft = data.skills.soft || [];
+    
+    // Merge without duplicates
+    const mergedTech = [...new Set([...currentTech, ...newTech])];
+    const mergedSoft = [...new Set([...currentSoft, ...newSoft])];
+    
+    if (newTech.length > 0) profileUpdates.technicalSkills = mergedTech;
+    if (newSoft.length > 0) profileUpdates.softSkills = mergedSoft;
+  }
+
+  // Apply certifications (from civilian resume)
+  if (data.certifications) {
+    const current = state.profile.certifications || '';
+    profileUpdates.certifications = current ? `${current}\n${data.certifications}` : data.certifications;
+  }
+
+  // Apply awards
+  const awardsData = data.award ? [data.award] : (data.awards || []);
+  awardsData.forEach(a => { if (a.name) newAwards.push({ id:id(), source:'AI:'+docType, ...a }); });
+
+  // Store the document record
+  const doc = { id:id(), name:fileName, type:docType, uploadDate:new Date().toISOString(), processed:true };
+
+  setState({
+    profile: { ...state.profile, ...profileUpdates },
+    assignments: newAssignments,
+    civilianJobs: newCivilianJobs,
+    awards: newAwards,
+    documents: [...state.documents, doc],
+    ui: { ...state.ui, docBusy:false, docStatus:'', docResult: data.summary || 'Extraction complete. Review your Experience page.', docError:'' }
+  });
+  showToast('Document processed! ✓');
+}
+
+async function processUpload() {
+  const fileEl = document.getElementById('d-file');
+  const typeEl = document.getElementById('d-type');
+  const file = fileEl?.files?.[0];
+  const docType = typeEl?.value;
+  if (!file) { showToast('Please select a file', false); return; }
+  if (!docType) { showToast('Please select a document type', false); return; }
+  if (!state.apiKey) { showToast('Add your API key in Settings first', false); return; }
+
+  setState({ ui: { ...state.ui, docBusy:true, docStatus:'🤖 Claude is reading your document...', docResult:null, docError:'' }});
+  try {
+    const base64 = await readFileAsBase64(file);
+    const mime = file.type.includes('pdf') ? 'application/pdf' : file.type;
+    const prompt = buildExtractionPrompt(docType);
+    const raw = await callClaudeWithFile(
+      'You are an expert at reading military documents and extracting structured data. Translate ALL military jargon to civilian equivalents. Return JSON only — no markdown, no extra text.',
+      prompt, base64, mime
+    );
+    await applyExtraction(raw, docType, file.name);
+  } catch(err) {
+    setState({ ui: { ...state.ui, docBusy:false, docStatus:'', docError:'Error: ' + err.message + '. Try the paste option below instead.' }});
+  }
+}
+
+async function processPastedDoc() {
+  const content = document.getElementById('dp-content')?.value?.trim();
+  const docType = document.getElementById('dp-type')?.value;
+  const name = document.getElementById('dp-name')?.value?.trim() || docType || 'Document';
+  if (!content) { showToast('Please paste document text', false); return; }
+  if (!docType) { showToast('Please select a document type', false); return; }
+  if (!state.apiKey) { showToast('Add your API key in Settings first', false); return; }
+
+  setState({ ui: { ...state.ui, docBusy:true, docStatus:'🤖 Extracting information...', docResult:null, docError:'' }});
+  try {
+    const prompt = buildExtractionPrompt(docType) + '\n\nDOCUMENT TEXT:\n' + content;
+    const raw = await callClaude(
+      'You are an expert at reading military documents and extracting structured data. Translate ALL military jargon to civilian equivalents. Return JSON only — no markdown.',
+      prompt
+    );
+    await applyExtraction(raw, docType, name);
+  } catch(err) {
+    setState({ ui: { ...state.ui, docBusy:false, docStatus:'', docError:'Error: ' + err.message }});
+  }
+}
+
+function removeDoc(did) { setState({ documents: state.documents.filter(d=>d.id!==did) }); }
+
+// ── Job Tracker ───────────────────────────────────────────────────────
+function renderJobs() {
+  const filter = state.ui.jobFilter || 'all';
+  const editId = state.ui.editJobId || null;
+  const addMode = state.ui.addJob || false;
+  const STATUSES = ['interested','applied','interviewing','offered','rejected','withdrawn'];
+  const filtered = filter==='all' ? state.jobs : state.jobs.filter(j=>j.status===filter);
+
+  const form = (job) => {
+    const j = job || { title:'',company:'',location:'',salaryRange:'',jobUrl:'',status:'interested',dateAdded:new Date().toISOString().split('T')[0],dateApplied:'',interviewDates:'',contactName:'',notes:'' };
+    const pre = job ? 'ej' : 'nj';
+    return `
+      <div class="card">
+        <h2>${job?'Edit Job':'Add New Job'}</h2>
+        
+        ${!job && state.apiKey ? `
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;margin-bottom:16px">
+          <div style="font-weight:700;color:#1e40af;margin-bottom:8px">🤖 AI Job Analysis</div>
+          <div style="font-size:13px;color:#1e3a8a;margin-bottom:12px">Paste a job URL or the full job description text. Claude will extract key details and analyze how well it fits your background.</div>
+          <div class="field" style="margin-bottom:10px">
+            <textarea id="job-analysis-input" rows="6" placeholder="Paste job URL (e.g., https://careers.company.com/job/12345) OR paste the full job description text..." style="font-size:13px"></textarea>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="analyzeJobPosting()" ${state.ui.jobAnalyzing?'disabled':''}>
+            ${state.ui.jobAnalyzing?'<div class="spinner"></div> Analyzing...':'🔍 Analyze Job'}
+          </button>
+          ${state.ui.jobAnalysisError?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:8px;margin-top:10px;font-size:12px;color:#dc2626">${esc(state.ui.jobAnalysisError)}</div>`:''}
+        </div>` : ''}
+        
+        ${state.ui.jobAnalysisResult ? `
+        <div style="background:#f0fdf4;border:2px solid #22c55e;border-radius:12px;padding:16px;margin-bottom:16px">
+          <div style="font-weight:700;color:#15803d;font-size:15px;margin-bottom:8px">✅ Job Analysis Complete</div>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:13px;margin-bottom:12px">
+            <span style="font-weight:600;color:#166534">Fit Score:</span><span>${state.ui.jobAnalysisResult.fitScore}/10 — ${esc(state.ui.jobAnalysisResult.fitLabel)}</span>
+            <span style="font-weight:600;color:#166534">Seniority:</span><span>${esc(state.ui.jobAnalysisResult.seniority)}</span>
+            ${state.ui.jobAnalysisResult.clearance?`<span style="font-weight:600;color:#166534">Clearance:</span><span>${esc(state.ui.jobAnalysisResult.clearance)}</span>`:''}
+          </div>
+          <div style="font-size:13px;color:#166534;line-height:1.6;margin-bottom:10px"><strong>Assessment:</strong> ${esc(state.ui.jobAnalysisResult.assessment)}</div>
+          <button class="btn btn-secondary btn-sm" onclick="toggleUI('jobAnalysisResult',null)">Clear Analysis</button>
+        </div>` : ''}
+        
+        <div class="grid2">
+          <div class="field"><label class="field-label">Job Title *</label><input id="${pre}-title" value="${esc(j.title)}"></div>
+          <div class="field"><label class="field-label">Company *</label><input id="${pre}-company" value="${esc(j.company)}"></div>
+          <div class="field"><label class="field-label">Location</label><input id="${pre}-location" value="${esc(j.location)}" placeholder="City, State or Remote"></div>
+          <div class="field"><label class="field-label">Salary Range</label><input id="${pre}-salaryRange" value="${esc(j.salaryRange)}" placeholder="$85k–$110k"></div>
+          <div class="field"><label class="field-label">Job URL</label><input id="${pre}-jobUrl" value="${esc(j.jobUrl)}" placeholder="https://..."></div>
+          <div class="field"><label class="field-label">Status</label>
+            <select id="${pre}-status">${STATUSES.map(s=>`<option ${j.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+          <div class="field"><label class="field-label">Date Added</label><input type="date" id="${pre}-dateAdded" value="${j.dateAdded}"></div>
+          <div class="field"><label class="field-label">Date Applied</label><input type="date" id="${pre}-dateApplied" value="${j.dateApplied||''}"></div>
+          <div class="field"><label class="field-label">Contact Name</label><input id="${pre}-contactName" value="${esc(j.contactName||'')}" placeholder="Recruiter name"></div>
+        </div>
+        <div class="field"><label class="field-label">Interview Dates & Details</label><textarea id="${pre}-interviewDates" rows="2" placeholder="Phone screen: 2/15 @ 2pm">${esc(j.interviewDates||'')}</textarea></div>
+        <div class="field"><label class="field-label">Notes</label><textarea id="${pre}-notes" rows="3" placeholder="Key requirements, culture, follow-ups...">${esc(j.notes||'')}</textarea></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="${job?`updateJob('${job.id}')`:'saveJob()'}">${job?'Update':'Save'}</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleUI('addJob',false);toggleUI('editJobId',null)">${'Cancel'}</button>
+        </div>
+      </div>`;
+  };
+
+  const jobCards = filtered.map(j=>{
+    if (editId===j.id) return form(j);
+    return `
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="font-weight:700;font-size:16px">${esc(j.title)}</span> ${statusBadge(j.status)}
+            </div>
+            <div style="font-size:14px;color:#4b5563">${esc(j.company)}${j.location?' — '+esc(j.location):''}</div>
+            ${j.salaryRange?`<div style="color:#16a34a;font-weight:600;font-size:14px">${esc(j.salaryRange)}</div>`:''}
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" onclick="toggleUI('editJobId','${j.id}')">✏</button>
+            <button class="btn btn-danger btn-sm" onclick="removeJob('${j.id}')">✕</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:12px;color:#9ca3af;margin-top:8px">
+          ${j.dateAdded?`<span>Added ${new Date(j.dateAdded).toLocaleDateString()}</span>`:''}
+          ${j.dateApplied?`<span>Applied ${new Date(j.dateApplied).toLocaleDateString()}</span>`:''}
+          ${j.contactName?`<span>Contact: ${esc(j.contactName)}</span>`:''}
+        </div>
+        ${j.interviewDates?`<div style="background:#eff6ff;border-radius:6px;padding:8px;font-size:12px;margin-top:8px">${esc(j.interviewDates)}</div>`:''}
+        ${j.notes?`<div style="background:#f9fafb;border-radius:6px;padding:8px;font-size:12px;margin-top:6px">${esc(j.notes)}</div>`:''}
+        ${j.jobUrl?`<a href="${esc(j.jobUrl)}" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;margin-top:6px;display:block">View posting →</a>`:''}
+      </div>`;
+  }).join('');
+
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h1 style="font-size:24px;font-weight:800;margin:0">Job Tracker</h1>
+      <button class="btn btn-primary" onclick="toggleUI('addJob',true)">+ Add Job</button>
+    </div>
+    <div class="grid3" style="margin-bottom:16px">
+      ${STATUSES.map(s=>`<div style="background:white;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:10px;text-align:center;cursor:pointer;${filter===s?'ring:2px solid blue':''}" onclick="toggleUI('jobFilter','${s}')">
+        <div style="font-size:22px;font-weight:800">${state.jobs.filter(j=>j.status===s).length}</div>
+        <div style="font-size:11px;color:#6b7280;text-transform:capitalize">${s}</div>
+      </div>`).join('')}
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;background:white;border-radius:8px;padding:10px 14px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+      <span style="font-size:13px;color:#6b7280">Filter:</span>
+      <select onchange="toggleUI('jobFilter',this.value)" style="width:auto;padding:4px 8px">
+        <option value="all" ${filter==='all'?'selected':''}>All (${state.jobs.length})</option>
+        ${STATUSES.map(s=>`<option value="${s}" ${filter===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)} (${state.jobs.filter(j=>j.status===s).length})</option>`).join('')}
+      </select>
+    </div>
+    ${addMode&&!editId?form(null):''}
+    ${filtered.length===0&&!addMode?'<div class="card" style="text-align:center;padding:40px;color:#9ca3af">💼 No jobs found. Add jobs you\'re interested in to start tracking.</div>':''}
+    ${jobCards}`;
+}
+
+function saveJob() {
+  const pre = 'nj';
+  const title = document.getElementById(pre+'-title')?.value?.trim();
+  const company = document.getElementById(pre+'-company')?.value?.trim();
+  if (!title||!company) { alert('Title and Company required'); return; }
+  const j = { id:id(), title, company, location:document.getElementById(pre+'-location')?.value, salaryRange:document.getElementById(pre+'-salaryRange')?.value, jobUrl:document.getElementById(pre+'-jobUrl')?.value, status:document.getElementById(pre+'-status')?.value, dateAdded:document.getElementById(pre+'-dateAdded')?.value, dateApplied:document.getElementById(pre+'-dateApplied')?.value, contactName:document.getElementById(pre+'-contactName')?.value, interviewDates:document.getElementById(pre+'-interviewDates')?.value, notes:document.getElementById(pre+'-notes')?.value };
+  setState({ jobs:[...state.jobs,j], ui:{...state.ui,addJob:false} });
+}
+
+function updateJob(jid) {
+  const pre = 'ej';
+  const title = document.getElementById(pre+'-title')?.value?.trim();
+  const company = document.getElementById(pre+'-company')?.value?.trim();
+  if (!title||!company) return;
+  const updated = { id:jid, title, company, location:document.getElementById(pre+'-location')?.value, salaryRange:document.getElementById(pre+'-salaryRange')?.value, jobUrl:document.getElementById(pre+'-jobUrl')?.value, status:document.getElementById(pre+'-status')?.value, dateAdded:document.getElementById(pre+'-dateAdded')?.value, dateApplied:document.getElementById(pre+'-dateApplied')?.value, contactName:document.getElementById(pre+'-contactName')?.value, interviewDates:document.getElementById(pre+'-interviewDates')?.value, notes:document.getElementById(pre+'-notes')?.value };
+  setState({ jobs:state.jobs.map(j=>j.id===jid?updated:j), ui:{...state.ui,editJobId:null} });
+}
+
+function removeJob(jid) { if(confirm('Delete this job?')) setState({ jobs: state.jobs.filter(j=>j.id!==jid) }); }
+
+async function analyzeJobPosting() {
+  const input = document.getElementById('job-analysis-input')?.value?.trim();
+  if (!input) { showToast('Please paste a job URL or description', false); return; }
+  if (!state.apiKey) { showToast('Add your API key in Settings first', false); return; }
+  
+  setState({ ui: { ...state.ui, jobAnalyzing: true, jobAnalysisError: '', jobAnalysisResult: null } });
+  
+  try {
+    const p = state.profile;
+    const veteranContext = `VETERAN PROFILE:
+Name: ${p.fullName || 'Not provided'}
+Branch: ${p.branch || 'N/A'} | Rank: ${p.rank || 'N/A'} | Years: ${p.yearsOfService || 'N/A'}
+Clearance: ${p.clearance || 'None'} (${p.clearanceStatus || 'N/A'})
+Technical Skills: ${(p.technicalSkills||[]).join(', ') || 'None listed'}
+Leadership Skills: ${(p.softSkills||[]).join(', ') || 'None listed'}
+Target Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?(i.subTypes?.length?i.name+' - '+i.subTypes.join(', '):i.name):i).join(', ') || 'Not specified'}
+
+RECENT EXPERIENCE:
+${[...state.assignments.slice(0,3).map(a=>`${a.dutyTitle} at ${a.base}: ${(a.accomplishments||'').slice(0,200)}`), ...state.civilianJobs.slice(0,2).map(j=>`${j.title} at ${j.company}: ${(j.accomplishments||'').slice(0,200)}`)].join('\n') || 'None'}`;
+
+    const analysisPrompt = `You are a veteran career coach analyzing a job posting for military-to-civilian fit.
+
+${veteranContext}
+
+JOB POSTING INPUT (could be a URL or full text):
+${input}
+
+TASK 1: Extract factual data (no creative content):
+- Job title
+- Company name
+- Location (or Remote/Hybrid status)
+- Clearance requirement (if mentioned)
+- Salary range (if mentioned)
+- Req ID (if mentioned)
+
+TASK 2: Generate original fit analysis:
+- Fit score: 1-10 (10 = excellent match)
+- Fit label: "Excellent Fit" / "Strong Fit" / "Moderate Fit" / "Weak Fit" / "Poor Fit"
+- Seniority: "On-Target" / "Stretch" / "Too Senior" / "Too Junior"
+- Assessment: 2-3 sentence plain-English explanation of fit, highlighting transferable skills and gaps
+
+Return ONLY this JSON (no markdown):
+{
+  "title": "extracted job title",
+  "company": "company name",
+  "location": "location or Remote",
+  "clearance": "clearance level if mentioned, else empty string",
+  "salaryRange": "salary if mentioned, else empty string",
+  "reqId": "req ID if found, else empty string",
+  "fitScore": <1-10>,
+  "fitLabel": "Excellent/Strong/Moderate/Weak/Poor Fit",
+  "seniority": "On-Target/Stretch/Too Senior/Too Junior",
+  "assessment": "Plain English fit explanation with specifics"
+}`;
+
+    const result = await callClaude(
+      'You are a military-to-civilian career transition expert. Extract factual job data and provide original fit analysis. Return valid JSON only.',
+      analysisPrompt
+    );
+    
+    let analysis;
+    try {
+      analysis = JSON.parse(result.replace(/```json|```/g, '').trim());
+    } catch(e) {
+      throw new Error('Could not parse analysis results');
+    }
+    
+    // Auto-populate the form with extracted data
+    if (analysis.title) document.getElementById('nj-title').value = analysis.title;
+    if (analysis.company) document.getElementById('nj-company').value = analysis.company;
+    if (analysis.location) document.getElementById('nj-location').value = analysis.location;
+    if (analysis.salaryRange) document.getElementById('nj-salaryRange').value = analysis.salaryRange;
+    
+    // Build notes field with extracted details
+    let notesContent = '';
+    if (analysis.clearance) notesContent += `Clearance: ${analysis.clearance}\n`;
+    if (analysis.reqId) notesContent += `Req ID: ${analysis.reqId}\n`;
+    notesContent += input.startsWith('http') ? `\n${input}` : ''; // Add URL if it was provided
+    document.getElementById('nj-notes').value = notesContent;
+    
+    setState({ ui: { ...state.ui, jobAnalyzing: false, jobAnalysisResult: analysis } });
+    showToast('✓ Job analyzed! Review the fit assessment above.');
+  } catch(err) {
+    setState({ ui: { ...state.ui, jobAnalyzing: false, jobAnalysisError: err.message } });
+  }
+}
+
+// ── Resume Builder ────────────────────────────────────────────────────
+function renderResume() {
+  const jobs = state.jobs;
+  const selJob = state.ui.resumeJob || '';
+  const fmt = state.ui.resumeFmt || 'ats';
+  const mode = state.ui.resumeMode || 'targeted'; // 'targeted' or 'generic'
+  const job = jobs.find(j=>j.id===selJob);
+  const busy = state.ui.resumeBusy || false;
+  const status = state.ui.resumeStatus || '';
+  const result = state.ui.resumeResult || null;
+  const error = state.ui.resumeError || '';
+
+  const jobOptions = jobs.map(j=>`<option value="${j.id}" ${selJob===j.id?'selected':''}>${esc(j.title)} — ${esc(j.company)}</option>`).join('');
+
+  const canGenTargeted = !busy && !!selJob && !!state.apiKey;
+  const canGenGeneric  = !busy && !!state.apiKey && !!state.profile?.fullName;
+
+  return `
+    <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">Resume Builder</h1>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px">AI-powered resume writing — Claude reads your actual experience and writes a real resume</p>
+    ${!state.apiKey?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:20px;font-size:14px;color:#92400e">⚠️ <strong>API Key Required.</strong> Go to <strong>⚙ API Settings</strong> in the sidebar to add your Claude API key first.</div>`:''}
+
+    <!-- Mode selector tabs -->
+    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb;width:fit-content">
+      <button onclick="toggleUI('resumeMode','targeted')" style="padding:10px 22px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:${mode==='targeted'?'#2563eb':'white'};color:${mode==='targeted'?'white':'#6b7280'};transition:all 0.15s">🎯 Tailored to a Job</button>
+      <button onclick="toggleUI('resumeMode','generic')" style="padding:10px 22px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:${mode==='generic'?'#2563eb':'white'};color:${mode==='generic'?'white':'#6b7280'};transition:all 0.15s;border-left:1.5px solid #e5e7eb">📋 General Resume</button>
+    </div>
+
+    <div class="card">
+      <h2>${mode==='targeted'?'Configure & Generate Tailored Resume':'Generate General-Purpose Resume'}</h2>
+
+      ${mode==='targeted'?`
+      <p style="font-size:13px;color:#6b7280;margin:-8px 0 16px">Select a job from your tracker — Claude will tailor your resume and cover letter specifically for it.</p>
+      <div class="grid2">
+        <div class="field"><label class="field-label">Target Job</label>
+          <select id="resume-job" onchange="toggleUI('resumeJob',this.value)"><option value="">Select a job...</option>${jobOptions}</select></div>
+        <div class="field"><label class="field-label">Resume Format</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            ${[{id:'ats',l:'ATS-Friendly',d:'Passes screening bots'},{id:'visual',l:'Professional',d:'Polished for humans'}].map(f=>`
+              <div onclick="toggleUI('resumeFmt','${f.id}')" style="padding:10px;border:2px solid ${fmt===f.id?'#2563eb':'#e5e7eb'};background:${fmt===f.id?'#eff6ff':'white'};border-radius:8px;cursor:pointer">
+                <div style="font-weight:600;font-size:13px">${f.l}</div>
+                <div style="font-size:11px;color:#6b7280">${f.d}</div>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>
+      ${job?`<div style="background:#f9fafb;border-radius:8px;padding:10px;font-size:13px;margin-bottom:14px"><strong>${esc(job.title)}</strong> at <span style="color:#2563eb">${esc(job.company)}</span>${job.location?' — '+esc(job.location):''}${job.salaryRange?` <span style="color:#16a34a;font-weight:600">· ${esc(job.salaryRange)}</span>`:''}</div>`:''}
+      <div class="field" style="margin-bottom:16px">
+        <label class="field-label">Optional: Special instructions for this resume</label>
+        <textarea id="resume-instructions" rows="3" placeholder="e.g., Consolidate all active duty into one section called 'Military Experience'&#10;Emphasize leadership over technical skills&#10;Keep it to one page&#10;Lead with my security clearance" style="font-size:13px" onchange="toggleUI('resumeInstructions',this.value)">${esc(state.ui.resumeInstructions||'')}</textarea>
+        <div style="font-size:11px;color:#9ca3af;margin-top:3px">Tell Claude how you want this specific resume structured or weighted — it will follow your lead.</div>
+      </div>
+      <button class="btn btn-primary" onclick="generateResume()" ${canGenTargeted?'':'disabled'} style="padding:12px 24px">
+        ${busy?'<div class="spinner"></div> Building...':'🚀 Generate Resume & Cover Letter'}
+      </button>
+      ${!state.jobs.length&&!busy?`<p style="font-size:13px;color:#f59e0b;margin-top:10px">💡 No jobs in your tracker yet — <button onclick="setState({view:'jobs'})" style="background:none;border:none;color:#2563eb;cursor:pointer;font-size:13px;font-weight:600;padding:0">add one</button>, or use the General Resume tab instead.</p>`:''}
+      `:`
+      <p style="font-size:13px;color:#6b7280;margin:-8px 0 16px">Generates a strong all-purpose resume you can hand out at career fairs, networking events, or any job posting. Also creates a short professional bio you can use on LinkedIn or email.</p>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-size:13px;color:#1e40af;margin-bottom:16px">
+        💡 This resume highlights your strongest experience across all industries. Use it when you don't have a specific job posting yet.
+      </div>
+      <div class="grid2" style="margin-bottom:14px">
+        <div class="field"><label class="field-label">Resume Format</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            ${[{id:'ats',l:'ATS-Friendly',d:'Passes screening bots'},{id:'visual',l:'Professional',d:'Polished for humans'}].map(f=>`
+              <div onclick="toggleUI('resumeFmt','${f.id}')" style="padding:10px;border:2px solid ${fmt===f.id?'#2563eb':'#e5e7eb'};background:${fmt===f.id?'#eff6ff':'white'};border-radius:8px;cursor:pointer">
+                <div style="font-weight:600;font-size:13px">${f.l}</div>
+                <div style="font-size:11px;color:#6b7280">${f.d}</div>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="field"><label class="field-label">Optional: Any specific focus areas?</label>
+          <input id="generic-focus" placeholder="e.g., leadership roles, project management, defense sector..." value="${esc(state.ui.genericFocus||'')}">
+          <div style="font-size:11px;color:#9ca3af;margin-top:4px">Leave blank for a broad general resume</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="generateGenericResume()" ${canGenGeneric?'':'disabled'} style="padding:12px 24px">
+        ${busy?'<div class="spinner"></div> Building...':'📋 Generate General Resume & Bio'}
+      </button>
+      ${!state.profile?.fullName&&!busy?`<p style="font-size:13px;color:#f59e0b;margin-top:10px">⚠️ Complete your profile first — <button onclick="setState({view:'profile'})" style="background:none;border:none;color:#2563eb;cursor:pointer;font-size:13px;font-weight:600;padding:0">go to Profile</button>.</p>`:''}
+      `}
+
+      ${busy?`<div style="background:#eff6ff;border-radius:8px;padding:12px;margin-top:12px;display:flex;align-items:center;gap:10px"><div class="spinner"></div><div><div style="font-weight:600;color:#1e40af;font-size:14px">${status}</div><div style="font-size:12px;color:#3b82f6;margin-top:2px">Takes 20–40 seconds — Claude is reading your experience</div></div></div>`:''}
+      ${error?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;color:#dc2626">${esc(error)}</div>`:''}
+    </div>
+    ${result?renderResumeResult(result,fmt):''}`;
+}
+
+function renderResumeResult(result, fmt) {
+  const sc = result.ats?.score;
+  const scoreGrad = sc>=80?'linear-gradient(135deg,#22c55e,#16a34a)':sc>=60?'linear-gradient(135deg,#f59e0b,#d97706)':'linear-gradient(135deg,#ef4444,#dc2626)';
+  const isGeneric = result.isGeneric || false;
+  return `
+    ${!isGeneric && result.ats ? `
+    <div class="card">
+      <h2>🔍 ATS Analysis</h2>
+      <div style="display:flex;gap:24px;align-items:start">
+        <div class="score-circle" style="background:${scoreGrad}">
+          <span style="font-size:28px;font-weight:800">${sc}</span>
+          <span style="font-size:11px">Grade: ${result.ats.grade}</span>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:16px;margin-bottom:8px">${esc(result.ats.summary||'')}</div>
+          ${(result.ats.transferable_skills_recognized||[]).length?`<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:700;color:#2563eb;margin-bottom:4px">🎖️ MILITARY → CIVILIAN SKILLS RECOGNIZED</div>${(result.ats.transferable_skills_recognized||[]).map(s=>`<div style="font-size:13px;color:#1e40af">• ${esc(s)}</div>`).join('')}</div>`:''}
+          ${(result.ats.strengths||[]).length?`<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:700;color:#16a34a;margin-bottom:4px">✅ STRENGTHS</div>${(result.ats.strengths||[]).map(s=>`<div style="font-size:13px;color:#166534">• ${esc(s)}</div>`).join('')}</div>`:''}
+          ${(result.ats.gaps||[]).length?`<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:4px">💡 SUGGESTIONS FOR IMPROVEMENT</div>${(result.ats.gaps||[]).map(g=>`<div style="font-size:13px;color:#92400e">• ${esc(g)}</div>`).join('')}</div>`:''}
+          ${(result.ats.keywords_missing||[]).length?`<div><div style="font-size:12px;font-weight:700;color:#dc2626;margin-bottom:4px">🔑 MISSING KEYWORDS</div><div>${(result.ats.keywords_missing||[]).map(k=>`<span class="tag tag-orange">${esc(k)}</span>`).join('')}</div></div>`:''}
+        </div>
+      </div>
+    </div>` : ''}
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h2 style="margin:0">📄 ${isGeneric?'General Resume':'Resume'} — ${fmt==='ats'?'ATS-Friendly':'Professional'} Format</h2>
+        <button class="btn btn-primary btn-sm" onclick="printResume()">🖨 Print / Save PDF</button>
+      </div>
+      <p style="font-size:12px;color:#6b7280;margin:0 0 12px">Click Print / Save PDF → in print dialog choose <strong>Save as PDF</strong></p>
+      <div class="resume-preview" style="font-family:${fmt==='ats'?'Arial':'Georgia'},serif">${esc(result.resume)}</div>
+    </div>
+    ${result.bio ? `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <h2 style="margin:0">🙋 Professional Bio</h2>
+          <p style="font-size:12px;color:#6b7280;margin:4px 0 0">Use this on LinkedIn, email introductions, or anywhere you need a quick summary of who you are.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="downloadBio()">⬇ Download .txt</button>
+      </div>
+      <div class="resume-preview" id="bio-text">${esc(result.bio)}</div>
+    </div>` : ''}
+    ${result.coverLetter ? `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0">✉️ Cover Letter</h2>
+        <button class="btn btn-primary btn-sm" onclick="downloadCover()">⬇ Download .txt</button>
+      </div>
+      <div class="resume-preview" id="cover-text">${esc(result.coverLetter)}</div>
+    </div>` : ''}`;
+}
+
+async function generateResume() {
+  const selJob = state.ui.resumeJob;
+  if (!selJob) { alert('Select a job first'); return; }
+  if (!state.profile?.fullName) { alert('Complete your profile first (add your name in Profile)'); return; }
+  if (!state.apiKey) { alert('Add your API key in Settings first'); return; }
+  const job = state.jobs.find(j=>j.id===selJob);
+
+  // Capture latest instructions value from textarea before generating
+  const instrEl = document.getElementById('resume-instructions');
+  if (instrEl) toggleUI('resumeInstructions', instrEl.value);
+
+  const setStatus = (s) => setState({ ui:{...state.ui, resumeBusy:true, resumeStatus:s, resumeError:'', resumeResult:null} });
+
+  const context = buildResumeContext(job);
+
+  try {
+    setStatus('✍️ Writing tailored resume...');
+    const p = state.profile;
+    const contactBlock = [
+      p.fullName || '[Name]',
+      [p.phone, p.email].filter(Boolean).join(' | '),
+      p.location || ''
+    ].filter(Boolean).join('\n');
+
+    const userInstructions = state.ui.resumeInstructions?.trim() || '';
+
+    const resume = await callClaude(
+      `You are a senior resume writer who specializes in military-to-civilian career transitions. You write resumes that read like a real person's story — confident, specific, and human. You never use hollow buzzwords or AI-sounding filler.
+
+WRITING RULES you follow on every resume:
+- Translate ALL military jargon to civilian equivalents — hiring managers don't know what MOS codes mean
+- Every bullet point must have at least one number: team size, budget, percentage, time saved, people trained, contracts won
+- Use varied, strong action verbs — don't start every bullet with "Led" or "Managed"
+- Vary bullet length — mix short punchy lines with one longer detailed line per section
+- NO filler phrases: "results-driven", "proven track record", "dynamic leader", "synergistic", "leveraged", "passionate about", "detail-oriented", "hard-working", "go-getter", "strategic thinker"
+- Write the Professional Summary in first-person voice — it should sound like the veteran speaking, not a template
+- Mirror keywords from the target job description naturally — don't keyword-stuff
+- The contact section MUST be EXACTLY the pre-formatted block provided — do not reformat, add, or remove anything from it
+- Return ONLY the resume content, no preamble, no commentary`,
+      `Write a complete, tailored resume for this veteran applying to the target job.
+
+${context}
+
+${userInstructions ? `VETERAN'S SPECIAL INSTRUCTIONS — follow these exactly:\n${userInstructions}\n` : ''}
+
+Use this EXACT contact block at the very top (copy it verbatim, do not change it):
+${contactBlock}
+
+Then continue with these sections using === headers: Professional Summary (2-3 sentences, first-person, specific and confident), Core Competencies (12-16 skills as comma-separated list), Professional Experience (reverse chronological, 4-6 bullets each with metrics), Awards & Recognition, Education, Certifications. Translate ALL military terms. Quantify every achievement.`
+    );
+
+    setStatus('✉️ Writing cover letter...');
+    const coverLetter = await callClaude(
+      `You are a career coach who writes cover letters that actually get read. You write them the way a confident, accomplished person would write them — specific, direct, and human. You avoid every cliché in the book.
+
+COVER LETTER RULES:
+- Open with something specific and compelling — NOT "I am writing to express my interest in..."
+- Never use: "I am passionate about", "I believe I would be a great fit", "Please find attached", "Thank you for your consideration", "I look forward to hearing from you"
+- Mention 2-3 real accomplishments with actual numbers
+- Connect military experience to business outcomes the company cares about
+- Sound like a real person wrote this at 9pm after doing research on the company — not like a template
+- Close with confidence, not desperation
+- Under 380 words. Plain text paragraphs only.`,
+      `Write a tailored cover letter for this veteran.\n\n${context}\n\nWrite 3-4 paragraphs. Paragraph 1: Strong opening hook — lead with your biggest relevant strength, not with "I am applying for...". Paragraph 2-3: Two specific accomplishments with numbers that directly connect to what this company needs. Final paragraph: Direct, confident close — why this role, what you bring, what happens next.`
+    );
+
+    setStatus('🔍 Running ATS analysis...');
+    const atsRaw = await callClaude(
+      `You are a military-to-civilian hiring expert and ATS specialist. Your job is to evaluate how well a VETERAN'S resume matches a civilian job posting.
+
+CRITICAL CONTEXT: Veterans often have the RIGHT skills but use DIFFERENT words. Your analysis must:
+1. Recognize transferable skills even when phrased differently
+2. Give credit for military experience that translates to civilian competencies
+3. Score based on CAPABILITY, not just keyword matches
+4. Be constructive and actionable in feedback
+
+TRANSFERABLE SKILL RECOGNITION RULES:
+- "Led team of 50" = Team Leadership, People Management ✓
+- "Managed $5M budget" = Budget Management, Financial Oversight ✓
+- "Coordinated with 12 agencies" = Stakeholder Management, Cross-functional Collaboration ✓
+- "Planned 30-day operations" = Project Management, Strategic Planning ✓
+- "Briefed senior leaders" = Executive Communication, Presentation Skills ✓
+- "Trained 200 personnel" = Training & Development, Instructional Design ✓
+- "Oversaw equipment maintenance" = Asset Management, Process Improvement ✓
+- Military awards/decorations = Achievement, Excellence, Recognition ✓
+
+SCORING PHILOSOPHY:
+- 90-100: Excellent fit — veteran has demonstrated the core competencies, even if worded differently
+- 75-89: Strong fit — has most competencies, minor gaps that are easily fillable
+- 60-74: Moderate fit — has foundational skills, would need some upskilling or domain shift
+- 45-59: Weak fit — significant gaps, but not impossible with training
+- 0-44: Poor fit — fundamentally different career track
+
+DO NOT penalize veterans for:
+- Using military terminology that clearly translates (e.g., "NCOIC" = "Team Lead")
+- Quantifying differently (e.g., "platoon" instead of "team")
+- Lacking exact industry buzzwords when they have the underlying skill
+
+Return ONLY valid JSON with no markdown:`,
+      `Analyze this VETERAN'S resume against the target civilian job.
+
+RESUME:
+${resume}
+
+JOB POSTING:
+Title: ${job.title}
+Company: ${job.company}
+Requirements/Notes: ${job.notes || 'No specific requirements provided'}
+
+Return this JSON structure ONLY (no markdown, no backticks):
+{
+  "score": <0-100>,
+  "grade": "A/B/C/D/F",
+  "summary": "One sentence explaining overall fit",
+  "strengths": [
+    "3-4 specific strengths this veteran brings (focus on transferable skills)",
+    "Be specific with examples from their resume"
+  ],
+  "gaps": [
+    "2-4 areas for improvement",
+    "Frame as 'Consider adding X based on your Y experience' NOT 'You lack X'"
+  ],
+  "transferable_skills_recognized": [
+    "List military experiences you translated to civilian skills"
+  ],
+  "keywords_missing": ["important keywords not present"],
+  "keywords_found": ["keywords that ARE present"]
+}`
+    );
+
+    let ats = { score:75, grade:'C', summary:'Moderate fit with transferable military experience.', strengths:[], gaps:[], transferable_skills_recognized:[], keywords_missing:[], keywords_found:[] };
+    try { 
+      const cleaned = atsRaw.replace(/```json|```/g, '').trim();
+      ats = JSON.parse(cleaned); 
+    } catch(e) {
+      console.error('ATS parse error:', e, atsRaw);
+    }
+
+    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume,coverLetter,ats}} });
+  } catch(err) {
+    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'. Check your API key in Settings.'} });
+  }
+}
+
+async function generateGenericResume() {
+  if (!state.profile?.fullName) { alert('Complete your profile first (at least your name and branch)'); return; }
+  if (!state.apiKey) { alert('Add your API key in Settings first'); return; }
+
+  const focus = document.getElementById('generic-focus')?.value?.trim() || '';
+  toggleUI('genericFocus', focus);
+
+  const setStatus = (s) => setState({ ui:{...state.ui, resumeBusy:true, resumeStatus:s, resumeError:'', resumeResult:null} });
+
+  const p = state.profile;
+  const exp = [...state.assignments.map(a=>`MILITARY: ${a.dutyTitle} | ${a.rank||''} | ${a.unit||''} | ${a.base||''} | ${a.startDate||'?'}-${a.endDate||'Present'}\nAccomplishments:\n${a.accomplishments||'None'}`), ...state.civilianJobs.map(j=>`CIVILIAN: ${j.title} at ${j.company} | ${j.startDate||'?'}-${j.endDate||'Present'}\nAccomplishments:\n${j.accomplishments||'None'}`)].join('\n---\n');
+  const awards = state.awards.map(a=>`${a.name}${a.civilianTranslation?' — '+a.civilianTranslation:''}`).join('\n');
+
+  const context = `VETERAN PROFILE:
+Name: ${p.fullName} | Phone: ${p.phone||'N/A'} | Email: ${p.email||'N/A'} | Location: ${p.location||'N/A'}
+Branch: ${p.branch} | Rank: ${p.rank} | Years of Service: ${p.yearsOfService}
+MOS/Rate: ${p.mosRate||'N/A'} | Security Clearance: ${p.clearance||'None'} (${p.clearanceStatus||'N/A'})
+Work Preference: ${p.workPreference||'N/A'} | Willing to Relocate: ${p.willingToRelocate||'N/A'}
+Technical Skills: ${(p.technicalSkills||[]).join(', ')||'None'}
+Leadership/Soft Skills: ${(p.softSkills||[]).join(', ')||'None'}
+Education: ${p.education||'N/A'}
+Certifications: ${p.certifications||'N/A'}
+Professional Summary: ${p.elevatorPitch||'Not written'}
+Target Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?(i.subTypes?.length?i.name+' ('+i.subTypes.join(', ')+')':i.name):i).join(', ')||'Not specified'}
+
+EXPERIENCE:
+${exp||'None'}
+
+AWARDS & DECORATIONS:
+${awards||'None'}
+
+${focus?`FOCUS AREAS REQUESTED BY VETERAN: ${focus}`:'NO SPECIFIC FOCUS — write a broad, versatile general resume'}`;
+
+  const systemPrompt = `You are a senior resume writer who specializes in military-to-civilian career transitions. You write resumes that read like a real person's story — confident, specific, and human. You never use hollow buzzwords or AI-sounding filler.
+
+WRITING RULES you follow on every resume:
+- Translate ALL military jargon to civilian equivalents
+- Every bullet point must have at least one number: team size, budget, percentage, time saved, contracts won
+- Use varied, strong action verbs — don't start every bullet with "Led" or "Managed"
+- Vary bullet length — mix short punchy lines with longer detailed lines
+- NO filler phrases: "results-driven", "proven track record", "dynamic leader", "synergistic", "leveraged", "passionate about", "detail-oriented"
+- Write the Professional Summary in first-person voice — it should sound like the veteran speaking, not a template
+- The contact section MUST include: full name, phone, email, city/state from profile
+- Return ONLY the resume content, no preamble or commentary`;
+
+  try {
+    setStatus('✍️ Writing your general resume...');
+    const contactBlock = [
+      p.fullName || '[Name]',
+      [p.phone, p.email].filter(Boolean).join(' | '),
+      p.location || ''
+    ].filter(Boolean).join('\n');
+
+    const resume = await callClaude(
+      systemPrompt,
+      `Write a strong, versatile general-purpose resume for this veteran. This resume should present them at their best without being targeted to a single job.
+
+${context}
+
+Use this EXACT contact block at the very top (copy it verbatim, do not change it):
+${contactBlock}
+
+Then continue with === headers. Sections: Professional Summary (3 sentences, first-person, confident and specific), Core Competencies (14-18 skills as a clean list), Professional Experience (reverse chronological — military and civilian, 4-6 bullets each with metrics), Awards & Recognition, Education, Certifications.
+
+Make the Professional Experience highlight their most transferable and impressive achievements. This is a document they can hand to anyone and be proud of.`
+    );
+
+    setStatus('🙋 Writing your professional bio...');
+    const bio = await callClaude(
+      'You write crisp, confident professional bios for veterans transitioning to civilian careers. Bios should sound human, specific, and compelling — like a LinkedIn "About" section written by someone who knows their own value.',
+      `Write a 3-paragraph professional bio for this veteran.
+
+${context}
+
+Paragraph 1 (3-4 sentences): Who they are, years of service, branch, and their career-defining achievement — be specific with numbers.
+Paragraph 2 (3-4 sentences): The skills and experiences that make them uniquely valuable to civilian employers — translate military strengths into business impact.
+Paragraph 3 (2-3 sentences): What they're looking for next and what they bring to the table — forward-looking and confident.
+
+Rules:
+- First person ("I" voice)
+- No military jargon
+- No clichés: "passionate about", "proven track record", "results-driven", "seeking to leverage"
+- Sound like a real, confident human who knows their value
+- Plain text paragraphs only`
+    );
+
+    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume, bio, isGeneric:true}} });
+  } catch(err) {
+    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'. Check your API key in Settings.'} });
+  }
+}
+
+function downloadBio() {
+  const text = document.getElementById('bio-text')?.innerText || '';
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+  a.download = `Professional_Bio_${(state.profile.fullName||'').replace(/\s+/g,'_')}.txt`;
+  a.click();
+}
+
+function buildResumeContext(job) {
+  const p = state.profile;
+  const exp = [...state.assignments.map(a=>`MILITARY (${a.employmentType||'Active Duty'}): ${a.dutyTitle} | ${a.unit||''} | ${a.base||''} | ${a.startDate||'?'}-${a.endDate||'Present'}\nAccomplishments:\n${a.accomplishments||'None'}`), ...state.civilianJobs.map(j=>`CIVILIAN: ${j.title} at ${j.company} | ${j.startDate||'?'}-${j.endDate||'Present'}\nAccomplishments:\n${j.accomplishments||'None'}`)].join('\n---\n');
+  const awards = state.awards.map(a=>`${a.name}${a.civilianTranslation?' — '+a.civilianTranslation:''}`).join('\n');
+  const docs = state.documents.map(d=>`[${d.type}] ${d.name}:\n${(d.content||'').slice(0,500)}`).join('\n---\n');
+  return `VETERAN CONTACT INFO (copy exactly into resume header — do not omit or alter):
+Full Name: ${p.fullName||'[Name not set — ask veteran to complete Profile]'}
+Phone: ${p.phone||'[Phone not set]'}
+Email: ${p.email||'[Email not set]'}
+City/State: ${p.location||'[Location not set]'}
+
+VETERAN BACKGROUND:
+Branch: ${p.branch||'N/A'} | Rank: ${p.rank||'N/A'} | Years of Service: ${p.yearsOfService||'N/A'}${p.reserveGuard?' | Reserve/Guard: Yes (concurrent military & civilian employment)':''}
+MOS/Rate: ${p.mosRate||'N/A'} | Clearance: ${p.clearance||'None'} (${p.clearanceStatus||'N/A'})
+Work Preference: ${p.workPreference||'N/A'} | Willing to Relocate: ${p.willingToRelocate||'N/A'}
+Technical Skills: ${(p.technicalSkills||[]).join(', ')||'None'}
+Leadership/Soft Skills: ${(p.softSkills||[]).join(', ')||'None'}
+Education: ${p.education||'N/A'}
+Certifications: ${p.certifications||'N/A'}
+Professional Summary: ${p.elevatorPitch||'Not written'}
+Target Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?(i.subTypes?.length?i.name+' ('+i.subTypes.join(', ')+')':i.name):i).join(', ')||'Not specified'}
+
+EXPERIENCE:
+${exp||'None'}
+
+AWARDS:
+${awards||'None'}
+
+PERFORMANCE DOCUMENTS:
+${docs||'None'}
+
+TARGET JOB:
+Title: ${job.title}
+Company: ${job.company}
+Location: ${job.location||'N/A'}
+Salary: ${job.salaryRange||'N/A'}
+Job Notes / Requirements: ${job.notes||'None'}`;
+}
+
+function printResume() {
+  const text = document.querySelector('.resume-preview')?.innerText || '';
+  const fmt = state.ui.resumeFmt || 'ats';
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Resume — ${state.profile.fullName}</title><style>body{font-family:${fmt==='ats'?'Arial':'Georgia'},serif;font-size:11pt;color:#111;max-width:750px;margin:0.75in auto;line-height:1.6}h2{font-size:10pt;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #333;padding-bottom:2px;margin:14px 0 6px}li{margin-bottom:2px}</style></head><body><pre style="font-family:inherit;white-space:pre-wrap;font-size:11pt">${text.replace(/</g,'&lt;')}</pre></body></html>`);
+  w.document.close(); setTimeout(()=>w.print(),400);
+}
+
+function downloadCover() {
+  const text = document.getElementById('cover-text')?.innerText || '';
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+  a.download = `Cover_Letter_${(state.profile.fullName||'').replace(/\s+/g,'_')}.txt`;
+  a.click();
+}
+
+// ── Settings ──────────────────────────────────────────────────────────
+function renderSettings() {
+  const k = state.apiKey;
+  return `
+    <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">API Settings</h1>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px">Connect Claude AI to enable real resume generation</p>
+    <div class="card">
+      <h2>Claude API Key</h2>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#1e40af">
+        <strong>How to get your free API key:</strong><br>
+        1. Go to <strong>console.anthropic.com</strong> and create a free account<br>
+        2. Click <strong>API Keys</strong> in the left sidebar<br>
+        3. Click <strong>Create Key</strong> → name it "VetCareer" → copy it<br>
+        4. Paste it below and click Save<br><br>
+        💡 Free tier is enough for dozens of resumes. Each generation costs ~$0.01–0.05.
+      </div>
+      <div class="field"><label class="field-label">Your API Key</label>
+        <div style="display:flex;gap:8px">
+          <input type="password" id="api-key-input" value="${esc(k)}" placeholder="sk-ant-..." style="font-family:monospace">
+          <button class="btn btn-secondary" onclick="toggleApiKeyVis()">👁 Show</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary" onclick="saveApiKey()">💾 Save Key</button>
+        ${k?'<button class="btn btn-secondary" onclick="clearApiKey()">Remove Key</button>':''}
+      </div>
+      ${k?`<div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px;margin-top:14px;font-size:14px;color:#166534">✅ API key configured — Resume Builder is ready</div>`:''}
+    </div>
+    <div class="card">
+      <h2>Data Backup & Restore</h2>
+      <p style="font-size:13px;color:#4b5563;margin:0 0 16px">Your data lives in your browser's local storage. Export it to save a backup, or import to restore from a previous export.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="exportData()">⬇ Export All Data</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">⬆ Import Data</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-top:14px;font-size:13px;color:#92400e">
+        💾 <strong>Recommendation:</strong> Export your data regularly. If you clear your browser cache or switch devices, you can import it back to restore everything.
+      </div>
+    </div>
+    <div class="card">
+      <h2>Privacy & Security</h2>
+      <div style="font-size:13px;color:#4b5563;space-y:8px">
+        <p>🔒 Your API key is stored only in your browser's local storage — never on any server.</p>
+        <p>🔒 Resume generation calls go directly from your browser to Anthropic — no third parties.</p>
+        <p>🔒 All profile data and documents are stored locally in your browser only.</p>
+        <p>⚠️ Clearing your browser cache will erase saved data. Always download completed resumes as PDFs.</p>
+      </div>
+    </div>`;
+}
+
+function saveApiKey() {
+  const val = document.getElementById('api-key-input')?.value?.trim();
+  if (!val) return;
+  setState({ apiKey: val });
+  showToast('API key saved! ✓');
+}
+function clearApiKey() { if(confirm('Remove API key?')) setState({ apiKey:'' }); }
+function toggleApiKeyVis() {
+  const el = document.getElementById('api-key-input');
+  if (el) el.type = el.type==='password' ? 'text' : 'password';
+}
+
+function exportData() {
+  const exportPackage = {
+    version: '1.0',
+    exportDate: new Date().toISOString(),
+    data: {
+      profile: state.profile,
+      assignments: state.assignments,
+      civilianJobs: state.civilianJobs,
+      awards: state.awards,
+      documents: state.documents.map(d => ({ ...d, content: undefined })), // Don't export raw file contents
+      jobs: state.jobs,
+      checklist: state.checklist,
+      // Note: API key is deliberately NOT exported for security
+    }
+  };
+
+  const json = JSON.stringify(exportPackage, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `VetCareer_Backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✓ Data exported! Check your downloads folder.');
+}
+
+function importData(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      
+      if (!imported.version || !imported.data) {
+        throw new Error('Invalid backup file format');
+      }
+
+      // Confirm before overwriting
+      if (!confirm('This will replace all current data with the imported backup. Your API key will not be affected. Continue?')) {
+        return;
+      }
+
+      // Restore data
+      setState({
+        profile: imported.data.profile || {},
+        assignments: imported.data.assignments || [],
+        civilianJobs: imported.data.civilianJobs || [],
+        awards: imported.data.awards || [],
+        documents: imported.data.documents || [],
+        jobs: imported.data.jobs || [],
+        checklist: imported.data.checklist || {},
+        view: 'dashboard' // Navigate to dashboard after import
+      });
+
+      showToast('✓ Data imported successfully!');
+    } catch (err) {
+      alert('Error importing data: ' + err.message + '. Make sure you selected a valid VetCareer backup file.');
+    }
+  };
+  reader.readAsText(file);
+  
+  // Reset file input so the same file can be imported again if needed
+  event.target.value = '';
+}
+
+// ── Gap Analysis ──────────────────────────────────────────────────────
+function renderGap() {
+  const p = state.profile;
+  const gaps = [], good = [];
+
+  if (!p?.fullName) gaps.push({sev:'high',area:'Profile',issue:'Name not entered',fix:'Go to Profile and enter your name'});
+  else good.push('Profile started');
+  if (!p?.elevatorPitch) gaps.push({sev:'high',area:'Profile',issue:'No professional summary written',fix:'Add an elevator pitch in Profile — the first thing hiring managers read'});
+  else good.push('Professional summary written');
+  if (!p?.mosRate) gaps.push({sev:'low',area:'Profile',issue:'MOS/Rate not specified',fix:'Add your military specialty code'});
+  if (!(p?.technicalSkills?.length)) gaps.push({sev:'medium',area:'Skills',issue:'No technical skills listed',fix:'Add technical skills in Profile → Skills'});
+  else good.push(`${p.technicalSkills.length} technical skill(s) listed`);
+  if (!(p?.softSkills?.length)) gaps.push({sev:'medium',area:'Skills',issue:'No leadership/soft skills listed',fix:'Add leadership skills in Profile → Skills'});
+  if (!p?.education) gaps.push({sev:'low',area:'Education',issue:'Education not filled in',fix:'Add education — military training counts too'});
+  else good.push('Education on file');
+  if (!p?.certifications) gaps.push({sev:'low',area:'Certs',issue:'No certifications listed',fix:'Add certifications — even military ones like PMP, Security+'});
+  else good.push('Certifications listed');
+  if (!state.apiKey) gaps.push({sev:'high',area:'Settings',issue:'No API key — AI resume generation disabled',fix:'Go to ⚙ API Settings and add your Claude API key'});
+  else good.push('API key configured ✓');
+  if (state.assignments.length===0) gaps.push({sev:'high',area:'Experience',issue:'No assignment history added',fix:'Go to Experience → add your military assignments'});
+  else good.push(`${state.assignments.length} assignment(s) on record`);
+  const noAccomp = state.assignments.filter(a=>!a.accomplishments?.trim());
+  if (noAccomp.length>0) gaps.push({sev:'high',area:'Experience',issue:`${noAccomp.length} assignment(s) missing accomplishments`,fix:'Edit each assignment — add 3–5 bullets with numbers (team size, budget, % improvement)'});
+  const noMetrics = state.assignments.filter(a=>a.accomplishments&&!/\d/.test(a.accomplishments));
+  if (noMetrics.length>0) gaps.push({sev:'medium',area:'Experience',issue:`${noMetrics.length} assignment(s) have bullets but no numbers`,fix:'Quantify: "Led 12-person team" beats "Led a team"'});
+  if (state.awards.length===0) gaps.push({sev:'medium',area:'Awards',issue:'No awards or decorations added',fix:'Add awards in Profile → Awards section'});
+  else good.push(`${state.awards.length} award(s) listed`);
+  const noTrans = state.awards.filter(a=>!a.civilianTranslation);
+  if (noTrans.length>0) gaps.push({sev:'medium',area:'Awards',issue:`${noTrans.length} award(s) missing civilian translation`,fix:"Edit each award — hiring managers don't know what ARCOM means"});
+  if (state.jobs.length===0) gaps.push({sev:'medium',area:'Jobs',issue:'No jobs in tracker',fix:'Add jobs to the Job Tracker — needed to generate tailored resumes'});
+  else good.push(`${state.jobs.length} job(s) tracked`);
+  if (state.civilianJobs.length>0) good.push(`${state.civilianJobs.length} civilian job(s) added`);
+  if (p?.clearance&&p?.clearanceStatus==='Active') good.push(`Active ${p.clearance} clearance — high value`);
+
+  const hi=gaps.filter(g=>g.sev==='high'), med=gaps.filter(g=>g.sev==='medium'), lo=gaps.filter(g=>g.sev==='low');
+  const score = Math.max(0, 100-hi.length*20-med.length*8-lo.length*3);
+  const scoreGrad = score>=80?'linear-gradient(135deg,#22c55e,#16a34a)':score>=50?'linear-gradient(135deg,#f59e0b,#d97706)':'linear-gradient(135deg,#ef4444,#dc2626)';
+
+  const gapHtml = (list, cls, label, tag) => list.length===0?'':`
+    <div class="card">
+      <h2>${label}</h2>
+      ${list.map(g=>`<div class="${cls}"><div style="display:flex;justify-content:space-between"><div><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280">${g.area}</span><div style="font-weight:600;font-size:14px;margin:2px 0">${esc(g.issue)}</div><div style="font-size:13px;color:#4b5563">💡 ${esc(g.fix)}</div></div><span class="badge" style="${tag}">${g.sev.toUpperCase()}</span></div></div>`).join('')}
+    </div>`;
+
+  const industryGaps = (p?.targetIndustries||[]).map(ind=>{
+    const industryName = typeof ind === 'string' ? ind : ind.name;
+    const subTypes = typeof ind === 'object' && ind.subTypes ? ind.subTypes : [];
+    const recs = SKILL_RECS[industryName]||[];
+    const have = [...(p.technicalSkills||[]),(p.certifications||'')].join(' ').toLowerCase();
+    const missing = recs.filter(s=>!have.includes(s.toLowerCase()));
+    const label = subTypes.length ? `${industryName} — ${subTypes.join(', ')}` : industryName;
+    return `<div style="padding:10px;background:#f9fafb;border-radius:8px;margin-bottom:8px">
+      <div style="font-weight:600;font-size:13px;margin-bottom:4px">${esc(label)}</div>
+      ${missing.length===0?'<span style="color:#16a34a;font-size:12px">✓ Good skill coverage</span>':`<div style="font-size:12px;color:#6b7280;margin-bottom:4px">Consider adding:</div><div>${missing.map(s=>`<span class="tag tag-orange">${esc(s)}</span>`).join('')}</div>`}
+    </div>`;
+  }).join('');
+
+  return `
+    <h1 style="font-size:24px;font-weight:800;margin:0 0 20px">Gap Analysis</h1>
+    <div class="card">
+      <h2>Resume Readiness Score</h2>
+      <div style="display:flex;gap:24px;align-items:center">
+        <div class="score-circle" style="background:${scoreGrad}">
+          <span style="font-size:32px;font-weight:800">${score}</span><span style="font-size:11px">/ 100</span>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:17px;margin-bottom:6px">${score>=80?'✅ Ready to Apply':score>=50?'⚠️ Needs Work':'🔴 Significant Gaps'}</div>
+          <div style="font-size:13px;color:#4b5563;margin-bottom:10px">${score>=80?'Strong profile. Address remaining items to maximize interview rates.':score>=50?'Good start. Fix critical items and your response rate will improve significantly.':'Focus on completing profile and assignment history before applying.'}</div>
+          <div style="display:flex;gap:16px;font-size:13px;font-weight:600">
+            <span style="color:#dc2626">${hi.length} Critical</span>
+            <span style="color:#d97706">${med.length} Important</span>
+            <span style="color:#2563eb">${lo.length} Minor</span>
+            <span style="color:#16a34a">${good.length} ✓ Good</span>
+          </div>
+          <div style="height:8px;background:#e5e7eb;border-radius:4px;margin-top:12px"><div style="height:8px;border-radius:4px;background:${scoreGrad};width:${score}%"></div></div>
+        </div>
+      </div>
+    </div>
+    ${good.length?`<div class="card"><h2>✅ Strengths</h2><div class="grid2">${good.map(s=>`<div class="gap-good"><span style="color:#22c55e;margin-right:6px">✓</span>${esc(s)}</div>`).join('')}</div></div>`:''}
+    ${gapHtml(hi,'gap-high','🔴 Critical — Fix These First','background:#fee2e2;color:#dc2626')}
+    ${gapHtml(med,'gap-med','⚠️ Important — Address Soon','background:#fef9c3;color:#a16207')}
+    ${gapHtml(lo,'gap-low','ℹ️ Minor — Nice to Have','background:#dbeafe;color:#1d4ed8')}
+    ${industryGaps?`<div class="card"><h2>📊 Skills vs Target Industries</h2>${industryGaps}</div>`:''}`;
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────
+function toggleUI(key, value) {
+  const newUI = { ...state.ui };
+  if (value === undefined) newUI[key] = !newUI[key];
+  else newUI[key] = value;
+  setState({ ui: newUI });
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1d4ed8;color:white;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2)';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+function bindEvents() {
+  // Enter key on login
+  const loginInput = document.getElementById('login-email');
+  if (loginInput) loginInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+}
+
+// ── Mobile Nav ───────────────────────────────────────────────────────────
+function openNav() {
+  document.querySelector('.sidebar').classList.add('open');
+  document.getElementById('nav-overlay').classList.add('show');
+}
+function closeNav() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('nav-overlay').classList.remove('show');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+loadState();
+render();
 </script>
 </body>
 </html>
