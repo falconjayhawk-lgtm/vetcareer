@@ -218,7 +218,8 @@ function updateJob(jid) {
     activityLog: log,
   };
   setState({ jobs:state.jobs.map(j=>j.id===jid?updated:j), ui:{...state.ui,editJobId:null} });
-  showToast('Job updated! ✓');
+  if (typeof trackAction==='function') trackAction('job_added');
+    showToast('Job updated! ✓');
 }
 
 function quickStatusChange(jid, newStatus) {

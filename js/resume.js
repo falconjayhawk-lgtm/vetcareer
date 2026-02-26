@@ -497,6 +497,7 @@ Return ONLY this JSON (no markdown, no extra text):
     let ats = { score:75, grade:'B', summary:'Good transferable match.', transferable_strengths:[], strengths:[], gaps:[], keywords_missing:[], keywords_found:[], clearance_value:'', coaching_tip:'' };
     try { ats = JSON.parse(atsRaw.replace(/```json|```/g,'').trim()); } catch(e) {}
 
+    if (typeof trackAction==='function') trackAction('resume_generate');
     setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume:resumeToUse,coverLetter,ats}} });
   } catch(err) {
     setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'.'} });

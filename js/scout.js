@@ -155,12 +155,26 @@ function renderScout() {
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <button class="btn btn-primary" onclick="runScout()" ${busy?'disabled':''} style="padding:10px 22px">
-          ${busy?'<div class="spinner"></div> Searching...':'🏛️ Search Federal Jobs'}
+          ${busy?'<div class="spinner"></div> Searching...':'🏛️ Search Federal Jobs (USAJobs)'}
         </button>
         <button class="btn btn-secondary" onclick="promptSaveSearch()" style="padding:10px 16px">💾 Save Search</button>
       </div>
       ${busy?`<div style="background:#eff6ff;border-radius:8px;padding:10px;margin-top:10px;font-size:13px;color:#1e40af">Fetching live listings from USAJobs...</div>`:''}
       ${error?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-top:10px;color:#dc2626;font-size:13px">❌ ${esc(error)}</div>`:''}
+
+      <!-- Civilian boards inline -->
+      <div style="margin-top:18px;padding-top:16px;border-top:1px solid #f3f4f6">
+        <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Also search civilian boards with these keywords →</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px" id="inline-board-btns">
+          <button onclick="scoutOpenBoard('linkedin')" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#374151">💼 LinkedIn</button>
+          <button onclick="scoutOpenBoard('clearance')" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#374151">🔐 ClearanceJobs</button>
+          <button onclick="scoutOpenBoard('indeed')" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#374151">🔍 Indeed</button>
+          <button onclick="scoutOpenBoard('zip')" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#374151">⚡ ZipRecruiter</button>
+          <button onclick="scoutOpenBoard('glassdoor')" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#374151">🪟 Glassdoor</button>
+          <button onclick="scoutOpenAllBoards()" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;color:#1d4ed8">🚀 All at once</button>
+        </div>
+        <p style="font-size:11px;color:#9ca3af;margin:6px 0 0">Uses the keywords and location you typed above</p>
+      </div>
     </div>
 
     ${results.length > 0 ? `
@@ -270,6 +284,32 @@ function renderScout() {
 
 }
 
+// ── Civilian board quick-launch (reads live input values) ──────────────
+function scoutGetCurrentInputs() {
+  const kw  = document.getElementById('sc-keywords')?.value?.trim() || state.ui.scoutKeywords || '';
+  const loc = document.getElementById('sc-location')?.value?.trim() || state.ui.scoutLocation || '';
+  return { kw, loc };
+}
+
+function scoutOpenBoard(board) {
+  const { kw, loc } = scoutGetCurrentInputs();
+  const k = encodeURIComponent(kw);
+  const l = encodeURIComponent(loc);
+  const urls = {
+    linkedin:  `https://www.linkedin.com/jobs/search/?keywords=${k}&location=${l}`,
+    clearance: `https://www.clearancejobs.com/jobs?query=${k}&location=${l}`,
+    indeed:    `https://www.indeed.com/jobs?q=${k}&l=${l}`,
+    zip:       `https://www.ziprecruiter.com/jobs-search?search=${k}&location=${l}`,
+    glassdoor: `https://www.glassdoor.com/Job/jobs.htm?sc.keyword=${k}&locT=C&locName=${l}`,
+  };
+  const url = urls[board];
+  if (url) window.open(url, '_blank');
+}
+
+function scoutOpenAllBoards() {
+  ['linkedin','clearance','indeed','zip','glassdoor'].forEach(b => scoutOpenBoard(b));
+}
+
 // ── Single Search ──────────────────────────────────────────────────────
 async function runScout() {
   const keywords  = document.getElementById('sc-keywords')?.value?.trim() || '';
@@ -285,6 +325,7 @@ async function runScout() {
 
   try {
     const jobs = await fetchScoutJobs({ keywords, location, clearance, seniority });
+    if (typeof trackAction==='function') trackAction('scout_search');
     setState({ ui: { ...state.ui, scoutBusy: false, scoutResults: jobs,
       scoutError: jobs.length === 0 ? 'No listings found. Try broader keywords or a different location.' : ''
     }});

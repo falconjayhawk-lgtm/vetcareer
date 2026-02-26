@@ -325,7 +325,8 @@ async function applyExtraction(rawJson, docType, fileName) {
     documents: [...state.documents, doc],
     ui: { ...state.ui, docBusy:false, docStatus:'', docResult: data.summary || 'Extraction complete. Review your Experience page.', docError:'' }
   });
-  showToast('Document processed! ✓');
+  if (typeof trackAction === 'function') trackAction('doc_upload');
+    showToast('Document processed! ✓');
 }
 
 async function processUpload() {

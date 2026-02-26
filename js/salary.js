@@ -146,6 +146,7 @@ Return ONLY this JSON (no markdown):
     let result;
     try { result = extractJSON(raw); } catch(e) { throw new Error('Could not parse salary data. Try again.'); }
     setState({ ui:{...state.ui, salaryBusy:false, salaryResult:result} });
+    if (typeof trackAction==='function') trackAction('salary_generate');
     showToast('✓ Salary intelligence ready!');
   } catch(err) {
     console.error('[Salary] ERROR:', err.message, err);

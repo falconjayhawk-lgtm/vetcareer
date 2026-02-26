@@ -122,6 +122,7 @@ Return ONLY this JSON:
     let result;
     try { result = extractJSON(raw); } catch(e) { throw new Error('Could not parse result. Try again.'); }
     setState({ ui:{...state.ui, networkBusy:false, networkResult:result} });
+    if (typeof trackAction==='function') trackAction('network_generate');
     showToast('✓ Email generated!');
   } catch(err) {
     setState({ ui:{...state.ui, networkBusy:false, networkError:err.message} });

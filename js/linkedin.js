@@ -178,6 +178,7 @@ Return ONLY this JSON (no markdown, no extra text):
     let result;
     try { result = extractJSON(raw); } catch(e) { throw new Error('Could not parse result. Try again.'); }
     setState({ ui:{...state.ui, linkedinBusy:false, linkedinResult:result} });
+    if (typeof trackAction==='function') trackAction('linkedin_generate');
     showToast('✓ LinkedIn profile generated!');
   } catch(err) {
     setState({ ui:{...state.ui, linkedinBusy:false, linkedinError:err.message} });

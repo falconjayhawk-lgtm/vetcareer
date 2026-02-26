@@ -13,6 +13,8 @@ function render() {
       ${renderSidebar()}
       <div class="main">${renderView()}</div>
     </div>`;
+  if (typeof trackView === 'function') trackView(state.view);
+  if (state.view === 'stats' && typeof loadStats === 'function') setTimeout(loadStats, 50);
 
   const backBtn = document.getElementById('mobile-back');
   if (backBtn) backBtn.style.display = state.view !== 'dashboard' ? 'block' : 'none';
@@ -106,6 +108,7 @@ function renderView() {
     case 'gap': return renderGap();
     case 'settings': return renderSettings();
     case 'faq': return renderFAQ();
+    case 'stats': return renderStats();
     default: return renderDashboard();
   }
 }

@@ -131,6 +131,7 @@ Return ONLY this JSON:
     let result;
     try { result = JSON.parse(raw.replace(/```json|```/g,'').trim()); } catch(e) { throw new Error('Could not parse result. Try again.'); }
     setState({ ui:{...state.ui, refBusy:false, refResult:result} });
+    if (typeof trackAction==='function') trackAction('refletter_generate');
     showToast('✓ Reference letter generated!');
   } catch(err) {
     setState({ ui:{...state.ui, refBusy:false, refError:err.message} });

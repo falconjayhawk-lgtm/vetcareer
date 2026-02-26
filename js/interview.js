@@ -150,6 +150,7 @@ Return ONLY this JSON (no markdown, no extra text):
     let result;
     try { result = extractJSON(raw); } catch(e) { throw new Error('Could not parse results. Try again.'); }
     setState({ ui:{...state.ui, interviewBusy:false, interviewResult:result} });
+    if (typeof trackAction==='function') trackAction('interview_generate');
     showToast('✓ Interview prep generated!');
   } catch(err) {
     console.error('[Interview] ERROR:', err.message, err);
