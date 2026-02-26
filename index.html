@@ -1493,7 +1493,7 @@ function renderResume() {
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">Resume Builder</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px">AI-powered resume writing — Claude reads your actual experience and writes a real resume</p>
-    ${!state.apiKey?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:20px;font-size:14px;color:#92400e">⚠️ <strong>API Key Required.</strong> Go to <strong>⚙ API Settings</strong> in the sidebar to add your Claude API key first.</div>`:''}
+    ${!state.apiKey?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-bottom:20px;font-size:14px;color:#92400e">⚠️ <strong>API Key Required.</strong> Go to <strong>⚙ Settings</strong> to add your Claude API key first.</div>`:''}
 
     <!-- Mode selector tabs -->
     <div style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb;width:fit-content">
@@ -1915,8 +1915,9 @@ function downloadCover() {
 function renderSettings() {
   const k = state.apiKey;
   return `
-    <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">API Settings</h1>
-    <p style="color:#6b7280;font-size:14px;margin:0 0 20px">Connect Claude AI to enable real resume generation</p>
+    <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">Settings</h1>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px">Manage your API key and data</p>
+    
     <div class="card">
       <h2>Claude API Key</h2>
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#1e40af">
@@ -1939,6 +1940,7 @@ function renderSettings() {
       </div>
       ${k?`<div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px;margin-top:14px;font-size:14px;color:#166534">✅ API key configured — Resume Builder is ready</div>`:''}
     </div>
+    
     <div class="card">
       <h2>Data Backup & Restore</h2>
       <p style="font-size:13px;color:#4b5563;margin:0 0 16px">Your data lives in your browser's local storage. Export it to save a backup, or import to restore from a previous export.</p>
@@ -1957,7 +1959,7 @@ function renderSettings() {
         <p>🔒 Your API key is stored only in your browser's local storage — never on any server.</p>
         <p>🔒 Resume generation calls go directly from your browser to Anthropic — no third parties.</p>
         <p>🔒 All profile data and documents are stored locally in your browser only.</p>
-        <p>⚠️ Clearing your browser cache will erase saved data. Always download completed resumes as PDFs.</p>
+        <p>⚠️ Clearing your browser cache will erase saved data. Always export backups and download completed resumes as PDFs.</p>
       </div>
     </div>`;
 }
