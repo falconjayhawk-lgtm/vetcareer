@@ -382,7 +382,7 @@ TWO-PAGE RULES (absolute)
 - Max 15 words per bullet.
 - Summary: 2-3 sentences.
 - Core Competencies: one comma-separated line.
-- ${wantNoAwards ? 'NO awards section — user requested.' : 'Awards: names only, one line.'}
+- NO awards or medals section — civilian employers don't value military decorations. Use awards data only as supporting context for experience bullets.
 - Combine or omit roles pre-2010.
 - Return ONLY the resume. No preamble or commentary.
 
@@ -408,7 +408,7 @@ Single comma-separated line.
 Per role: **Title** | Org | Location | Years
 Then max 3 bullets, each under 12 words with one metric.
 
-${wantNoAwards ? '' : '=== AWARDS & RECOGNITION ===\nMedal names only, one line.\n\n'}=== EDUCATION ===
+=== EDUCATION ===
 === CERTIFICATIONS ===
 
 FINAL CHECK: Count your bullets. If more than 20, delete the weakest ones until you have 20 or fewer.`;
@@ -577,7 +577,7 @@ SECTIONS (use === headers):
 1. === PROFESSIONAL SUMMARY === (2 sentences MAX)
 2. === CORE COMPETENCIES === (single comma-separated line, no bullets, 14-18 skills)
 3. === PROFESSIONAL EXPERIENCE === (reverse chronological — most recent first)
-4. === AWARDS & RECOGNITION === (medal/award names only, single line, no descriptions)
+4. NO awards section — skip military medals entirely. Civilian hiring managers don't value decorations. Use awards data only as context for experience bullets.
 5. === EDUCATION ===
 6. === CERTIFICATIONS ===
 
