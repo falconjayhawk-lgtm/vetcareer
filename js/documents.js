@@ -222,7 +222,11 @@ CRITICAL RULE: Classify jobs carefully based on BOTH the employer AND the job ti
 async function applyExtraction(rawJson, docType, fileName) {
   let data;
   try {
-    data = JSON.parse(rawJson.replace(/```json|```/g, '').trim());
+    const cleaned = rawJson.replace(/```json|```/g, '').trim();
+    // Find JSON object in response in case there's extra text
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in response');
+    data = JSON.parse(jsonMatch[0]);
   } catch(e) {
     throw new Error('Could not parse AI response. Try again or use the paste option.');
   }
