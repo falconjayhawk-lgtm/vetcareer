@@ -15,7 +15,34 @@ function renderResume() {
   const canGenTargeted = !busy && !!selJob;
   const canGenGeneric  = !busy && !!!!state.profile?.fullName;
 
+  const showModal = state.ui.resumeModal && result;
+
   return `
+    ${showModal ? `
+    <!-- Post-generation success modal -->
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="toggleUI('resumeModal',false)">
+      <div style="background:white;border-radius:16px;padding:28px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)" onclick="event.stopPropagation()">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:48px;margin-bottom:8px">🎉</div>
+          <div style="font-size:20px;font-weight:800;color:#1f2937;margin-bottom:4px">Your resume is ready!</div>
+          <div style="font-size:13px;color:#6b7280">Scroll down to view, download, or print it. What would you like to do next?</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button onclick="exportResumeToWord();toggleUI('resumeModal',false)" style="padding:12px;border:none;background:#2563eb;color:white;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-align:left">
+            📝 Download as Word Document
+          </button>
+          <button onclick="printResume();toggleUI('resumeModal',false)" style="padding:12px;border:none;background:#f9fafb;border:1.5px solid #e5e7eb;color:#1f2937;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-align:left">
+            🖨 Print / Save as PDF
+          </button>
+          ${!result.isGeneric ? `<button onclick="setState({view:'interview'});toggleUI('resumeModal',false)" style="padding:12px;border:none;background:#f9fafb;border:1.5px solid #e5e7eb;color:#1f2937;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-align:left">
+            🎤 Prep for the Interview
+          </button>` : ''}
+          <button onclick="toggleUI('resumeModal',false)" style="padding:10px;border:none;background:none;color:#6b7280;font-size:13px;cursor:pointer">
+            Keep reviewing my resume
+          </button>
+        </div>
+      </div>
+    </div>` : ''}
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">Resume Builder</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px">AI-powered resume writing — Claude reads your actual experience and writes a real resume</p>
     
@@ -80,7 +107,34 @@ function renderResume() {
       ${!state.profile?.fullName&&!busy?`<p style="font-size:13px;color:#f59e0b;margin-top:10px">⚠️ Complete your profile first — <button onclick="setState({view:'profile'})" style="background:none;border:none;color:#2563eb;cursor:pointer;font-size:13px;font-weight:600;padding:0">go to Profile</button>.</p>`:''}
       `}
 
-      ${busy?`<div style="background:#eff6ff;border-radius:8px;padding:12px;margin-top:12px;display:flex;align-items:center;gap:10px"><div class="spinner"></div><div><div style="font-weight:600;color:#1e40af;font-size:14px">${status}</div><div style="font-size:12px;color:#3b82f6;margin-top:2px">Takes 20–40 seconds — Claude is reading your experience</div></div></div>`:''}
+      ${busy?`<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px;margin-top:12px">
+        <div style="font-weight:700;color:#1e40af;font-size:14px;margin-bottom:12px">🤖 Claude is building your resume...</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'#22c55e':'#2563eb'};color:white">
+            ${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'✓':'1'}
+          </div>
+          <div style="font-size:13px;color:${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'#16a34a':status.startsWith('✍️')?'#1e40af':'#9ca3af'};font-weight:${status.startsWith('✍️')?'600':'400'}">
+            Analyzing experience &amp; job requirements${status.startsWith('✍️')?' ...':''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:${['🔍','✉️'].some(s=>status.startsWith(s))?'#22c55e':status.startsWith('✍️')||status.startsWith('✂️')?'#2563eb':'#e5e7eb'};color:${status.startsWith('✍️')||['🔍','✉️','✂️'].some(s=>status.startsWith(s))?'white':'#9ca3af'}">
+            ${['🔍','✉️'].some(s=>status.startsWith(s))?'✓':'2'}
+          </div>
+          <div style="font-size:13px;color:${['🔍','✉️'].some(s=>status.startsWith(s))?'#16a34a':status.startsWith('✍️')||status.startsWith('✂️')?'#1e40af':'#9ca3af'};font-weight:${status.startsWith('✍️')||status.startsWith('✂️')?'600':'400'}">
+            Writing your tailored resume${status.startsWith('✍️')||status.startsWith('✂️')?' ...':''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:${['🔍','✉️'].some(s=>status.startsWith(s))?'#2563eb':'#e5e7eb'};color:${['🔍','✉️'].some(s=>status.startsWith(s))?'white':'#9ca3af'}">
+            3
+          </div>
+          <div style="font-size:13px;color:${['🔍','✉️'].some(s=>status.startsWith(s))?'#1e40af':'#9ca3af'};font-weight:${['🔍','✉️'].some(s=>status.startsWith(s))?'600':'400'}">
+            Scoring fit &amp; writing cover letter${['🔍','✉️'].some(s=>status.startsWith(s))?' ...':''}
+          </div>
+        </div>
+        <div style="font-size:11px;color:#3b82f6">Takes 20–40 seconds — Claude reads your actual experience</div>
+      </div>`:''}
       ${error?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;color:#dc2626">${esc(error)}</div>`:''}
     </div>
     ${result?renderResumeResult(result,fmt):''}`;
@@ -498,7 +552,7 @@ Return ONLY this JSON (no markdown, no extra text):
     try { ats = JSON.parse(atsRaw.replace(/```json|```/g,'').trim()); } catch(e) {}
 
     if (typeof trackAction==='function') trackAction('resume_generate');
-    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume:resumeToUse,coverLetter,ats}} });
+    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume:resumeToUse,coverLetter,ats}, resumeModal:true} });
   } catch(err) {
     setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'.'} });
   }
@@ -609,7 +663,7 @@ Rules:
 - Plain text paragraphs only`
     );
 
-    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume, bio, isGeneric:true}} });
+    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume, bio, isGeneric:true}, resumeModal:true} });
   } catch(err) {
     setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'.'} });
   }
