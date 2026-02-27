@@ -1,162 +1,141 @@
 // ── Export ─────────────────────────────────────────────────────────────
-// Generates real .docx files using the docx library (loaded via docx.min.js).
+// Downloads resume as RTF — opens natively in Word, Pages, Google Docs.
 
-// ── Resume Parser ──────────────────────────────────────────────────────
-function parseResumeText(text) {
-  const lines = text.split('\n').map(l => l.trim());
-  const result = { name: '', contact: [], sections: [] };
-  let currentSection = null;
-  let headerDone = false;
-
-  for (const line of lines) {
-    if (!line) continue;
-    if (line.startsWith('===')) {
-      const title = line.replace(/===/g, '').trim();
-      currentSection = { title, lines: [] };
-      result.sections.push(currentSection);
-      headerDone = true;
-      continue;
-    }
-    if (!headerDone) {
-      if (!result.name) result.name = line;
-      else result.contact.push(line);
-      continue;
-    }
-    if (currentSection) currentSection.lines.push(line);
-  }
-  return result;
-}
-
-// ── Build DOCX ─────────────────────────────────────────────────────────
-function buildResumeDocx(parsed) {
-  const { Document, Packer, Paragraph, TextRun, AlignmentType, LevelFormat, BorderStyle } = docx;
-  const BLUE = '1E3A8A', DARK = '1F2937', GRAY = '6B7280';
-  const children = [];
-
-  // Name
-  if (parsed.name) {
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 40 },
-      children: [new TextRun({ text: parsed.name, bold: true, size: 36, color: DARK, font: 'Calibri' })]
-    }));
-  }
-
-  // Contact lines
-  parsed.contact.forEach(line => {
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 20 },
-      children: [new TextRun({ text: line, size: 18, color: GRAY, font: 'Calibri' })]
-    }));
-  });
-
-  // Header divider
-  children.push(new Paragraph({
-    spacing: { before: 80, after: 160 },
-    border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: BLUE } },
-    children: []
-  }));
-
-  // Sections
-  parsed.sections.forEach(section => {
-    children.push(new Paragraph({
-      spacing: { before: 200, after: 80 },
-      border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: BLUE } },
-      children: [new TextRun({ text: section.title, bold: true, size: 20, color: BLUE, font: 'Calibri', allCaps: true })]
-    }));
-
-    section.lines.forEach(line => {
-      if (!line) return;
-
-      // Bullet point
-      if (/^[•\-·*]/.test(line)) {
-        const text = line.replace(/^[•\-·*]\s*/, '');
-        children.push(new Paragraph({
-          numbering: { reference: 'bullets', level: 0 },
-          spacing: { after: 40 },
-          children: [new TextRun({ text, size: 20, color: DARK, font: 'Calibri' })]
-        }));
-        return;
-      }
-
-      // Role/title line with year and separator
-      if (/\d{4}/.test(line) && /[|–\-—]/.test(line)) {
-        const parts = line.split(/\s*\|\s*/);
-        const runs = [];
-        parts.forEach((part, idx) => {
-          if (idx > 0) runs.push(new TextRun({ text: '  |  ', size: 20, color: GRAY, font: 'Calibri' }));
-          const isDate = /\d{4}/.test(part) && idx === parts.length - 1;
-          runs.push(new TextRun({ text: part, bold: idx === 0, size: 20, color: isDate ? GRAY : DARK, font: 'Calibri' }));
-        });
-        children.push(new Paragraph({ spacing: { before: 140, after: 40 }, children: runs }));
-        return;
-      }
-
-      // Normal paragraph
-      children.push(new Paragraph({
-        spacing: { after: 40 },
-        children: [new TextRun({ text: line, size: 20, color: DARK, font: 'Calibri' })]
-      }));
-    });
-  });
-
-  return new Document({
-    numbering: {
-      config: [{ reference: 'bullets', levels: [{ level: 0, format: LevelFormat.BULLET, text: '\u2022', alignment: AlignmentType.LEFT,
-        style: { paragraph: { indent: { left: 360, hanging: 180 } }, run: { font: 'Calibri', size: 20 } } }] }]
-    },
-    styles: { default: { document: { run: { font: 'Calibri', size: 20, color: DARK } } } },
-    sections: [{ properties: { page: { size: { width: 12240, height: 15840 }, margin: { top: 864, right: 1080, bottom: 864, left: 1080 } } }, children }]
-  });
-}
-
-// ── Main resume export ─────────────────────────────────────────────────
-async function exportResumeToWord() {
+function exportResumeToWord() {
   const resumeEl = document.getElementById('resume-text-output');
   const resumeText = resumeEl ? (resumeEl.innerText || resumeEl.textContent || '') : '';
-
   if (resumeText.trim().length < 50) { showToast('Generate a resume first', false); return; }
-  if (typeof docx === 'undefined') { showToast('Export library loading — try again in a moment', false); return; }
-
   showToast('Building Word document...', true);
   try {
-    const parsed = parseResumeText(resumeText);
-    const doc = buildResumeDocx(parsed);
-    const buffer = await docx.Packer.toBuffer(doc);
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const rtf = buildRTF(resumeText);
+    const blob = new Blob([rtf], { type: 'application/rtf' });
     const name = ((state.profile && state.profile.fullName) || 'Resume').replace(/\s+/g, '_');
-    saveAs(blob, name + '_Resume.docx');
-    showToast('✓ Resume downloaded as Word document');
+    saveAs(blob, name + '_Resume.rtf');
+    showToast('✓ Resume downloaded — open in Word or Google Docs');
   } catch (err) {
-    console.error('DOCX export error:', err);
+    console.error('Export error:', err);
     showToast('Export failed: ' + err.message, false);
   }
 }
 
-// ── Letter export ──────────────────────────────────────────────────────
+function buildRTF(text) {
+  const lines = text.split('\n');
+  const BLUE = '\\red30\\green58\\blue138';   // #1E3A8A
+  const GRAY = '\\red107\\green114\\blue128'; // #6B7280
+  const DARK = '\\red31\\green41\\blue55';    // #1F2937
+
+  function esc(s) {
+    return s
+      .replace(/\\/g, '\\\\')
+      .replace(/\{/g, '\\{')
+      .replace(/\}/g, '\\}')
+      .replace(/[^\x00-\x7F]/g, c => {
+        const code = c.charCodeAt(0);
+        return code > 255 ? `\\u${code}?` : `\\'${code.toString(16).padStart(2,'0')}`;
+      });
+  }
+
+  function clean(s) {
+    return s.replace(/^===\s*/,'').replace(/\s*===\s*$/,'').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/^#+\s*/,'').trim();
+  }
+
+  const parts = [];
+  parts.push(
+    '{\\rtf1\\ansi\\deff0' +
+    `{\\fonttbl{\\f0 Calibri;}}` +
+    `{\\colortbl;${BLUE};${GRAY};${DARK};}` +
+    '\\paperw12240\\paperh15840' +
+    '\\margl1080\\margr1080\\margt864\\margb864' +
+    '\\f0\\fs20\\cf3'
+  );
+
+  let headerDone = false;
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) { parts.push('\\par'); continue; }
+    const cl = clean(line);
+    if (!cl) continue;
+
+    // Section header
+    if (line.startsWith('===')) {
+      parts.push(
+        '\\pard\\sb200\\sa80' +
+        '\\brdrb\\brdrs\\brdrw10\\brdrcf1\\brsp20' +
+        `\\f0\\fs18\\b\\cf1\\caps ${esc(cl)}` +
+        '\\caps0\\b0\\cf3\\par'
+      );
+    }
+    // Name — first line before any section
+    else if (!headerDone && !cl.includes('@') && !cl.includes('|') && cl.length > 2 && cl.length < 70) {
+      headerDone = true;
+      parts.push(
+        '\\pard\\qc\\sa60' +
+        `\\f0\\fs32\\b\\cf3 ${esc(cl)}` +
+        '\\b0\\par'
+      );
+    }
+    // Contact info
+    else if (cl.includes('@') || cl.includes('linkedin') || (cl.includes('|') && cl.length < 150)) {
+      parts.push(
+        '\\pard\\qc\\sa40' +
+        `\\f0\\fs18\\cf2 ${esc(cl)}` +
+        '\\cf3\\par'
+      );
+    }
+    // Bullet points
+    else if (/^[•\-·*]/.test(line)) {
+      const bulletText = cl.replace(/^[•\-·*]\s*/, '');
+      parts.push(
+        '\\pard\\li360\\fi-180\\sa50' +
+        `\\f0\\fs20\\cf3 \\bullet  ${esc(bulletText)}` +
+        '\\par'
+      );
+    }
+    // Role/title lines with year ranges
+    else if (/\d{4}/.test(cl) && /[|–\-—]/.test(cl)) {
+      const segs = cl.split(/\s*\|\s*/);
+      let out = '\\pard\\sb140\\sa40\\f0\\fs20 ';
+      segs.forEach((seg, si) => {
+        if (si === 0) out += `\\b\\cf3 ${esc(seg)}\\b0 `;
+        else if (/\d{4}/.test(seg) && si === segs.length - 1) out += `\\cf2  |  ${esc(seg)}\\cf3 `;
+        else out += `\\cf2  |  \\cf3${esc(seg)} `;
+      });
+      parts.push(out + '\\par');
+    }
+    // Normal body text
+    else {
+      parts.push(`\\pard\\sa50\\f0\\fs20\\cf3 ${esc(cl)}\\par`);
+    }
+  }
+
+  parts.push('}');
+  return parts.join('\n');
+}
+
 async function exportLetterToWord(letterText, recipientName) {
   if (!letterText) { showToast('No letter to export', false); return; }
-  if (typeof docx === 'undefined') { showToast('Export library loading — try again in a moment', false); return; }
-
   showToast('Building document...', true);
   try {
-    const { Document, Packer, Paragraph, TextRun } = docx;
-    const DARK = '1F2937';
-    const children = letterText.split('\n').map(line =>
-      new Paragraph({ spacing: { after: 120 }, children: [new TextRun({ text: line || ' ', size: 22, color: DARK, font: 'Calibri' })] })
-    );
-    const doc = new Document({
-      styles: { default: { document: { run: { font: 'Calibri', size: 22, color: DARK } } } },
-      sections: [{ properties: { page: { size: { width: 12240, height: 15840 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children }]
+    const lines = letterText.split('\n');
+    const parts = [
+      '{\\rtf1\\ansi\\deff0' +
+      '{\\fonttbl{\\f0 Calibri;}}' +
+      '\\paperw12240\\paperh15840\\margl1440\\margr1440\\margt1440\\margb1440' +
+      '\\f0\\fs22'
+    ];
+    lines.forEach(line => {
+      const escaped = line
+        .replace(/\\/g,'\\\\').replace(/\{/g,'\\{').replace(/\}/g,'\\}')
+        .replace(/[^\x00-\x7F]/g, c => `\\'${c.charCodeAt(0).toString(16).padStart(2,'0')}`);
+      parts.push(`\\pard\\sa120 ${escaped}\\par`);
     });
-    const buffer = await Packer.toBuffer(doc);
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    parts.push('}');
+    const blob = new Blob([parts.join('\n')], { type: 'application/rtf' });
     const name = (recipientName || 'Reference_Letter').replace(/\s+/g, '_');
-    saveAs(blob, `Reference_Letter_${name}.docx`);
-    showToast('✓ Letter downloaded as Word document');
-  } catch (err) {
-    console.error('Letter export error:', err);
+    saveAs(blob, `Reference_Letter_${name}.rtf`);
+    showToast('✓ Letter downloaded — open in Word or Google Docs');
+  } catch(err) {
     showToast('Export failed: ' + err.message, false);
   }
 }
