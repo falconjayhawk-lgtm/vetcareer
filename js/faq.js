@@ -2,7 +2,7 @@
 function renderFAQ() {
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">❓ Help & FAQ</h1>
-    <p style="color:#6b7280;font-size:14px;margin:0 0 24px">How AfterAction works, what it does with your data, and answers to common questions</p>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 24px">How Tactics 2 Talent works, what it does with your data, and answers to common questions</p>
 
     <!-- Privacy banner -->
     <div style="background:#f0fdf4;border:2px solid #22c55e;border-radius:12px;padding:18px 20px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start">
@@ -10,14 +10,14 @@ function renderFAQ() {
       <div>
         <div style="font-weight:800;color:#15803d;font-size:15px;margin-bottom:4px">Your data stays yours — here's exactly what we collect</div>
         <div style="font-size:13px;color:#166534;line-height:1.6">
-          AfterAction never stores your uploaded documents. When you upload a DD-214 or performance report, the file is sent to Claude for reading, structured data is extracted, and then the file is discarded. What we save is only the extracted text fields (duty titles, dates, accomplishments) — never the raw document. We do not sell or share your information. See our <a href="legal/privacy.html" target="_blank" style="color:#15803d;font-weight:700">Privacy Policy</a> for full details.
+          Tactics 2 Talent never stores your uploaded documents. When you upload a DD-214 or performance report, the file is sent to Claude for reading, structured data is extracted, and then the file is discarded. What we save is only the extracted text fields (duty titles, dates, accomplishments) — never the raw document. We do not sell or share your information. See our <a href="legal/privacy.html" target="_blank" style="color:#15803d;font-weight:700">Privacy Policy</a> for full details.
         </div>
       </div>
     </div>
 
     ${faqSection('🏗️ How the App Works', [
       {
-        q: 'What is the recommended order to use AfterAction?',
+        q: 'What is the recommended order to use Tactics 2 Talent?',
         a: `Start with <strong>Upload Docs</strong> — uploading your DD-214 and performance reports auto-fills most of your profile and experience in seconds. Then review <strong>Profile</strong> and <strong>Experience</strong> to fill any gaps. Once your data is solid, everything else (Resume, LinkedIn, Interview Prep, Job Scout, Salary Intel) draws from that foundation and gets dramatically better results.`
       },
       {
@@ -53,13 +53,13 @@ function renderFAQ() {
           <li>Your file is read locally in your browser and converted to a format Claude can read</li>
           <li>The file is sent to Claude (via our secure Cloudflare API proxy) for analysis</li>
           <li>Claude extracts structured data — duty titles, dates, locations, accomplishments, awards</li>
-          <li>That structured data is returned and saved to your AfterAction profile</li>
-          <li>The original file is <strong>never stored</strong> on AfterAction's servers</li>
+          <li>That structured data is returned and saved to your Tactics 2 Talent profile</li>
+          <li>The original file is <strong>never stored</strong> on Tactics 2 Talent's servers</li>
         </ol>
         What we store: the extracted text fields only (e.g., "Program Manager, 2019–2022, Ft. Bragg"). What we never store: your actual DD-214, performance report, or any other uploaded file.`
       },
       {
-        q: 'Does AfterAction see my Social Security Number or other PII from my DD-214?',
+        q: 'Does Tactics 2 Talent see my Social Security Number or other PII from my DD-214?',
         a: `Claude reads your DD-214 to extract career information — duty title, dates, branch, rank, MOS, characterization of service, and awards. Claude is not instructed to extract or return Social Security Numbers, home addresses, or other personally identifiable information that isn't career-relevant. The extraction prompt specifically requests career fields only. However, because the raw document passes through Claude's API during processing, we recommend redacting your SSN from your DD-214 before uploading as a precaution. On a DD-214, the SSN typically appears in Box 3.`
       },
       {
@@ -68,7 +68,7 @@ function renderFAQ() {
       },
       {
         q: 'Can I redact my DD-214 before uploading?',
-        a: `Yes, and we recommend it for sensitive fields. The career information AfterAction needs from a DD-214 is primarily in blocks 11 (Primary MOS), 12 (Record of Service dates), 13 (Decorations/Awards), 24 (Characterization of Service), and 28 (Narrative Reason for Separation). Blocks 3 (SSN) and 5 (DOB) are not needed and can be redacted with a black marker or PDF editor before uploading.`
+        a: `Yes, and we recommend it for sensitive fields. The career information Tactics 2 Talent needs from a DD-214 is primarily in blocks 11 (Primary MOS), 12 (Record of Service dates), 13 (Decorations/Awards), 24 (Characterization of Service), and 28 (Narrative Reason for Separation). Blocks 3 (SSN) and 5 (DOB) are not needed and can be redacted with a black marker or PDF editor before uploading.`
       },
       {
         q: 'What is the "paste document text" option?',
@@ -87,7 +87,7 @@ function renderFAQ() {
       },
       {
         q: 'What is the daily AI request limit?',
-        a: `AfterAction limits AI requests to manage costs and ensure fair access. The current limits are <strong>50 standard AI requests per day</strong> (covers Resume, LinkedIn, Interview, Salary, etc.) and <strong>20 Job Scout searches per day</strong>. Limits reset at midnight UTC. If you hit a limit, you'll see a message and can resume the next day. These limits will be adjusted as the platform scales.`
+        a: `Tactics 2 Talent limits AI requests to manage costs and ensure fair access. The current limits are <strong>50 standard AI requests per day</strong> (covers Resume, LinkedIn, Interview, Salary, etc.) and <strong>20 Job Scout searches per day</strong>. Limits reset at midnight UTC. If you hit a limit, you'll see a message and can resume the next day. These limits will be adjusted as the platform scales.`
       },
       {
         q: 'How accurate is the AI output? Should I edit it?',
@@ -101,16 +101,16 @@ function renderFAQ() {
 
     ${faqSection('💳 Account & Billing', [
       {
-        q: 'Is AfterAction free?',
-        a: `AfterAction is currently in beta. Beta users get full access to all features during the beta period. Paid tiers will be introduced before public launch — beta users will be notified in advance and may receive preferential pricing. We are committed to keeping AfterAction accessible to the veteran community.`
+        q: 'Is Tactics 2 Talent free?',
+        a: `Tactics 2 Talent is currently in beta. Beta users get full access to all features during the beta period. Paid tiers will be introduced before public launch — beta users will be notified in advance and may receive preferential pricing. We are committed to keeping Tactics 2 Talent accessible to the veteran community.`
       },
       {
         q: 'How do I delete my account and data?',
         a: `Email <a href="mailto:privacy@afteraction.com" style="color:#2563eb">privacy@afteraction.com</a> with the subject line "Account Deletion Request" and your registered email address. We will delete your account and all associated data within 30 days and send confirmation. Note: AI-generated content you've downloaded (resumes, LinkedIn text, etc.) that is saved on your own device is not affected.`
       },
       {
-        q: 'Who built AfterAction and why?',
-        a: `AfterAction was built to address a real gap in job search tools — most applicant tracking systems and job boards penalize veterans for not having civilian keyword matches, even when their experience is directly applicable. AfterAction is designed to understand military experience on its own terms and translate it into language civilian employers recognize. The platform is built and operated by AfterAction LLC, a veteran-focused company.`
+        q: 'Who built Tactics 2 Talent and why?',
+        a: `Tactics 2 Talent was built to address a real gap in job search tools — most applicant tracking systems and job boards penalize veterans for not having civilian keyword matches, even when their experience is directly applicable. Tactics 2 Talent is designed to understand military experience on its own terms and translate it into language civilian employers recognize. The platform is built and operated by Tactics 2 Talent LLC, a veteran-focused company.`
       }
     ])}
 

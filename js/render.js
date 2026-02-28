@@ -28,7 +28,7 @@ function renderLogin() {
       <div class="login-card" style="width:420px;max-width:95vw">
         <div style="text-align:center;margin-bottom:28px">
           <div style="font-size:48px;margin-bottom:8px">&#9876;</div>
-          <h1 style="font-size:26px;font-weight:800;margin:0;color:#111827">AfterAction</h1>
+          <h1 style="font-size:26px;font-weight:800;margin:0;color:#111827">Tactics 2 Talent</h1>
           <p style="color:#6b7280;font-size:14px;margin:6px 0 0">Your military-to-civilian transition platform</p>
         </div>
 
@@ -77,7 +77,7 @@ function renderSidebar() {
   return `
     <div class="sidebar">
       <div style="padding:16px;border-bottom:1px solid #f3f4f6">
-        <div style="font-weight:800;color:#1d4ed8;font-size:18px">&#9876; AfterAction</div>
+        <div style="font-weight:800;color:#1d4ed8;font-size:18px">🎖️ Tactics 2 Talent</div>
         <div style="font-size:11px;color:#9ca3af">Career Transition &middot; v0.8</div>
         ${displayName ? `<div style="font-size:12px;color:#6b7280;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(displayName)}">&#128100; ${esc(displayName)}</div>` : ''}
       </div>

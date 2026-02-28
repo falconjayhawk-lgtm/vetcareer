@@ -16,18 +16,47 @@ function loadJSZip() {
 }
 
 // ── Resume parser ─────────────────────────────────────────────────────
+// Handles both === markers and the AI's natural --- / CAPS HEADER format
 function parseResumeText(text) {
   const lines = text.split('\n').map(l => l.trim());
   const result = { name: '', contact: [], sections: [] };
   let current = null, headerDone = false;
-  for (const line of lines) {
-    if (!line) continue;
+  let pendingSection = false; // true when we just saw a --- divider
+
+  // Known section names the AI generates
+  const sectionNames = /^(PROFESSIONAL SUMMARY|SUMMARY|CORE COMPETENCIES|COMPETENCIES|SKILLS|PROFESSIONAL EXPERIENCE|EXPERIENCE|WORK EXPERIENCE|EDUCATION|CERTIFICATIONS|CERTIFICATIONS & CLEARANCES|CLEARANCES|AWARDS|VOLUNTEER|PUBLICATIONS|PROJECTS)$/i;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) { pendingSection = false; continue; }
+
+    // === style section header
     if (line.startsWith('===')) {
-      current = { title: line.replace(/===/g, '').trim(), lines: [] };
+      const title = line.replace(/===/g, '').trim();
+      current = { title, lines: [] };
       result.sections.push(current);
       headerDone = true;
+      pendingSection = false;
       continue;
     }
+
+    // --- divider: next non-empty line is a section title
+    if (/^---+$/.test(line) || /^• --/.test(line)) {
+      pendingSection = true;
+      continue;
+    }
+
+    // Line after --- OR line that looks like a section title
+    if (pendingSection || (!headerDone && sectionNames.test(line)) || (headerDone && sectionNames.test(line) && current && current.lines.length === 0)) {
+      current = { title: line, lines: [] };
+      result.sections.push(current);
+      headerDone = true;
+      pendingSection = false;
+      continue;
+    }
+
+    pendingSection = false;
+
     if (!headerDone) {
       if (!result.name) result.name = line;
       else result.contact.push(line);
@@ -124,25 +153,27 @@ function buildDocXml(parsed, tmpl) {
         continue;
       }
 
-      // Role/title line with year
+      // Role/title line with year — handle **bold** markdown in title
       if (/\d{4}/.test(line) && /[|–\-—]/.test(line)) {
-        const parts = line.split(/\s*\|\s*/);
+        // Strip ** markdown from the whole line first
+        const cleanLine = line.replace(/\*\*([^*]+)\*\*/g, '$1');
+        const parts = cleanLine.split(/\s*\|\s*/);
         let runs = '';
         parts.forEach((part, idx) => {
           if (idx === 0) {
-            runs += run(part, { font:T.font, size:T.bodySize, bold:true, color:T.text });
+            runs += run(part.trim(), { font:T.font, size:T.bodySize, bold:true, color:T.text });
           } else {
-            const isDate = /\d{4}/.test(part) && idx === parts.length - 1;
-            runs += run('  |  ' + part, { font:T.font, size:T.bodySize, color:T.gray });
+            runs += run('  |  ' + part.trim(), { font:T.font, size:T.bodySize, color:T.gray });
           }
         });
         body += para(runs, '', 140, 40);
         continue;
       }
 
-      // Normal text
+      // Normal text — strip any remaining ** markdown
+      const cleanedLine = line.replace(/\*\*([^*]+)\*\*/g, '$1');
       body += para(
-        run(line, { font:T.font, size:T.bodySize, color:T.text }),
+        run(cleanedLine, { font:T.font, size:T.bodySize, color:T.text }),
         '', 0, 40
       );
     }

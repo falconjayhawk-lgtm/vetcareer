@@ -249,7 +249,7 @@ CREATE POLICY &quot;anon full access&quot; ON afteraction_data FOR ALL USING (tr
       <div style="font-size:13px;color:#4b5563">
         <p>🔒 Your Claude API key is stored only in your browser — never on any server.</p>
         <p>🔒 Resume generation calls go directly from your browser to Anthropic — no third parties.</p>
-        <p>☁️ If Supabase sync is enabled, your profile and job data is stored in your own Supabase project — not on AfterAction servers.</p>
+        <p>☁️ If Supabase sync is enabled, your profile and job data is stored in your own Supabase project — not on Tactics 2 Talent servers.</p>
         <p>⚠️ Your Supabase anon key is stored in your browser. Anyone with your User ID and anon key could read your data — keep them private.</p>
       </div>
     </div>`;
@@ -273,7 +273,7 @@ function exportData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `AfterAction_Backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `Tactics2Talent_Backup_${new Date().toISOString().split('T')[0]}.json`;
   a.click();
   URL.revokeObjectURL(url);
   showToast('✓ Data exported! Check your downloads folder.');
@@ -311,7 +311,7 @@ function importData(event) {
 
       showToast('✓ Data imported successfully!');
     } catch (err) {
-      alert('Error importing data: ' + err.message + '. Make sure you selected a valid AfterAction backup file.');
+      alert('Error importing data: ' + err.message + '. Make sure you selected a valid Tactics 2 Talent backup file.');
     }
   };
   reader.readAsText(file);

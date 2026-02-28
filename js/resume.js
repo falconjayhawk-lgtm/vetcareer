@@ -459,7 +459,7 @@ ${context}
 START with this contact block verbatim:
 ${contactBlock}
 
-SECTIONS:
+SECTIONS — use EXACTLY === SECTION NAME === format for all headers, no dashes:
 === PROFESSIONAL SUMMARY ===
 2 sentences only.
 
@@ -635,7 +635,7 @@ ${context}
 Use this EXACT contact block at the very top (copy it verbatim, do not change it):
 ${contactBlock}
 
-SECTIONS (use === headers):
+SECTIONS — CRITICAL: Use EXACTLY this format for section headers: === SECTION NAME === (three equals signs on each side, no dashes, no other formatting):
 1. === PROFESSIONAL SUMMARY === (2 sentences MAX)
 2. === CORE COMPETENCIES === (single comma-separated line, no bullets, 14-18 skills)
 3. === PROFESSIONAL EXPERIENCE === (reverse chronological — most recent first)

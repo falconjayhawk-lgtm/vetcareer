@@ -1,4 +1,4 @@
-// ── AfterAction Analytics — lightweight feature usage tracking ─────────
+// ── Tactics 2 Talent Analytics — lightweight feature usage tracking ─────────
 // Tracks which features are used. No PII, no session data, just counters.
 // Events fire on nav click and key actions. Data lives in Cloudflare KV.
 
