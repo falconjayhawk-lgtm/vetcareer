@@ -3,8 +3,8 @@
 // Supports three templates: professional, modern, classic
 
 function exportResumeToWord() {
-  const resumeEl = document.getElementById('resume-text-output');
-  const resumeText = resumeEl ? (resumeEl.innerText || resumeEl.textContent || '') : '';
+  // Read raw resume text directly from state — more reliable than scraping the DOM
+  const resumeText = state.ui.resumeResult?.resume || '';
   if (resumeText.trim().length < 50) { showToast('Generate a resume first', false); return; }
 
   const fmt = state.ui.resumeFmt || 'professional';

@@ -748,7 +748,7 @@ Job Notes / Requirements: ${job.notes||'None'}`;
 }
 
 function copyResumeToClipboard() {
-  const text = document.getElementById('resume-text-output')?.innerText || '';
+  const text = state.ui.resumeResult?.resume || document.getElementById('resume-text-output')?.innerText || '';
   navigator.clipboard.writeText(text).then(() => showToast('✓ Resume copied! Paste into Word or Google Docs')).catch(()=>{
     // Fallback
     const ta = document.createElement('textarea');
@@ -769,7 +769,7 @@ function copyBioToClipboard() {
 }
 
 function printResume() {
-  const text = document.getElementById('resume-text-output')?.innerText || document.querySelector('.resume-preview')?.innerText || '';
+  const text = state.ui.resumeResult?.resume || document.getElementById('resume-text-output')?.innerText || '';
   const fmt = state.ui.resumeFmt || 'professional';
   const name = state.profile.fullName || 'Resume';
   const w = window.open('','_blank');
