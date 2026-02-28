@@ -52,6 +52,7 @@ async function callClaudeWithFile(system, user, base64Data, mimeType) {
     body: JSON.stringify({
       system,
       user,
+      feature: 'document',
       fileData: { base64: base64Data, mimeType }
     })
   });
