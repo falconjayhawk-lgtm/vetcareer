@@ -409,8 +409,13 @@ IMPORTANT: branch and yearsOfService are critical fields — always extract them
       setState({ awards: [...state.awards, ...data.awards.filter(a => a.name)] });
     }
 
-    setState({ ui: { ...state.ui, onboardBusy: false, onboardDD214Done: true, onboardStatus: '',
-      onboardAddedDocs: [...(state.ui.onboardAddedDocs||[]), 'dd214'] } });
+    // Save document record so it shows in dashboard/documents page
+    const dd214Doc = { id: Date.now().toString(), name: 'DD-214', type: 'dd214', uploadDate: new Date().toISOString(), processed: true };
+    setState({
+      documents: [...state.documents, dd214Doc],
+      ui: { ...state.ui, onboardBusy: false, onboardDD214Done: true, onboardStatus: '',
+        onboardAddedDocs: [...(state.ui.onboardAddedDocs||[]), 'dd214'] }
+    });
 
   } catch(err) {
     setState({ ui: { ...state.ui, onboardBusy: false, onboardError: 'Could not read the DD-214: ' + err.message + '. Try the manual option below.' } });
@@ -464,11 +469,16 @@ async function _onboardProcessOneFile(file, retryCount = 0) {
     if ((data.assignments||[]).length) setState({ assignments: [...state.assignments, ...data.assignments.filter(a=>a.dutyTitle)] });
     if ((data.civilianJobs||[]).length) setState({ civilianJobs: [...state.civilianJobs, ...data.civilianJobs.filter(j=>j.title)] });
     if ((data.awards||[]).length) setState({ awards: [...state.awards, ...data.awards.filter(a=>a.name)] });
-    setState({ ui: {
-      ...state.ui,
-      onboardProcessed: (state.ui.onboardProcessed || 0) + 1,
-      onboardAddedCount: (state.ui.onboardAddedCount || 0) + 1,
-    }});
+    // Save document record
+    const docRecord = { id: Date.now().toString(), name: file.name, type: 'upload', uploadDate: new Date().toISOString(), processed: true };
+    setState({
+      documents: [...state.documents, docRecord],
+      ui: {
+        ...state.ui,
+        onboardProcessed: (state.ui.onboardProcessed || 0) + 1,
+        onboardAddedCount: (state.ui.onboardAddedCount || 0) + 1,
+      }
+    });
   } catch(err) {
     const is429 = err.message?.includes('429') || err.status === 429;
     if (is429 && retryCount < 2) {

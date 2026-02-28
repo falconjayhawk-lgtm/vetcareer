@@ -35,6 +35,8 @@ function renderDashboard() {
   const totalCount = checksWithStatus.length;
   const name = p.fullName ? ', ' + p.fullName.split(' ')[0] : '';
   const isNewUser = state.documents.length === 0 && !p.fullName && state.assignments.length === 0;
+  const needsSkillsGen = state.assignments.length > 0 && (state.profile.technicalSkills||[]).length === 0 && !state.ui.skillsGenDismissed;
+  const needsSummaryGen = state.assignments.length > 0 && !state.profile.elevatorPitch && !state.ui.summaryGenDismissed;
   
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 20px">Welcome back${name}! 👋</h1>
@@ -51,12 +53,29 @@ function renderDashboard() {
     </div>` : ''}
     
     <div class="grid3" style="margin-bottom:20px">
-      ${[['Active Applications',active+'/'+total,'#2563eb'],['Profile Complete',pct+'%',pct===100?'#16a34a':'#ca8a04'],['Documents',state.documents.length + (state.documents.length>0?' ✓':''),'#7c3aed']].map(([l,v,c])=>`
+      ${[['Active Applications',active+'/'+total,'#2563eb'],['Profile Complete',pct+'%',pct===100?'#16a34a':'#ca8a04'],['Documents', (() => { const n = state.documents.length; return n > 0 ? n + ' ✓' : (state.assignments.length > 0 ? '✓' : '0'); })(), '#7c3aed']].map(([l,v,c])=>`
         <div class="card" style="margin-bottom:0;text-align:center">
           <div style="font-size:32px;font-weight:800;color:${c}">${v}</div>
           <div style="font-size:12px;color:#6b7280;margin-top:4px">${l}</div>
         </div>`).join('')}
     </div>
+    ${(needsSkillsGen || needsSummaryGen) ? `
+    <div style="background:#eff6ff;border:2px solid #bfdbfe;border-radius:12px;padding:16px 18px;margin-bottom:16px">
+      <div style="display:flex;align-items:start;gap:12px">
+        <span style="font-size:22px;flex-shrink:0">🤖</span>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:15px;color:#1e3a8a;margin-bottom:4px">Your profile is missing a few things Claude needs</div>
+          <div style="font-size:13px;color:#1e40af;margin-bottom:12px">You have experience loaded but ${[needsSkillsGen?'no skills inventory':null,needsSummaryGen?'no professional summary':null].filter(Boolean).join(' and ')}. These are used in every resume, LinkedIn profile, and interview answer.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${needsSkillsGen ? `<button class="btn btn-primary btn-sm" onclick="setState({view:'profile'});setTimeout(extractSkillsFromExperience,300)">✨ Auto-generate Skills</button>` : ''}
+            ${needsSummaryGen ? `<button class="btn btn-primary btn-sm" onclick="setState({view:'profile'});setTimeout(generateElevatorPitch,300)">✨ Auto-generate Summary</button>` : ''}
+            <button onclick="setState({ui:{...state.ui,skillsGenDismissed:true,summaryGenDismissed:true}})" style="background:none;border:none;color:#6b7280;font-size:12px;cursor:pointer;padding:4px">Dismiss</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <h2 style="margin:0">Getting Started Checklist</h2>
