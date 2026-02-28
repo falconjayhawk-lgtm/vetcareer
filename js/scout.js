@@ -152,10 +152,18 @@ function renderScout() {
           </select>
         </div>
       </div>
+      <div style="margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#374151">
+          <input type="checkbox" id="sc-clearance-include-none" ${state.ui.scoutIncludeNoClearance!==false?'checked':''}
+            onchange="toggleUI('scoutIncludeNoClearance',this.checked)" style="width:16px;height:16px">
+          Also include jobs that don't require a clearance
+        </label>
+        <div style="font-size:11px;color:#9ca3af;margin-top:3px;margin-left:24px">When checked, shows both clearance-required and open jobs</div>
+      </div>
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <button class="btn btn-primary" onclick="runScout()" ${busy?'disabled':''} style="padding:10px 22px">
-          ${busy?'<div class="spinner"></div> Searching...':'🏛️ Search Federal Jobs (USAJobs)'}
+          ${busy?'<div class="spinner"></div> Searching...':'🏛️ Search USAJobs'}
         </button>
         <button class="btn btn-secondary" onclick="promptSaveSearch()" style="padding:10px 16px">💾 Save Search</button>
       </div>
@@ -375,7 +383,7 @@ async function fetchScoutJobs({ keywords, location, clearance, seniority }) {
   const res = await fetch(`${WORKER_URL}/api/scout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-    body: JSON.stringify({ mode: 'usajobs', keywords, location, clearance, seniority,
+    body: JSON.stringify({ mode: 'usajobs', keywords, location, clearance, seniority, includeNoClearance: state.ui.scoutIncludeNoClearance !== false,
       veteranProfile: {
         branch: state.profile.branch, rank: state.profile.rank,
         mosRate: state.profile.mosRate,

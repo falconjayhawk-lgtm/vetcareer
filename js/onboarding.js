@@ -14,9 +14,28 @@ function shouldShowOnboarding() {
   return true;
 }
 
-function completeOnboarding(goalView) {
+async function completeOnboarding(goalView) {
   localStorage.setItem('t2t_onboarding_complete', '1');
   setState({ view: goalView || 'dashboard' });
+
+  // Auto-generate skills and summary in the background if we have enough data
+  const hasExperience = state.assignments.length > 0 || state.civilianJobs.length > 0;
+  const hasProfile = state.profile?.fullName;
+  if (hasExperience && hasProfile) {
+    // Small delay so the view transition completes first
+    setTimeout(async () => {
+      try {
+        showToast('🤖 Auto-generating your skills inventory...', true);
+        if (typeof extractSkillsFromExperience === 'function') await extractSkillsFromExperience();
+        showToast('🤖 Auto-generating your professional summary...', true);
+        if (typeof generateElevatorPitch === 'function') await generateElevatorPitch();
+        showToast('✅ Profile complete — skills and summary generated!');
+      } catch(err) {
+        // Silently fail — user can generate manually from profile page
+        console.warn('Auto-generation failed:', err.message);
+      }
+    }, 800);
+  }
 }
 
 function dismissOnboarding() {
@@ -335,14 +354,25 @@ async function onboardProcessDD214(file) {
       `Extract all military career information from this DD-214 and return ONLY this JSON (no markdown, no extra text):
 {
   "profile": {
-    "fullName": "", "branch": "", "rank": "", "mosRate": "", "yearsOfService": "",
-    "separationDate": "", "characterOfService": "", "clearance": "", "email": "", "phone": "", "location": ""
+    "fullName": "Box 1 — Last, First Middle",
+    "branch": "Box 12b — Branch of Service (e.g. Air Force, Army, Navy, Marine Corps, Coast Guard, Space Force)",
+    "rank": "Box 4a — Grade/Rate/Rank at separation",
+    "mosRate": "Box 11 — Primary Specialty (MOS/AFSC/Rate code and title)",
+    "yearsOfService": "Calculate from Box 12c — Net Active Service (years only, as a number e.g. 21)",
+    "separationDate": "Box 12b — Separation date",
+    "characterOfService": "Box 24 — Character of Service",
+    "clearance": "",
+    "email": "",
+    "phone": "",
+    "location": "Box 7 — Last duty station city/state or home of record"
   },
   "assignments": [{ "dutyTitle": "", "unit": "", "startDate": "", "endDate": "", "accomplishments": "" }],
   "awards": [{ "name": "", "date": "" }],
   "education": "",
   "summary": "Plain English summary of what was extracted"
-}`,
+}
+
+IMPORTANT: branch and yearsOfService are critical fields — always extract them. yearsOfService should be a plain number like 21, not a string like "21 years".`,
       base64, mime
     );
 
