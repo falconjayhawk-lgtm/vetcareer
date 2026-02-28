@@ -668,7 +668,36 @@ COVER LETTER RULES:
 - Sound like a real person wrote this at 9pm after doing research on the company — not like a template
 - Close with confidence, not desperation
 - Under 380 words. Plain text paragraphs only.`,
-      `Write a tailored cover letter for this veteran.\n\n${context}\n\nWrite 3-4 paragraphs. Paragraph 1: Strong opening hook — lead with your biggest relevant strength, not with "I am applying for...". Paragraph 2-3: Two specific accomplishments with numbers that directly connect to what this company needs. Final paragraph: Direct, confident close — why this role, what you bring, what happens next.`
+      `Write a tailored cover letter for this veteran. Return it in this EXACT format:
+
+[TODAY'S DATE]
+
+Hiring Manager
+${job?.company || 'Hiring Team'}
+${job?.location || ''}
+
+Re: ${job?.title || 'Open Position'}
+
+[LETTER BODY - 3-4 paragraphs]
+
+Sincerely,
+
+${p.fullName || 'Your Name'}
+${p.phone || ''}
+${p.email || ''}
+${p.linkedIn ? p.linkedIn : ''}
+
+---
+
+VETERAN BACKGROUND:
+${context}
+
+LETTER BODY RULES:
+Paragraph 1: Strong opening hook — lead with your biggest relevant strength, NOT "I am applying for..."
+Paragraph 2-3: Two specific accomplishments with numbers that directly connect to what this company needs
+Final paragraph: Direct confident close — why this role, what you bring, what happens next
+
+Output the complete letter exactly as formatted above. Use today's date. No extra commentary.`
     );
 
     setStatus('🔍 Analyzing fit & transferable skills...');
@@ -964,7 +993,7 @@ async function downloadCover() {
   try {
     await loadJSZip();
     const name = (state.profile?.fullName || 'Cover_Letter').replace(/\s+/g, '_');
-    const blob = await buildLetterDocx(text, 'Cover Letter');
+    const blob = await buildLetterDocx(text, 'Cover Letter', state.profile?.fullName || '');
     saveAs(blob, `Cover_Letter_${name}.docx`);
     showToast('✓ Cover letter downloaded as Word document');
   } catch(err) {

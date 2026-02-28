@@ -294,7 +294,7 @@ async function exportResumeToWord() {
 }
 
 // ── Letter/Bio docx builder ───────────────────────────────────────────
-async function buildLetterDocx(text, docTitle) {
+async function buildLetterDocx(text, docTitle, applicantName) {
   await loadJSZip();
   const lines = text.split('\n');
   const accentColor = '1E3A8A';
@@ -308,29 +308,68 @@ async function buildLetterDocx(text, docTitle) {
     <w:pPr><w:spacing w:before="0" w:after="80"/></w:pPr>
     <w:r>
       <w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:b/><w:bCs/><w:color w:val="${accentColor}"/></w:rPr>
-      <w:t>${xmlEsc(docTitle)}</w:t>
+      <w:t>${xmlEsc(applicantName || docTitle)}</w:t>
     </w:r>
   </w:p>`;
 
   // Divider
   body += `<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="8" w:space="1" w:color="${accentColor}"/></w:pBdr><w:spacing w:before="0" w:after="160"/></w:pPr></w:p>`;
 
-  // Content lines
+  // Content lines — detect header block, body paragraphs, signature
+  let inSignature = false;
+  let inHeader = true; // first non-empty lines are header (date, recipient, re: line)
+  let headerLineCount = 0;
+
   for (const line of lines) {
     const trimmed = line.trim();
+
     if (!trimmed) {
-      body += `<w:p><w:pPr><w:spacing w:before="0" w:after="80"/></w:pPr></w:p>`;
+      if (inHeader && headerLineCount > 0) inHeader = false; // blank line ends header block
+      body += `<w:p><w:pPr><w:spacing w:before="0" w:after="60"/></w:pPr></w:p>`;
       continue;
     }
+
     // Strip markdown bold
     const clean = trimmed.replace(/\*+([^*]+)\*+/g, '$1');
-    body += `<w:p>
-      <w:pPr><w:spacing w:before="0" w:after="80"/></w:pPr>
-      <w:r>
-        <w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:color w:val="${textColor}"/></w:rPr>
-        <w:t xml:space="preserve">${xmlEsc(clean)}</w:t>
-      </w:r>
-    </w:p>`;
+
+    // Detect signature block
+    if (/^(Sincerely|Best regards|Respectfully|Warm regards)/i.test(clean)) {
+      inSignature = true;
+    }
+
+    if (inHeader && headerLineCount < 6) {
+      // Header lines — smaller gray text
+      const isReLabel = /^Re:/i.test(clean);
+      body += `<w:p>
+        <w:pPr><w:spacing w:before="0" w:after="40"/></w:pPr>
+        <w:r>
+          <w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/>
+            <w:sz w:val="${isReLabel ? '22' : '20'}"/><w:szCs w:val="${isReLabel ? '22' : '20'}"/>
+            <w:b${isReLabel ? '/' : ' w:val="0"/'}><w:color w:val="${isReLabel ? textColor : grayColor}"/>
+          </w:rPr>
+          <w:t xml:space="preserve">${xmlEsc(clean)}</w:t>
+        </w:r>
+      </w:p>`;
+      headerLineCount++;
+    } else if (inSignature) {
+      // Signature block
+      body += `<w:p>
+        <w:pPr><w:spacing w:before="0" w:after="40"/></w:pPr>
+        <w:r>
+          <w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="20"/><w:szCs w:val="20"/><w:color w:val="${textColor}"/></w:rPr>
+          <w:t xml:space="preserve">${xmlEsc(clean)}</w:t>
+        </w:r>
+      </w:p>`;
+    } else {
+      // Body paragraph
+      body += `<w:p>
+        <w:pPr><w:spacing w:before="0" w:after="120"/></w:pPr>
+        <w:r>
+          <w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:color w:val="${textColor}"/></w:rPr>
+          <w:t xml:space="preserve">${xmlEsc(clean)}</w:t>
+        </w:r>
+      </w:p>`;
+    }
   }
 
   const docXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
