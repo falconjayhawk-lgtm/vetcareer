@@ -76,6 +76,27 @@ function renderResume() {
         </div>
       </div>
       ${job?`<div style="background:#f9fafb;border-radius:8px;padding:10px;font-size:13px;margin-bottom:14px"><strong>${esc(job.title)}</strong> at <span style="color:#2563eb">${esc(job.company)}</span>${job.location?' — '+esc(job.location):''}${job.salaryRange?` <span style="color:#16a34a;font-weight:600">· ${esc(job.salaryRange)}</span>`:''}</div>`:''}
+
+      ${job && (job.resumeVersions||[]).length > 0 ? `
+      <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="font-weight:700;font-size:13px;color:#15803d;margin-bottom:10px">📁 Saved Versions (${job.resumeVersions.length})</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${[...job.resumeVersions].reverse().map((v,i) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;background:white;border:1px solid #d1fae5;border-radius:8px;padding:8px 12px">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:#1f2937">Version ${job.resumeVersions.length - i}</div>
+                <div style="font-size:11px;color:#6b7280">${esc(v.label)} · ${esc(v.fmt||'professional')} format${v.ats?` · ATS ${v.ats.score||'?'}/100`:''}</div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-secondary btn-sm" onclick="loadResumeVersion('${esc(job.id)}','${esc(v.id)}')" style="font-size:11px">Load</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteResumeVersion('${esc(job.id)}','${esc(v.id)}')" style="font-size:11px">✕</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      ` : ''}
+
       <div class="field" style="margin-bottom:16px">
         <label class="field-label">Optional: Special instructions for this resume</label>
         <textarea id="resume-instructions" rows="3" placeholder="e.g., Consolidate all active duty into one section called 'Military Experience'&#10;Emphasize leadership over technical skills&#10;Keep it to one page&#10;Lead with my security clearance" style="font-size:13px" onchange="toggleUI('resumeInstructions',this.value)">${esc(state.ui.resumeInstructions||'')}</textarea>
@@ -230,6 +251,7 @@ function renderResumeResult(result, fmt) {
             <button class="btn btn-secondary btn-sm" onclick="copyResumeToClipboard()">📋 Copy Text</button>
             <button class="btn btn-secondary btn-sm" onclick="exportResumeToWord()">📥 Download .docx</button>
             <button class="btn btn-primary btn-sm" onclick="printResume()">🖨 Print / Save PDF</button>
+            ${state.ui.resumeJob ? `<button class="btn btn-secondary btn-sm" onclick="saveCurrentResumeVersion()" style="background:#f0fdf4;border-color:#86efac;color:#15803d">💾 Save Version</button>` : ""}
           `}
         </div>
       </div>
@@ -776,7 +798,27 @@ Return ONLY this JSON (no markdown, no extra text):
     try { ats = JSON.parse(atsRaw.replace(/```json|```/g,'').trim()); } catch(e) {}
 
     if (typeof trackAction==='function') trackAction('resume_generate');
-    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume:resumeToUse,coverLetter,ats}, resumeModal:true} });
+
+    // Auto-save version to the linked job
+    const jobId = state.ui.resumeJob;
+    if (jobId) {
+      const version = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        label: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}),
+        resume: resumeToUse,
+        coverLetter,
+        ats,
+        fmt: state.ui.resumeFmt || 'professional'
+      };
+      const updatedJobs = state.jobs.map(j => j.id === jobId
+        ? { ...j, resumeVersions: [...(j.resumeVersions||[]), version] }
+        : j
+      );
+      setState({ jobs: updatedJobs, ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume:resumeToUse,coverLetter,ats}, resumeModal:true} });
+    } else {
+      setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume:resumeToUse,coverLetter,ats}, resumeModal:true} });
+    }
   } catch(err) {
     setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'.'} });
   }
@@ -1041,3 +1083,52 @@ async function downloadCover() {
   }
 }
 
+
+// ── Resume versioning ──────────────────────────────────────────────────
+function loadResumeVersion(jobId, versionId) {
+  const job = state.jobs.find(j => j.id === jobId);
+  if (!job) return;
+  const version = (job.resumeVersions||[]).find(v => v.id === versionId);
+  if (!version) return;
+
+  setState({ ui: {
+    ...state.ui,
+    resumeJob: jobId,
+    resumeFmt: version.fmt || 'professional',
+    resumeResult: { resume: version.resume, coverLetter: version.coverLetter, ats: version.ats },
+    resumeModal: false,
+    resumeMode: 'targeted'
+  }});
+  showToast(`✅ Version loaded — ${version.label}`);
+}
+
+function deleteResumeVersion(jobId, versionId) {
+  if (!confirm('Delete this saved resume version?')) return;
+  const updatedJobs = state.jobs.map(j => j.id === jobId
+    ? { ...j, resumeVersions: (j.resumeVersions||[]).filter(v => v.id !== versionId) }
+    : j
+  );
+  setState({ jobs: updatedJobs });
+  showToast('Version deleted');
+}
+
+function saveCurrentResumeVersion() {
+  const jobId = state.ui.resumeJob;
+  const result = state.ui.resumeResult;
+  if (!jobId || !result?.resume) { showToast('No resume to save', false); return; }
+  const version = {
+    id: Date.now().toString(),
+    date: new Date().toISOString(),
+    label: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}),
+    resume: result.resume,
+    coverLetter: result.coverLetter || '',
+    ats: result.ats || null,
+    fmt: state.ui.resumeFmt || 'professional'
+  };
+  const updatedJobs = state.jobs.map(j => j.id === jobId
+    ? { ...j, resumeVersions: [...(j.resumeVersions||[]), version] }
+    : j
+  );
+  setState({ jobs: updatedJobs });
+  showToast(`✅ Version saved`);
+}

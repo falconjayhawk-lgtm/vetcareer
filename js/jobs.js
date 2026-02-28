@@ -98,6 +98,17 @@ function renderJobs() {
           ${j.dateApplied?`<span>Applied ${new Date(j.dateApplied).toLocaleDateString()}</span>`:''}
           ${j.contactName?`<span>📞 ${esc(j.contactName)}</span>`:''}
           ${j.jobUrl?`<a href="${esc(j.jobUrl)}" target="_blank" style="color:#2563eb;text-decoration:none">View posting →</a>`:''}
+          ${(j.resumeVersions||[]).length > 0 ? `
+            <button onclick="setState({view:'resume',ui:{...state.ui,resumeJob:'${j.id}',resumeMode:'targeted'}})"
+              style="background:#f0fdf4;color:#15803d;border:1px solid #86efac;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:600;cursor:pointer">
+              📄 ${j.resumeVersions.length} Resume Version${j.resumeVersions.length>1?'s':''}
+            </button>
+          ` : `
+            <button onclick="setState({view:'resume',ui:{...state.ui,resumeJob:'${j.id}',resumeMode:'targeted'}})"
+              style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:600;cursor:pointer">
+              ✨ Build Resume
+            </button>
+          `}
         </div>
 
         ${j.notes?`<div style="background:#f9fafb;border-radius:6px;padding:8px;font-size:12px;margin-top:8px;color:#374151">${esc(j.notes)}</div>`:''}
