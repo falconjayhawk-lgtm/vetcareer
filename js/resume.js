@@ -221,13 +221,30 @@ function renderResumeResult(result, fmt) {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
         <h2 style="margin:0">📄 ${isGeneric?'General Resume':'Resume'} — ${{professional:'Professional',modern:'Modern',classic:'Classic'}[fmt]||'Professional'} Format</h2>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-secondary btn-sm" onclick="copyResumeToClipboard()">📋 Copy Text</button>
-          <button class="btn btn-secondary btn-sm" onclick="exportResumeToWord()">📝 Export Word</button>
-          <button class="btn btn-primary btn-sm" onclick="printResume()">🖨 Print / Save PDF</button>
+          ${state.ui.resumeEditing ? `
+            <button class="btn btn-secondary btn-sm" onclick="cancelResumeEdit()" style="color:#6b7280">✕ Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="saveResumeEdit()" style="background:#16a34a">✅ Done Editing</button>
+          ` : `
+            <button class="btn btn-secondary btn-sm" onclick="startResumeEdit()">✏️ Edit</button>
+            <button class="btn btn-secondary btn-sm" onclick="copyResumeToClipboard()">📋 Copy Text</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportResumeToWord()">📝 Export Word</button>
+            <button class="btn btn-primary btn-sm" onclick="printResume()">🖨 Print / Save PDF</button>
+          `}
         </div>
       </div>
-      <p style="font-size:12px;color:#6b7280;margin:0 0 12px">Print / Save PDF → in print dialog choose <strong>Save as PDF</strong> · Or copy text to paste into Word/Google Docs for formatting</p>
-      <div class="resume-preview" id="resume-text-output" style="font-family:${fmt==='classic'?'Georgia,serif':'Arial,sans-serif'};${fmt==='modern'?'border-left:4px solid #1e3a8a;padding-left:16px':''}">${esc(result.resume)}</div>
+      ${state.ui.resumeEditing ? `
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:10px">
+          ✏️ <strong>Editing mode</strong> — click anywhere in the resume to make changes. Hit <strong>Done Editing</strong> when finished to save your changes.
+        </div>
+      ` : `
+        <p style="font-size:12px;color:#6b7280;margin:0 0 12px">Print / Save PDF → in print dialog choose <strong>Save as PDF</strong> · Or click <strong>Edit</strong> to make changes before downloading</p>
+      `}
+      <div class="resume-preview" id="resume-text-output"
+        contenteditable="${state.ui.resumeEditing ? 'true' : 'false'}"
+        style="font-family:${fmt==='classic'?'Georgia,serif':'Arial,sans-serif'};${fmt==='modern'?'border-left:4px solid #1e3a8a;padding-left:16px':''};${state.ui.resumeEditing?'outline:2px solid #2563eb;border-radius:6px;padding:12px;min-height:200px;':''}"
+        data-resume-content="${esc(result.resume)}">
+        ${state.ui.resumeEditing ? '' : esc(result.resume)}
+      </div>
     </div>
 
     ${result.bio ? `
@@ -256,6 +273,47 @@ function renderResumeResult(result, fmt) {
       </div>
       <div class="resume-preview" id="cover-text">${esc(result.coverLetter)}</div>
     </div>` : ''}`;
+}
+
+// ── Inline resume editor ──────────────────────────────────────────────
+function startResumeEdit() {
+  const resumeText = state.ui.resumeResult?.resume || '';
+  setState({ ui: { ...state.ui, resumeEditing: true, resumeEditOriginal: resumeText } });
+  // Populate and focus the editor after render
+  setTimeout(() => {
+    const el = document.getElementById('resume-text-output');
+    if (el) {
+      el.innerText = resumeText; // Set plain text content for editing
+      el.focus();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 50);
+}
+
+function saveResumeEdit() {
+  const el = document.getElementById('resume-text-output');
+  if (!el) return;
+  const edited = el.innerText || el.textContent || '';
+  if (edited.trim().length < 50) { showToast('Resume seems too short — check your edits', false); return; }
+  // Save edited text back to state so downloads use the new version
+  setState({ ui: {
+    ...state.ui,
+    resumeEditing: false,
+    resumeEditOriginal: null,
+    resumeResult: { ...state.ui.resumeResult, resume: edited }
+  }});
+  showToast('✅ Changes saved — ready to download');
+}
+
+function cancelResumeEdit() {
+  const original = state.ui.resumeEditOriginal;
+  setState({ ui: {
+    ...state.ui,
+    resumeEditing: false,
+    resumeEditOriginal: null,
+    // Restore original if cancelled
+    resumeResult: original ? { ...state.ui.resumeResult, resume: original } : state.ui.resumeResult
+  }});
 }
 
 async function generateResume() {
