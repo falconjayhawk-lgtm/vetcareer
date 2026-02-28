@@ -188,43 +188,84 @@ function renderOnboardStep2Manual() {
 
 // ── Step 3: Additional documents ─────────────────────────────────────
 function renderOnboardStep3() {
+  const queue = state.ui.onboardQueue || [];
+  const processed = state.ui.onboardProcessed || 0;
+  const total = state.ui.onboardTotal || 0;
   const busy = state.ui.onboardDocBusy;
-  const addedDocs = state.ui.onboardAddedDocs || [];
+  const currentFile = state.ui.onboardCurrentFile || '';
+  const errors = state.ui.onboardErrors || [];
+  const addedCount = state.ui.onboardAddedCount || 0;
+
+  const isProcessing = busy && total > 0;
+  const isDone = !busy && total > 0;
 
   return `
     <div style="text-align:center;margin-bottom:24px">
-      <h2 style="font-size:22px;font-weight:800;color:#1f2937;margin:0 0 8px">Add more documents</h2>
-      <p style="font-size:14px;color:#6b7280;margin:0">The more Claude knows about your background, the better your resume and interview prep will be.</p>
+      <h2 style="font-size:22px;font-weight:800;color:#1f2937;margin:0 0 8px">Add your documents</h2>
+      <p style="font-size:14px;color:#6b7280;margin:0">Upload as many as you have — performance reports, training records, existing resume, awards. The more Claude sees, the better your results.</p>
     </div>
 
-    <div style="display:grid;gap:10px;margin-bottom:20px">
-      ${[
-        { id:'perf', icon:'⭐', label:'Performance Reports / OERs / NCOERs', desc:'Shows your ratings, achievements, and leadership narrative' },
-        { id:'resume', icon:'📋', label:'Existing Resume or LinkedIn Export', desc:'We\'ll extract your civilian job history automatically' },
-        { id:'training', icon:'🎓', label:'Training Records / Course Certificates', desc:'Military schools, professional development, certifications' },
-      ].map(doc => `
-        <div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;gap:12px;align-items:start">
-          <span style="font-size:24px;flex-shrink:0">${doc.icon}</span>
-          <div style="flex:1">
-            <div style="font-weight:600;font-size:14px;color:#1f2937;margin-bottom:2px">${doc.label}</div>
-            <div style="font-size:12px;color:#6b7280;margin-bottom:8px">${doc.desc}</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <label style="cursor:pointer">
-                <input type="file" accept=".pdf" style="display:none" onchange="onboardAddDocument('${doc.id}', this.files[0], '${doc.label}')">
-                <span class="btn btn-secondary btn-sm" style="pointer-events:none">📤 Upload PDF</span>
-              </label>
-              <button class="btn btn-secondary btn-sm" onclick="onboardShowPaste('${doc.id}', '${doc.label}')">📋 Paste Text</button>
-              ${addedDocs.includes(doc.id) ? `<span style="font-size:12px;color:#16a34a;font-weight:600;align-self:center">✓ Added</span>` : ''}
-            </div>
+    <!-- Drop zone -->
+    ${!isProcessing ? `
+    <div id="onboard-dropzone"
+      style="border:2px dashed #d1d5db;border-radius:12px;padding:32px;text-align:center;margin-bottom:16px;cursor:pointer;transition:all 0.15s"
+      onclick="document.getElementById('onboard-doc-files').click()"
+      ondragover="event.preventDefault();this.style.borderColor='#2563eb';this.style.background='#eff6ff'"
+      ondragleave="this.style.borderColor='#d1d5db';this.style.background='white'"
+      ondrop="event.preventDefault();this.style.borderColor='#d1d5db';this.style.background='white';onboardQueueFiles(event.dataTransfer.files)">
+      <div style="font-size:36px;margin-bottom:8px">📁</div>
+      <div style="font-weight:600;color:#374151;font-size:15px;margin-bottom:4px">Drop files here or click to browse</div>
+      <div style="font-size:12px;color:#9ca3af">PDF files · Select as many as you want at once</div>
+      <input type="file" id="onboard-doc-files" accept=".pdf" multiple style="display:none"
+        onchange="onboardQueueFiles(this.files)">
+    </div>
+
+    <div style="font-size:12px;color:#6b7280;margin-bottom:16px;text-align:center">
+      Works with: Performance Reports · OERs/NCOERs · DD-214 · Training Records · Existing Resume · Awards · Any PDF
+    </div>
+    ` : ''}
+
+    <!-- Processing progress -->
+    ${isProcessing ? `
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div class="spinner"></div>
+          <div style="font-size:13px;font-weight:600;color:#1e40af">
+            Processing ${processed + 1} of ${total} — ${esc(currentFile)}
           </div>
         </div>
-      `).join('')}
+        <div style="background:#bfdbfe;border-radius:4px;height:6px;overflow:hidden">
+          <div style="background:#2563eb;height:100%;width:${Math.round((processed/total)*100)}%;transition:width 0.3s"></div>
+        </div>
+        <div style="font-size:11px;color:#6b7280;margin-top:6px">Processing one at a time to stay within limits — please don't close this tab</div>
+      </div>
+    ` : ''}
+
+    <!-- Done summary -->
+    ${isDone ? `
+      <div style="background:#f0fdf4;border:2px solid #86efac;border-radius:10px;padding:16px;margin-bottom:16px">
+        <div style="font-weight:700;color:#15803d;font-size:15px;margin-bottom:4px">✅ ${addedCount} of ${total} document${total>1?'s':''} processed</div>
+        ${errors.length > 0 ? `
+          <div style="font-size:12px;color:#92400e;margin-top:6px">
+            ⚠️ ${errors.length} file${errors.length>1?'s':''} couldn't be read: ${errors.map(e=>esc(e)).join(', ')}
+          </div>` : ''}
+        <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="setState({ui:{...state.ui,onboardTotal:0,onboardProcessed:0,onboardAddedCount:0,onboardErrors:[]}})">
+          + Add more documents
+        </button>
+      </div>
+    ` : ''}
+
+    <!-- Paste text option -->
+    <div style="text-align:center;margin-bottom:16px">
+      <button onclick="onboardShowPaste('paste','document')" style="background:none;border:none;color:#6b7280;font-size:13px;cursor:pointer;text-decoration:underline">
+        📋 Paste text instead of uploading a file
+      </button>
     </div>
 
     ${state.ui.onboardPasteDocId ? `
       <div style="background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:16px">
-        <div style="font-weight:600;font-size:13px;margin-bottom:8px">Paste ${esc(state.ui.onboardPasteDocLabel||'document')} text:</div>
-        <textarea id="onboard-paste-text" rows="6" placeholder="Paste the document text here..." style="width:100%;font-size:13px;box-sizing:border-box"></textarea>
+        <div style="font-weight:600;font-size:13px;margin-bottom:8px">Paste document text:</div>
+        <textarea id="onboard-paste-text" rows="6" placeholder="Paste any document text here — resume, performance report, training history..." style="width:100%;font-size:13px;box-sizing:border-box"></textarea>
         <div style="display:flex;gap:8px;margin-top:8px">
           <button class="btn btn-primary btn-sm" onclick="onboardProcessPaste()">Extract Info</button>
           <button class="btn btn-secondary btn-sm" onclick="setState({ui:{...state.ui,onboardPasteDocId:null}})">Cancel</button>
@@ -232,21 +273,9 @@ function renderOnboardStep3() {
       </div>
     ` : ''}
 
-    ${busy ? `
-      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;display:flex;gap:10px;align-items:center;margin-bottom:12px">
-        <div class="spinner"></div>
-        <div style="font-size:13px;font-weight:600;color:#1e40af">🤖 Extracting information...</div>
-      </div>
-    ` : ''}
-
-    ${addedDocs.length > 0 ? `
-      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;font-size:13px;color:#15803d;margin-bottom:12px">
-        ✅ ${addedDocs.length} document${addedDocs.length>1?'s':''} added — Claude will use ${addedDocs.length>1?'these':'this'} to strengthen your resume and interview answers.
-      </div>
-    ` : ''}
-
-    <button class="btn btn-primary" onclick="setState({ui:{...state.ui,onboardStep:4}})" style="width:100%;padding:14px;font-size:15px">
-      ${addedDocs.length > 0 ? 'Continue → Pick Your First Goal' : 'Skip for Now → Pick Your First Goal'}
+    <button class="btn btn-primary" onclick="setState({ui:{...state.ui,onboardStep:4}})"
+      style="width:100%;padding:14px;font-size:15px" ${isProcessing?'disabled':''}>
+      ${addedCount > 0 || (isDone) ? `Continue → Pick Your First Goal` : `Skip for Now → Pick Your First Goal`}
     </button>`;
 }
 
@@ -345,9 +374,38 @@ async function onboardProcessDD214(file) {
   }
 }
 
-async function onboardAddDocument(docId, file, docLabel) {
-  if (!file) return;
-  setState({ ui: { ...state.ui, onboardDocBusy: true } });
+// ── Sequential document queue ─────────────────────────────────────────
+let _onboardQueueRunning = false;
+let _onboardFileQueue = [];
+
+function onboardQueueFiles(fileList) {
+  const files = Array.from(fileList);
+  if (!files.length) return;
+  _onboardFileQueue.push(...files);
+  const total = (_onboardFileQueue.length) + (state.ui.onboardProcessed || 0);
+  setState({ ui: {
+    ...state.ui,
+    onboardTotal: (state.ui.onboardTotal || 0) + files.length,
+    onboardDocBusy: true,
+    onboardErrors: state.ui.onboardErrors || []
+  }});
+  if (!_onboardQueueRunning) _onboardRunQueue();
+}
+
+async function _onboardRunQueue() {
+  _onboardQueueRunning = true;
+  while (_onboardFileQueue.length > 0) {
+    const file = _onboardFileQueue.shift();
+    setState({ ui: { ...state.ui, onboardCurrentFile: file.name, onboardDocBusy: true } });
+    await _onboardProcessOneFile(file);
+    // Small pause between documents to avoid rate limits
+    if (_onboardFileQueue.length > 0) await new Promise(r => setTimeout(r, 1500));
+  }
+  _onboardQueueRunning = false;
+  setState({ ui: { ...state.ui, onboardDocBusy: false, onboardCurrentFile: '' } });
+}
+
+async function _onboardProcessOneFile(file, retryCount = 0) {
   try {
     const base64 = await readFileAsBase64(file);
     const raw = await callClaudeWithFile(
@@ -363,12 +421,32 @@ async function onboardAddDocument(docId, file, docLabel) {
     if ((data.assignments||[]).length) setState({ assignments: [...state.assignments, ...data.assignments.filter(a=>a.dutyTitle)] });
     if ((data.civilianJobs||[]).length) setState({ civilianJobs: [...state.civilianJobs, ...data.civilianJobs.filter(j=>j.title)] });
     if ((data.awards||[]).length) setState({ awards: [...state.awards, ...data.awards.filter(a=>a.name)] });
-    setState({ ui: { ...state.ui, onboardDocBusy: false, onboardAddedDocs: [...(state.ui.onboardAddedDocs||[]), docId] } });
-    showToast(`✅ ${docLabel} processed`);
+    setState({ ui: {
+      ...state.ui,
+      onboardProcessed: (state.ui.onboardProcessed || 0) + 1,
+      onboardAddedCount: (state.ui.onboardAddedCount || 0) + 1,
+    }});
   } catch(err) {
-    setState({ ui: { ...state.ui, onboardDocBusy: false } });
-    showToast('Could not process document — try pasting the text instead', false);
+    const is429 = err.message?.includes('429') || err.status === 429;
+    if (is429 && retryCount < 2) {
+      // Rate limited — wait and retry
+      const waitMs = (retryCount + 1) * 4000; // 4s, then 8s
+      setState({ ui: { ...state.ui, onboardCurrentFile: `⏳ Rate limit hit — retrying ${file.name} in ${waitMs/1000}s...` } });
+      await new Promise(r => setTimeout(r, waitMs));
+      return _onboardProcessOneFile(file, retryCount + 1);
+    }
+    // Failed after retries — log error, keep going
+    setState({ ui: {
+      ...state.ui,
+      onboardProcessed: (state.ui.onboardProcessed || 0) + 1,
+      onboardErrors: [...(state.ui.onboardErrors || []), file.name],
+    }});
   }
+}
+
+// Legacy single-file handler (kept for paste flow)
+async function onboardAddDocument(docId, file, docLabel) {
+  onboardQueueFiles([file]);
 }
 
 function onboardShowPaste(docId, docLabel) {
