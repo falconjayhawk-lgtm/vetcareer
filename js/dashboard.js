@@ -12,6 +12,7 @@ function renderDashboard() {
     {label:'Upload your documents (DD-214, performance reports, resume)', autoDone: docsEffectivelyDone, view:'documents', priority:true},
     {label:'Complete your profile', autoDone:!!(p.fullName&&p.branch), view:'profile'},
     {label:'Review & edit your experience', autoDone:state.assignments.length>0 || state.civilianJobs.length>0, view:'experience'},
+    {label:'Search for jobs', autoDone:state.jobs.length>0||state.ui.scoutResults?.length>0, view:'scout'},
     {label:'Add jobs to tracker', autoDone:state.jobs.length>0, view:'jobs'},
     {label:'You\'re connected! AI features are ready to use.', autoDone:true, view:'dashboard'},
     {label:'Generate your LinkedIn profile', autoDone:false, view:'linkedin', manualOnly:true},

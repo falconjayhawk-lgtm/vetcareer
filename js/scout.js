@@ -17,6 +17,10 @@ function renderScout() {
   const savedClearance = state.ui.scoutClearance !== undefined ? state.ui.scoutClearance : (p.clearance || '');
   const savedSeniority = state.ui.scoutSeniority || 'mid-senior';
 
+  const suggestions = state.ui.scoutSuggestions || null;
+  const suggBusy = state.ui.scoutSuggBusy || false;
+  const hasProfile = !!(p.branch || p.mosRate || (state.profile.technicalSkills||[]).length > 0);
+
   const seniorOpts = [
     {v:'entry',     l:'Entry / Junior (GS-5 to GS-9)'},
     {v:'mid-senior',l:'Mid / Senior (GS-11 to GS-13)'},
@@ -110,6 +114,63 @@ function renderScout() {
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">🔍 Job Scout</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 16px">Real federal listings from USAJobs · Direct links to civilian boards · Multi-search</p>
+
+    <!-- ── WHERE SHOULD I LOOK panel ── -->
+    ${hasProfile ? `
+    <div class="card" style="margin-bottom:16px;border:1.5px solid #e0e7ff;background:#fafbff">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${suggestions||suggBusy?'14px':'0'}">
+        <div>
+          <div style="font-weight:700;font-size:15px;color:#1e3a8a">🧭 Where should I look?</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:2px">Get AI-powered career path suggestions based on your background and skills</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="generateCareerSuggestions()" ${suggBusy?'disabled':''} style="white-space:nowrap;flex-shrink:0">
+          ${suggBusy?'<div class="spinner" style="display:inline-block"></div> Analyzing...':'✨ Suggest Careers'}
+        </button>
+      </div>
+
+      ${suggBusy ? `
+        <div style="background:#eff6ff;border-radius:8px;padding:12px;font-size:13px;color:#1e40af;display:flex;align-items:center;gap:8px">
+          <div class="spinner"></div> Claude is analyzing your military background and skills...
+        </div>
+      ` : ''}
+
+      ${suggestions ? `
+        <div>
+          ${suggestions.paths.map(path => `
+            <div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:10px;background:white">
+              <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:6px">
+                <div style="font-weight:700;font-size:14px;color:#1f2937">${esc(path.title)}</div>
+                <div style="display:flex;gap:4px;flex-shrink:0">
+                  <span style="background:#dcfce7;color:#15803d;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700">
+                    ${esc(path.fitScore)}/10 fit
+                  </span>
+                  <span style="background:#eff6ff;color:#1d4ed8;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600">
+                    ${esc(path.demand)}
+                  </span>
+                </div>
+              </div>
+              <div style="font-size:13px;color:#4b5563;margin-bottom:8px">${esc(path.why)}</div>
+              <div style="font-size:12px;color:#6b7280;margin-bottom:8px">
+                <strong style="color:#374151">Search terms:</strong> ${path.searchTerms.map(t=>`
+                  <button onclick="applyScoutSuggestion('${t.replace(/'/g,"\'")}','${(p.location||'').replace(/'/g,"\'")}','${(p.clearance||'').replace(/'/g,"\'")}');"
+                    style="display:inline-block;margin:2px;padding:2px 8px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:999px;cursor:pointer;font-size:11px;color:#374151;font-weight:500">
+                    ${esc(t)} →
+                  </button>`).join('')}
+              </div>
+              <div style="font-size:11px;color:#9ca3af">
+                💰 ${esc(path.salaryRange)} · 📈 ${esc(path.growthNote)}
+              </div>
+            </div>
+          `).join('')}
+          ${suggestions.bottomLine ? `
+            <div style="background:#fef9c3;border:1px solid #fef08a;border-radius:8px;padding:10px 14px;font-size:13px;color:#854d0e;margin-top:4px">
+              💡 <strong>Bottom line:</strong> ${esc(suggestions.bottomLine)}
+            </div>
+          ` : ''}
+        </div>
+      ` : ''}
+    </div>
+    ` : ''}
 
     <!-- Tab bar -->
     <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:2px solid #e5e7eb;padding-bottom:0">
@@ -387,7 +448,12 @@ async function fetchScoutJobs({ keywords, location, clearance, seniority }) {
       veteranProfile: {
         branch: state.profile.branch, rank: state.profile.rank,
         mosRate: state.profile.mosRate,
-        targetIndustries: (state.profile.targetIndustries||[]).map(i=>typeof i==='object'?i.name:i).join(', ')
+        yearsOfService: state.profile.yearsOfService,
+        clearance: state.profile.clearance,
+        technicalSkills: (state.profile.technicalSkills||[]).join(', '),
+        softSkills: (state.profile.softSkills||[]).join(', '),
+        targetIndustries: (state.profile.targetIndustries||[]).map(i=>typeof i==='object'?i.name:i).join(', '),
+        recentExperience: state.assignments.slice(0,3).map(a=>`${a.dutyTitle||''} - ${(a.accomplishments||'').slice(0,120)}`).join(' | ')
       }
     })
   });
@@ -499,4 +565,84 @@ function copyMultiResults() {
   const jobs = state.ui.multiResults || [];
   const text = jobs.map(j=>`${j.title} — ${j.agency||j.company}\n${j.location} | ${j.salary||''} | Match: ${j.grade}/10\n${j.searchLabel||''}\n${j.url||''}`).join('\n\n---\n\n');
   navigator.clipboard.writeText(text).then(()=>showToast('Copied ✓'));
+}
+
+// ── Career path suggestions ──────────────────────────────────────────
+async function generateCareerSuggestions() {
+  const p = state.profile;
+  setState({ ui: { ...state.ui, scoutSuggBusy: true, scoutSuggestions: null } });
+
+  try {
+    const techSkills = (p.technicalSkills||[]).join(', ') || 'None listed';
+    const softSkills = (p.softSkills||[]).join(', ') || 'None listed';
+    const recentExp = state.assignments.slice(0,4)
+      .map(a => `${a.dutyTitle||''}: ${(a.accomplishments||'').slice(0,150)}`)
+      .join(' | ') || 'None';
+
+    const prompt = `You are a veteran career transition expert. Analyze this veteran's background and suggest the TOP 4 civilian career paths that best match their experience, skills, and military background. Be specific and honest — not every path is a perfect fit.
+
+VETERAN PROFILE:
+Branch: ${p.branch||'Unknown'} | Rank: ${p.rank||'Unknown'} | MOS/Rate: ${p.mosRate||'Unknown'} | Years: ${p.yearsOfService||'Unknown'}
+Security Clearance: ${p.clearance||'None'}
+Technical Skills: ${techSkills}
+Leadership/Soft Skills: ${softSkills}
+Recent Experience: ${recentExp}
+Target Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?i.name:i).join(', ')||'Not specified'}
+
+Return ONLY this JSON (no markdown):
+{
+  "paths": [
+    {
+      "title": "Specific career title (e.g. Operations Manager, Project Manager, Cybersecurity Analyst)",
+      "fitScore": 9,
+      "demand": "High Demand",
+      "why": "2-sentence explanation of exactly WHY their background fits this — reference specific skills, MOS, or experience",
+      "searchTerms": ["keyword 1", "keyword 2", "keyword 3"],
+      "salaryRange": "$85,000 - $115,000",
+      "growthNote": "Brief note on job market growth"
+    }
+  ],
+  "bottomLine": "One honest sentence about their strongest career direction and what to focus on first"
+}
+
+Rules:
+- fitScore 1-10 based on actual skill alignment — be honest, not all 10s
+- demand must be one of: "High Demand", "Steady Demand", "Competitive Market"
+- searchTerms should be 3 specific keywords they can paste directly into a job search
+- Prioritize paths where their clearance or MOS gives them a genuine advantage
+- If they have TS/SCI, always include at least one defense/intel path`;
+
+    const result = await callClaude(
+      'You are a veteran career transition expert who gives specific, honest career guidance. You never give generic advice. You always tie recommendations directly to the veteran\'s actual skills and experience. Return valid JSON only.',
+      prompt,
+      'scout'
+    );
+
+    const data = JSON.parse(result.replace(/```json|```/g, '').trim());
+    setState({ ui: { ...state.ui, scoutSuggBusy: false, scoutSuggestions: data } });
+    showToast('✅ Career suggestions ready!');
+  } catch(err) {
+    setState({ ui: { ...state.ui, scoutSuggBusy: false } });
+    showToast('Could not generate suggestions: ' + err.message, false);
+  }
+}
+
+function applyScoutSuggestion(keywords, location, clearance) {
+  // Pre-fill the search form with the suggested search terms and scroll to it
+  setState({ ui: {
+    ...state.ui,
+    scoutKeywords: keywords,
+    scoutLocation: location || state.ui.scoutLocation || '',
+    scoutClearance: clearance || state.ui.scoutClearance || '',
+    scoutActiveTab: 'single'
+  }});
+  // Update input values directly since setState doesn't re-render inputs
+  setTimeout(() => {
+    const kw = document.getElementById('sc-keywords');
+    const loc = document.getElementById('sc-location');
+    if (kw) kw.value = keywords;
+    if (loc && location) loc.value = location;
+    kw?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast(`Search pre-filled with "${keywords}" — click Search USAJobs`);
+  }, 50);
 }
