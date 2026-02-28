@@ -1,5 +1,11 @@
 // ── Profile ───────────────────────────────────────────────────────────
 function renderProfile() {
+  // Auto-fix military name format on first render if needed
+  const raw = state.profile.fullName || '';
+  if (raw.includes(',') && !state.ui.nameNormalized) {
+    setState({ ui: { ...state.ui, nameNormalized: true } }, false);
+    setTimeout(normalizeProfileName, 100);
+  }
   const p = state.profile;
   const selectedIndustries = p.targetIndustries || [];
   
@@ -122,6 +128,21 @@ function renderProfile() {
         </div>`:'' }
       ${awardList||'<p style="color:#9ca3af;font-size:14px">No awards yet. Military decorations translate powerfully to civilian achievement recognition.</p>'}
     </div>`;
+}
+
+function normalizeProfileName() {
+  // Fix military-format names (LAST, FIRST MIDDLE) stored in profile
+  const raw = state.profile.fullName || '';
+  const commaMatch = raw.match(/^([^,]+),\s*(.+)$/);
+  if (commaMatch) {
+    const last = commaMatch[1].trim();
+    const first = commaMatch[2].trim().split(/\s+/)[0];
+    const normalized = `${first} ${last}`.replace(/\b\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    setState({ profile: { ...state.profile, fullName: normalized } }, false);
+    const el = document.getElementById('p-fullName');
+    if (el) el.value = normalized;
+    showToast('Name reformatted to First Last');
+  }
 }
 
 function saveProfile() {

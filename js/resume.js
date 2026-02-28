@@ -447,8 +447,28 @@ async function generateResume() {
       const el = document.getElementById('p-'+f); if(el && el.value) p[f] = el.value;
     });
 
+    // Normalize name from military "LAST, FIRST MIDDLE" to "First Last"
+    const normalizeVetName = (raw) => {
+      if (!raw) return '[Name]';
+      // If it matches "LAST, FIRST MIDDLE" format, reorder and title-case
+      const commaMatch = raw.match(/^([^,]+),\s*(.+)$/);
+      if (commaMatch) {
+        const last = commaMatch[1].trim();
+        const rest = commaMatch[2].trim().split(/\s+/);
+        const first = rest[0]; // drop middle name
+        const name = `${first} ${last}`;
+        return name.replace(/\b\w/g, c => c.toUpperCase()).replace(/\b\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+      }
+      // Already in normal order — just ensure title case if ALL CAPS
+      if (raw === raw.toUpperCase()) {
+        return raw.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+      }
+      return raw;
+    };
+    const displayName = normalizeVetName(p.fullName);
+
     const contactBlock = [
-      p.fullName || '[Name]',
+      displayName,
       [p.phone, p.email].filter(Boolean).join(' | '),
       p.linkedin ? p.linkedin.replace(/^https?:\/\//,'') : '',
       p.location || ''
@@ -815,8 +835,28 @@ OUTPUT: Resume content only — no preamble, no "Here is your resume:", no comme
     ['fullName','email','phone','location','linkedin'].forEach(f => {
       const el = document.getElementById('p-'+f); if(el && el.value) p[f] = el.value;
     });
+    // Normalize name from military "LAST, FIRST MIDDLE" to "First Last"
+    const normalizeVetName = (raw) => {
+      if (!raw) return '[Name]';
+      // If it matches "LAST, FIRST MIDDLE" format, reorder and title-case
+      const commaMatch = raw.match(/^([^,]+),\s*(.+)$/);
+      if (commaMatch) {
+        const last = commaMatch[1].trim();
+        const rest = commaMatch[2].trim().split(/\s+/);
+        const first = rest[0]; // drop middle name
+        const name = `${first} ${last}`;
+        return name.replace(/\b\w/g, c => c.toUpperCase()).replace(/\b\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+      }
+      // Already in normal order — just ensure title case if ALL CAPS
+      if (raw === raw.toUpperCase()) {
+        return raw.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+      }
+      return raw;
+    };
+    const displayName = normalizeVetName(p.fullName);
+
     const contactBlock = [
-      p.fullName || '[Name]',
+      displayName,
       [p.phone, p.email].filter(Boolean).join(' | '),
       p.linkedin ? p.linkedin.replace(/^https?:\/\//,'') : '',
       p.location || ''

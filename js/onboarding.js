@@ -379,10 +379,23 @@ IMPORTANT: branch and yearsOfService are critical fields — always extract them
     const data = JSON.parse(raw.replace(/```json|```/g, '').trim());
     const p = data.profile || {};
 
-    // Apply profile fields
+    // Apply profile fields — normalize name from military "LAST, FIRST MIDDLE" to "First Last"
+    const normalizeVetName = (raw) => {
+      if (!raw) return '';
+      const commaMatch = raw.match(/^([^,]+),\s*(.+)$/);
+      if (commaMatch) {
+        const last = commaMatch[1].trim();
+        const first = commaMatch[2].trim().split(/\s+/)[0];
+        const name = `${first} ${last}`;
+        return name.replace(/\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+      }
+      if (raw === raw.toUpperCase()) return raw.toLowerCase().replace(/\w/g, c => c.toUpperCase());
+      return raw;
+    };
+
     const updates = {};
     ['fullName','branch','rank','mosRate','yearsOfService','separationDate','characterOfService','clearance','email','phone','location'].forEach(f => {
-      if (p[f]) updates[f] = p[f];
+      if (p[f]) updates[f] = f === 'fullName' ? normalizeVetName(p[f]) : p[f];
     });
     if (Object.keys(updates).length) setState({ profile: { ...state.profile, ...updates } });
 
