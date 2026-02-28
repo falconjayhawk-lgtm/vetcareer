@@ -2,7 +2,7 @@
 function renderResume() {
   const jobs = state.jobs;
   const selJob = state.ui.resumeJob || '';
-  const fmt = state.ui.resumeFmt || 'ats';
+  const fmt = state.ui.resumeFmt || 'professional';
   const mode = state.ui.resumeMode || 'targeted'; // 'targeted' or 'generic'
   const job = jobs.find(j=>j.id===selJob);
   const busy = state.ui.resumeBusy || false;
@@ -63,7 +63,11 @@ function renderResume() {
           <select id="resume-job" onchange="toggleUI('resumeJob',this.value)"><option value="">Select a job...</option>${jobOptions}</select></div>
         <div class="field"><label class="field-label">Resume Format</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            ${[{id:'ats',l:'ATS-Friendly',d:'Passes screening bots'},{id:'visual',l:'Professional',d:'Polished for humans'}].map(f=>`
+            ${[
+              {id:'professional',l:'Professional',d:'Navy headers · Calibri · Corporate'},
+              {id:'modern',l:'Modern',d:'Bold accents · Clean · Tech/Business'},
+              {id:'classic',l:'Classic',d:'Traditional · No color · Gov/Federal'}
+            ].map(f=>`
               <div onclick="toggleUI('resumeFmt','${f.id}')" style="padding:10px;border:2px solid ${fmt===f.id?'#2563eb':'#e5e7eb'};background:${fmt===f.id?'#eff6ff':'white'};border-radius:8px;cursor:pointer">
                 <div style="font-weight:600;font-size:13px">${f.l}</div>
                 <div style="font-size:11px;color:#6b7280">${f.d}</div>
@@ -89,7 +93,11 @@ function renderResume() {
       <div class="grid2" style="margin-bottom:14px">
         <div class="field"><label class="field-label">Resume Format</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            ${[{id:'ats',l:'ATS-Friendly',d:'Passes screening bots'},{id:'visual',l:'Professional',d:'Polished for humans'}].map(f=>`
+            ${[
+              {id:'professional',l:'Professional',d:'Navy headers · Calibri · Corporate'},
+              {id:'modern',l:'Modern',d:'Bold accents · Clean · Tech/Business'},
+              {id:'classic',l:'Classic',d:'Traditional · No color · Gov/Federal'}
+            ].map(f=>`
               <div onclick="toggleUI('resumeFmt','${f.id}')" style="padding:10px;border:2px solid ${fmt===f.id?'#2563eb':'#e5e7eb'};background:${fmt===f.id?'#eff6ff':'white'};border-radius:8px;cursor:pointer">
                 <div style="font-weight:600;font-size:13px">${f.l}</div>
                 <div style="font-size:11px;color:#6b7280">${f.d}</div>
@@ -211,7 +219,7 @@ function renderResumeResult(result, fmt) {
     <!-- Resume output -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
-        <h2 style="margin:0">📄 ${isGeneric?'General Resume':'Resume'} — ${fmt==='ats'?'ATS-Friendly':'Professional'} Format</h2>
+        <h2 style="margin:0">📄 ${isGeneric?'General Resume':'Resume'} — ${{professional:'Professional',modern:'Modern',classic:'Classic'}[fmt]||'Professional'} Format</h2>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-secondary btn-sm" onclick="copyResumeToClipboard()">📋 Copy Text</button>
           <button class="btn btn-secondary btn-sm" onclick="exportResumeToWord()">📝 Export Word</button>
@@ -219,7 +227,7 @@ function renderResumeResult(result, fmt) {
         </div>
       </div>
       <p style="font-size:12px;color:#6b7280;margin:0 0 12px">Print / Save PDF → in print dialog choose <strong>Save as PDF</strong> · Or copy text to paste into Word/Google Docs for formatting</p>
-      <div class="resume-preview" id="resume-text-output" style="font-family:${fmt==='ats'?'Arial':'Georgia'},serif">${esc(result.resume)}</div>
+      <div class="resume-preview" id="resume-text-output" style="font-family:${fmt==='classic'?'Georgia,serif':'Arial,sans-serif'};${fmt==='modern'?'border-left:4px solid #1e3a8a;padding-left:16px':''}">${esc(result.resume)}</div>
     </div>
 
     ${result.bio ? `
@@ -762,12 +770,12 @@ function copyBioToClipboard() {
 
 function printResume() {
   const text = document.getElementById('resume-text-output')?.innerText || document.querySelector('.resume-preview')?.innerText || '';
-  const fmt = state.ui.resumeFmt || 'ats';
+  const fmt = state.ui.resumeFmt || 'professional';
   const name = state.profile.fullName || 'Resume';
   const w = window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><title>${name} — Resume</title><style>
     @page { margin: 0.65in; }
-    body { font-family:${fmt==='ats'?'Arial, Helvetica':'Georgia, serif'};font-size:10.5pt;color:#111;max-width:100%;line-height:1.55;margin:0 }
+    body { font-family:${fmt==='classic'?'Georgia, serif':'Arial, Helvetica, sans-serif'};font-size:10.5pt;color:#111;max-width:100%;line-height:1.55;margin:0 }
     pre { font-family:inherit;white-space:pre-wrap;font-size:10.5pt;margin:0 }
     @media print { body { margin:0 } }
   </style></head><body><pre>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></body></html>`);
