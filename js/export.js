@@ -137,7 +137,18 @@ function buildDocXml(parsed, tmpl) {
       headBorder, 200, 80
     );
 
+    // Pre-process: join lines starting with | to the previous line (e.g. education split across lines)
+    const mergedLines = [];
     for (const line of section.lines) {
+      if (!line) { mergedLines.push(line); continue; }
+      if (line.startsWith('|') && mergedLines.length > 0) {
+        const last = mergedLines[mergedLines.length - 1];
+        if (last) { mergedLines[mergedLines.length - 1] = last + ' ' + line; continue; }
+      }
+      mergedLines.push(line);
+    }
+
+    for (const line of mergedLines) {
       if (!line) continue;
 
       // Bullet
@@ -156,7 +167,7 @@ function buildDocXml(parsed, tmpl) {
       // Role/title line with year — handle **bold** markdown in title
       if (/\d{4}/.test(line) && /[|–\-—]/.test(line)) {
         // Strip ** markdown from the whole line first
-        const cleanLine = line.replace(/\*\*([^*]+)\*\*/g, '$1');
+        const cleanLine = line.replace(/\*+([^*]+)\*+/g, '$1');
         const parts = cleanLine.split(/\s*\|\s*/);
         let runs = '';
         parts.forEach((part, idx) => {
@@ -171,7 +182,7 @@ function buildDocXml(parsed, tmpl) {
       }
 
       // Normal text — strip any remaining ** markdown
-      const cleanedLine = line.replace(/\*\*([^*]+)\*\*/g, '$1');
+      const cleanedLine = line.replace(/\*+([^*]+)\*+/g, '$1');
       body += para(
         run(cleanedLine, { font:T.font, size:T.bodySize, color:T.text }),
         '', 0, 40
@@ -282,7 +293,84 @@ async function exportResumeToWord() {
   }
 }
 
-// ── Letter export ─────────────────────────────────────────────────────
+// ── Letter/Bio docx builder ───────────────────────────────────────────
+async function buildLetterDocx(text, docTitle) {
+  await loadJSZip();
+  const lines = text.split('\n');
+  const accentColor = '1E3A8A';
+  const textColor = '1F2937';
+  const grayColor = '6B7280';
+
+  let body = '';
+
+  // Title header
+  body += `<w:p>
+    <w:pPr><w:spacing w:before="0" w:after="80"/></w:pPr>
+    <w:r>
+      <w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:b/><w:bCs/><w:color w:val="${accentColor}"/></w:rPr>
+      <w:t>${xmlEsc(docTitle)}</w:t>
+    </w:r>
+  </w:p>`;
+
+  // Divider
+  body += `<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="8" w:space="1" w:color="${accentColor}"/></w:pBdr><w:spacing w:before="0" w:after="160"/></w:pPr></w:p>`;
+
+  // Content lines
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      body += `<w:p><w:pPr><w:spacing w:before="0" w:after="80"/></w:pPr></w:p>`;
+      continue;
+    }
+    // Strip markdown bold
+    const clean = trimmed.replace(/\*+([^*]+)\*+/g, '$1');
+    body += `<w:p>
+      <w:pPr><w:spacing w:before="0" w:after="80"/></w:pPr>
+      <w:r>
+        <w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:color w:val="${textColor}"/></w:rPr>
+        <w:t xml:space="preserve">${xmlEsc(clean)}</w:t>
+      </w:r>
+    </w:p>`;
+  }
+
+  const docXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<w:body>
+${body}
+<w:sectPr>
+  <w:pgSz w:w="12240" w:h="15840"/>
+  <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/>
+</w:sectPr>
+</w:body>
+</w:document>`;
+
+  const zip = new JSZip();
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+</Types>`);
+
+  zip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`);
+
+  zip.file('word/_rels/document.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`);
+
+  zip.file('word/document.xml', docXml);
+  zip.file('word/styles.xml', buildStylesXml({ font: 'Calibri', bodySize: 22, text: textColor }));
+
+  return await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+}
+
+// ── Letter export (legacy RTF - kept for reference letters) ───────────
 async function exportLetterToWord(letterText, recipientName) {
   if (!letterText) { showToast('No letter to export', false); return; }
   showToast('Building document...', true);

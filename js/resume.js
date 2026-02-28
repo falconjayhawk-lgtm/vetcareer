@@ -228,7 +228,7 @@ function renderResumeResult(result, fmt) {
             <button class="btn btn-secondary btn-sm" onclick="startResumeEdit()">✏️ Edit</button>
             <button class="btn btn-secondary btn-sm" onclick="toggleUI('resumeRewriteOpen',!state.ui.resumeRewriteOpen)">🔄 Rewrite Section</button>
             <button class="btn btn-secondary btn-sm" onclick="copyResumeToClipboard()">📋 Copy Text</button>
-            <button class="btn btn-secondary btn-sm" onclick="exportResumeToWord()">📝 Export Word</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportResumeToWord()">📥 Download .docx</button>
             <button class="btn btn-primary btn-sm" onclick="printResume()">🖨 Print / Save PDF</button>
           `}
         </div>
@@ -288,7 +288,7 @@ function renderResumeResult(result, fmt) {
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-secondary btn-sm" onclick="copyBioToClipboard()">📋 Copy for LinkedIn</button>
-          <button class="btn btn-primary btn-sm" onclick="downloadBio()">⬇ Download .txt</button>
+          <button class="btn btn-primary btn-sm" onclick="downloadBio()">📥 Download .docx</button>
         </div>
       </div>
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 12px;font-size:12px;color:#1e40af;margin-bottom:10px">
@@ -301,7 +301,7 @@ function renderResumeResult(result, fmt) {
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h2 style="margin:0">✉️ Cover Letter</h2>
-        <button class="btn btn-primary btn-sm" onclick="downloadCover()">⬇ Download .txt</button>
+        <button class="btn btn-primary btn-sm" onclick="downloadCover()">📥 Download .docx</button>
       </div>
       <div class="resume-preview" id="cover-text">${esc(result.coverLetter)}</div>
     </div>` : ''}`;
@@ -844,12 +844,19 @@ Rules:
   }
 }
 
-function downloadBio() {
-  const text = document.getElementById('bio-text')?.innerText || '';
-  const a = document.createElement('a');
-  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
-  a.download = `Professional_Bio_${(state.profile.fullName||'').replace(/\s+/g,'_')}.txt`;
-  a.click();
+async function downloadBio() {
+  const text = state.ui.resumeResult?.bio || document.getElementById('bio-text')?.innerText || '';
+  if (!text) { showToast('No bio to download', false); return; }
+  showToast('Building document...', true);
+  try {
+    await loadJSZip();
+    const name = (state.profile?.fullName || 'Bio').replace(/\s+/g, '_');
+    const blob = await buildLetterDocx(text, 'Professional Bio');
+    saveAs(blob, `Professional_Bio_${name}.docx`);
+    showToast('✓ Bio downloaded as Word document');
+  } catch(err) {
+    showToast('Export failed — try copying the text instead', false);
+  }
 }
 
 function buildResumeContext(job) {
@@ -950,11 +957,18 @@ function printResume() {
   setTimeout(()=>{ w.focus(); w.print(); }, 500);
 }
 
-function downloadCover() {
-  const text = document.getElementById('cover-text')?.innerText || '';
-  const a = document.createElement('a');
-  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
-  a.download = `Cover_Letter_${(state.profile.fullName||'').replace(/\s+/g,'_')}.txt`;
-  a.click();
+async function downloadCover() {
+  const text = state.ui.resumeResult?.coverLetter || document.getElementById('cover-text')?.innerText || '';
+  if (!text) { showToast('No cover letter to download', false); return; }
+  showToast('Building document...', true);
+  try {
+    await loadJSZip();
+    const name = (state.profile?.fullName || 'Cover_Letter').replace(/\s+/g, '_');
+    const blob = await buildLetterDocx(text, 'Cover Letter');
+    saveAs(blob, `Cover_Letter_${name}.docx`);
+    showToast('✓ Cover letter downloaded as Word document');
+  } catch(err) {
+    showToast('Export failed — try copying the text instead', false);
+  }
 }
 
