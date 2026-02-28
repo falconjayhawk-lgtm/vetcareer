@@ -23,8 +23,43 @@ function renderProfile() {
       <button class="btn btn-danger btn-sm" onclick="removeAward('${a.id}')">✕</button>
     </div>`).join('');
 
+  // Check for common data quality issues to warn about
+  const p2 = state.profile;
+  const issues = [];
+  if (p2.fullName && p2.fullName === p2.fullName.toUpperCase()) issues.push('Name appears to be ALL CAPS');
+  if (p2.fullName && p2.fullName.includes(',')) issues.push('Name may be in Last, First order');
+  if (p2.rank && p2.rank === p2.rank.toUpperCase() && p2.rank.length > 3) issues.push('Rank appears to be ALL CAPS');
+  if (!p2.fullName) issues.push('Name is missing');
+  if (!p2.branch) issues.push('Branch of service is missing');
+  if (!p2.rank) issues.push('Rank is missing');
+  if (!p2.yearsOfService) issues.push('Years of service is missing');
+
   return `
-    <h1 style="font-size:24px;font-weight:800;margin:0 0 20px">Your Profile</h1>
+    <h1 style="font-size:24px;font-weight:800;margin:0 0 16px">Your Profile</h1>
+
+    <!-- Data quality banner -->
+    <div style="background:#fffbeb;border:2px solid #f59e0b;border-radius:12px;padding:16px 18px;margin-bottom:20px">
+      <div style="display:flex;align-items:start;gap:12px">
+        <span style="font-size:22px;flex-shrink:0">⚠️</span>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:15px;color:#92400e;margin-bottom:4px">Review your profile before generating anything</div>
+          <div style="font-size:13px;color:#78350f;line-height:1.6">
+            Claude uses exactly what's here to write your resume, cover letter, LinkedIn profile, and interview answers.
+            <strong>Garbage in, garbage out</strong> — take 2 minutes to verify everything looks right before you generate.
+          </div>
+          ${issues.length > 0 ? `
+          <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">
+            ${issues.map(i => `<span style="background:#fef3c7;border:1px solid #f59e0b;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;color:#92400e">⚠ ${esc(i)}</span>`).join('')}
+          </div>` : `
+          <div style="margin-top:8px;font-size:12px;color:#15803d;font-weight:600">✅ No obvious issues detected — still worth a quick read-through</div>
+          `}
+          <div style="margin-top:12px;font-size:12px;color:#78350f">
+            <strong>Common things to check:</strong> Name capitalization · Name order (First Last, not LAST FIRST) · Dates formatted consistently · Rank spelled out fully · Location is a city, not a base name
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <h2>Personal Information</h2>
       <div class="grid2">
