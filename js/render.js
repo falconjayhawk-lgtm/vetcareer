@@ -92,6 +92,7 @@ function renderSidebar() {
 
 function renderView() {
   switch(state.view) {
+    case 'onboarding': return renderOnboarding();
     case 'dashboard': return renderDashboard();
     case 'profile': return renderProfile();
     case 'experience': return renderExperience();

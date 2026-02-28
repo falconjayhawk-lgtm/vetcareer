@@ -18,6 +18,10 @@ async function initClerk() {
       syncClerkUserToState(clerk.user);
       setState({ loggedIn: true });
       if (typeof initFeedback === 'function') initFeedback();
+      // Show onboarding for new users
+      if (typeof shouldShowOnboarding === 'function' && shouldShowOnboarding()) {
+        setState({ view: 'onboarding', ui: { ...state.ui, onboardStep: 1 } });
+      }
     } else {
       setState({ loggedIn: false });
     }
