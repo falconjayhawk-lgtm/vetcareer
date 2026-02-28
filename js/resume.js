@@ -226,6 +226,7 @@ function renderResumeResult(result, fmt) {
             <button class="btn btn-primary btn-sm" onclick="saveResumeEdit()" style="background:#16a34a">✅ Done Editing</button>
           ` : `
             <button class="btn btn-secondary btn-sm" onclick="startResumeEdit()">✏️ Edit</button>
+            <button class="btn btn-secondary btn-sm" onclick="toggleUI('resumeRewriteOpen',!state.ui.resumeRewriteOpen)">🔄 Rewrite Section</button>
             <button class="btn btn-secondary btn-sm" onclick="copyResumeToClipboard()">📋 Copy Text</button>
             <button class="btn btn-secondary btn-sm" onclick="exportResumeToWord()">📝 Export Word</button>
             <button class="btn btn-primary btn-sm" onclick="printResume()">🖨 Print / Save PDF</button>
@@ -235,6 +236,37 @@ function renderResumeResult(result, fmt) {
       ${state.ui.resumeEditing ? `
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:10px">
           ✏️ <strong>Editing mode</strong> — click anywhere in the resume to make changes. Hit <strong>Done Editing</strong> when finished to save your changes.
+        </div>
+      ` : state.ui.resumeRewriteOpen ? `
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;margin-bottom:14px">
+          <div style="font-weight:700;color:#15803d;font-size:13px;margin-bottom:10px">🔄 Rewrite a Section</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div class="field">
+              <label class="field-label">Which section?</label>
+              <select id="rewrite-section" style="font-size:13px">
+                <option value="">Select a section...</option>
+                <option value="PROFESSIONAL SUMMARY">Professional Summary</option>
+                <option value="CORE COMPETENCIES">Core Competencies</option>
+                ${(result.resume.match(/=== ([^=]+) ===/g)||[])
+                  .map(s=>s.replace(/===/g,'').trim())
+                  .filter(s=>s!=='PROFESSIONAL SUMMARY'&&s!=='CORE COMPETENCIES'&&s!=='EDUCATION'&&s!=='CERTIFICATIONS')
+                  .map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')}
+                <option value="EDUCATION">Education</option>
+                <option value="CERTIFICATIONS">Certifications</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label">Instructions (optional)</label>
+              <input id="rewrite-instruction" placeholder="e.g. make it more concise, emphasize leadership..." style="font-size:13px">
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-primary btn-sm" onclick="rewriteSection()" style="background:#16a34a">
+              ${state.ui.rewriteBusy?'<div class="spinner"></div> Rewriting...':'🔄 Rewrite It'}
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="toggleUI('resumeRewriteOpen',false)">Cancel</button>
+            ${state.ui.rewriteError?`<span style="font-size:12px;color:#dc2626">${esc(state.ui.rewriteError)}</span>`:''}
+          </div>
         </div>
       ` : `
         <p style="font-size:12px;color:#6b7280;margin:0 0 12px">Print / Save PDF → in print dialog choose <strong>Save as PDF</strong> · Or click <strong>Edit</strong> to make changes before downloading</p>
@@ -273,6 +305,83 @@ function renderResumeResult(result, fmt) {
       </div>
       <div class="resume-preview" id="cover-text">${esc(result.coverLetter)}</div>
     </div>` : ''}`;
+}
+
+// ── Section rewriter ─────────────────────────────────────────────────
+async function rewriteSection() {
+  const sectionName = document.getElementById('rewrite-section')?.value;
+  const instruction = document.getElementById('rewrite-instruction')?.value?.trim() || '';
+  if (!sectionName) { showToast('Please select a section', false); return; }
+
+  const resume = state.ui.resumeResult?.resume || '';
+  if (!resume) { showToast('No resume found', false); return; }
+
+  // Extract the target section from the resume
+  const sectionRegex = new RegExp(`(=== ${sectionName} ===)([\s\S]*?)(?===== |$)`, 'i');
+  const match = resume.match(sectionRegex);
+
+  // Also try without === markers (AI sometimes uses plain headers)
+  const plainRegex = new RegExp(`(^${sectionName}$)([\s\S]*?)(?=^[A-Z ]{4,}$|$)`, 'im');
+  const plainMatch = !match ? resume.match(plainRegex) : null;
+
+  const sectionContent = match ? match[0] : plainMatch ? plainMatch[0] : '';
+  if (!sectionContent) {
+    setState({ ui: { ...state.ui, rewriteError: `Could not find "${sectionName}" section in your resume` } });
+    return;
+  }
+
+  setState({ ui: { ...state.ui, rewriteBusy: true, rewriteError: '' } });
+
+  try {
+    const job = state.jobs?.find(j => j.id === state.ui.resumeJob);
+    const jobContext = job ? `Target job: ${job.title} at ${job.company}. Job description: ${job.description || 'not provided'}.` : '';
+
+    const prompt = `You are rewriting ONE section of a veteran's resume.
+
+FULL RESUME FOR CONTEXT:
+${resume}
+
+SECTION TO REWRITE: === ${sectionName} ===
+${sectionContent}
+
+${jobContext}
+${instruction ? `SPECIFIC INSTRUCTION: ${instruction}` : ''}
+
+RULES:
+- Rewrite ONLY the "${sectionName}" section
+- Keep the exact same === ${sectionName} === header format
+- Match the style and tone of the rest of the resume
+- Keep bullets under 15 words with at least one metric each
+- Return ONLY the rewritten section, nothing else, no commentary`;
+
+    const rewritten = await callClaude(
+      'You are an expert resume writer specializing in military-to-civilian transitions. Return only the rewritten section, no preamble.',
+      prompt,
+      'resume'
+    );
+
+    // Splice the rewritten section back into the full resume
+    let newResume;
+    if (match) {
+      newResume = resume.replace(sectionRegex, rewritten.trim());
+    } else if (plainMatch) {
+      newResume = resume.replace(plainRegex, rewritten.trim());
+    } else {
+      newResume = resume + '\n\n' + rewritten.trim();
+    }
+
+    setState({ ui: {
+      ...state.ui,
+      rewriteBusy: false,
+      resumeRewriteOpen: false,
+      rewriteError: '',
+      resumeResult: { ...state.ui.resumeResult, resume: newResume }
+    }});
+    showToast(`✅ ${sectionName} rewritten successfully`);
+
+  } catch(err) {
+    setState({ ui: { ...state.ui, rewriteBusy: false, rewriteError: 'Error: ' + err.message } });
+  }
 }
 
 // ── Inline resume editor ──────────────────────────────────────────────
