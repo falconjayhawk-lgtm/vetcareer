@@ -252,6 +252,23 @@ CREATE POLICY &quot;anon full access&quot; ON afteraction_data FOR ALL USING (tr
         <p>☁️ If Supabase sync is enabled, your profile and job data is stored in your own Supabase project — not on Tactics 2 Talent servers.</p>
         <p>⚠️ Your Supabase anon key is stored in your browser. Anyone with your User ID and anon key could read your data — keep them private.</p>
       </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="card" style="border:2px solid #fecaca">
+      <h2 style="color:#dc2626">⚠️ Danger Zone</h2>
+      <p style="font-size:13px;color:#4b5563;margin-bottom:16px">These actions are permanent and cannot be undone.</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="font-weight:600;font-size:14px;color:#1f2937">Restart Onboarding</div>
+            <div style="font-size:12px;color:#6b7280">Clears all your data and runs the setup wizard again. Good for testing or starting fresh.</div>
+          </div>
+          <button class="btn btn-sm" onclick="confirmResetAndOnboard()" style="background:#dc2626;color:white;border:none;white-space:nowrap">
+            🔄 Erase & Restart
+          </button>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -266,6 +283,33 @@ function toggleApiKeyVis() {
   const el = document.getElementById('api-key-input');
   if (el) el.type = el.type==='password' ? 'text' : 'password';
 }
+// ── Reset & onboarding restart ────────────────────────────────────────
+function resetAllData() {
+  // Clear all localStorage keys
+  const keys = ['profile','assignments','civilianJobs','awards','documents','jobs',
+                 'apiKey','checklist','scoutFilters','sf86','supabase'];
+  keys.forEach(k => localStorage.removeItem('vc_' + k));
+  localStorage.removeItem('t2t_onboarding_complete');
+  // Reset state to defaults
+  setState({
+    profile: { fullName:'', email:'', phone:'', location:'', linkedin:'', branch:'', rank:'',
+               yearsOfService:'', mosRate:'', clearance:'', clearanceStatus:'', workPreference:'',
+               willingToRelocate:'', targetLocations:'', targetIndustries:[], technicalSkills:[],
+               softSkills:[], education:'', certifications:'', training:'', elevatorPitch:'' },
+    assignments: [], civilianJobs: [], awards: [], documents: [], jobs: [],
+    checklist: {}, scoutFilters: {}, sf86: {},
+    ui: { onboardStep: 1 },
+    view: 'onboarding'
+  });
+}
+
+function confirmResetAndOnboard() {
+  if (confirm('⚠️ This will permanently erase all your profile data, documents, jobs, and resume history.\n\nAre you sure you want to start over?')) {
+    resetAllData();
+    showToast('Data cleared — starting onboarding');
+  }
+}
+
 function exportData() {
 
   const json = JSON.stringify(exportPackage, null, 2);

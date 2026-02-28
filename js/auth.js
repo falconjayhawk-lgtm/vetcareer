@@ -18,6 +18,16 @@ async function initClerk() {
       syncClerkUserToState(clerk.user);
       setState({ loggedIn: true });
       if (typeof initFeedback === 'function') initFeedback();
+      // ?reset=1 URL param — developer shortcut to wipe data and restart onboarding
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('reset') === '1') {
+        if (typeof resetAllData === 'function') {
+          resetAllData();
+          // Clean the URL so refresh doesn't re-trigger
+          window.history.replaceState({}, '', window.location.pathname);
+          return;
+        }
+      }
       // Show onboarding for new users
       if (typeof shouldShowOnboarding === 'function' && shouldShowOnboarding()) {
         setState({ view: 'onboarding', ui: { ...state.ui, onboardStep: 1 } });
