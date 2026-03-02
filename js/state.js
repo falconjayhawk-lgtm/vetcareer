@@ -30,13 +30,14 @@ let state = {
     notes: ''
   },
   supabase: { url: '', anonKey: '', userId: '', syncing: false, lastSync: null, syncError: '' },
+  access: { plan: 'free', proUntil: null, promoCode: null },
   // UI state
   ui: {}
 };
 
 function loadState() {
   try {
-    const keys = ['profile','assignments','civilianJobs','awards','documents','jobs','apiKey','checklist','scoutFilters','sf86','supabase'];
+    const keys = ['profile','assignments','civilianJobs','awards','documents','jobs','apiKey','checklist','scoutFilters','sf86','supabase','access'];
     keys.forEach(k => {
       const v = localStorage.getItem('vc_' + k);
       if (v) state[k] = JSON.parse(v);
@@ -60,6 +61,7 @@ function setState(updates, shouldRender=true) {
   if (updates.checklist !== undefined) { saveKey('checklist'); scheduleSync(); }
   if (updates.scoutFilters !== undefined) { saveKey('scoutFilters'); scheduleSync(); }
   if (updates.sf86 !== undefined) { saveKey('sf86'); scheduleSync(); }
+  if (updates.access !== undefined) saveKey('access');
   if (updates.supabase !== undefined) saveKey('supabase');
   if (shouldRender) render();
 }

@@ -155,6 +155,22 @@ function renderSettings() {
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">Settings</h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px">API keys, cloud sync, and data management</p>
 
+    <!-- Access Status (read-only in settings) -->
+    <div class="card">
+      <h2>🎟️ Access</h2>
+      ${isPro() ? `
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:28px">✅</span>
+        <div>
+          <div style="font-weight:700;color:#15803d;font-size:15px">Pro Access Active</div>
+          <div style="font-size:13px;color:#166534">${proExpiresLabel()}${getAccess().promoCode ? ' · Code: ' + getAccess().promoCode : ''}</div>
+        </div>
+      </div>` : `
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px;font-size:13px;color:#6b7280">
+        Free plan. Promo codes can be entered during onboarding or account setup.
+      </div>`}
+    </div>
+
     <!-- AI Status -->
     <div class="card">
       <h2>🤖 AI Features</h2>

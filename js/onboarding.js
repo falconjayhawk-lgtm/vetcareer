@@ -308,6 +308,15 @@ function renderOnboardStep4() {
       <p style="font-size:14px;color:#6b7280;margin:0">What would you like to tackle first?</p>
     </div>
 
+    ${!isPro() ? `
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;margin-bottom:20px">
+      <div style="font-weight:700;font-size:13px;color:#92400e;margin-bottom:8px">🎟️ Have a promo or beta code?</div>
+      ${promoCodeWidget('onboarding')}
+    </div>` : `
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px;margin-bottom:20px;font-size:13px;color:#15803d;font-weight:600;text-align:center">
+      ✅ Pro Access Active — ${proExpiresLabel()}
+    </div>`}
+
     <div style="display:grid;gap:10px">
       ${[
         { view:'resume', icon:'📄', label:'Build My Resume', desc:'AI writes a tailored resume for a specific job or a general one' },
