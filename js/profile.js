@@ -143,7 +143,10 @@ function renderProfile() {
       <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f3f4f6">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <label class="field-label" style="margin:0">🧭 Identity Frame</label>
-          <span style="font-size:11px;color:#6b7280">Used in every resume, cover letter, and interview answer</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:#6b7280">Used in every resume, cover letter, and interview answer</span>
+            ${state.assignments.length > 0 ? `<button class="btn btn-primary btn-sm" onclick="generateIdentityFrame()">🤖 AI Generate</button>` : ''}
+          </div>
         </div>
         <p style="font-size:12px;color:#6b7280;margin:0 0 8px">One sentence that anchors your entire narrative. What unique combination of experience makes you different from every other candidate? Be specific.</p>
         <textarea id="p-identityFrame" rows="2"
@@ -262,6 +265,65 @@ WRITING RULES — follow every one:
       el.value = result.trim();
       showToast('Summary generated! Review and edit as needed.');
     }
+  } catch(err) {
+    showToast('Error: ' + err.message, false);
+  }
+}
+
+async function generateIdentityFrame() {
+  if (state.assignments.length === 0) { showToast('Add some assignments first', false); return; }
+
+  showToast('🤖 Crafting your identity frame...', true);
+
+  try {
+    const p = state.profile;
+    const topAssignments = [...state.assignments]
+      .sort((a,b) => new Date(b.startDate||0) - new Date(a.startDate||0))
+      .slice(0, 5)
+      .map(a => `${a.dutyTitle||''} at ${a.base||''}: ${(a.accomplishments||'').slice(0,200)}`)
+      .join('\n');
+
+    const targetIndustries = (p.targetIndustries||[])
+      .map(i => typeof i === 'object' ? i.name : i)
+      .join(', ') || 'Not specified';
+
+    const prompt = `Write a single identity frame sentence for this veteran. This sentence anchors every resume, cover letter, and interview answer they will ever use.
+
+VETERAN DATA:
+Branch: ${p.branch||'Unknown'} | Rank: ${p.rank||'Unknown'} | Years: ${p.yearsOfService||'Unknown'}
+MOS/Rate: ${p.mosRate||'Unknown'}
+Clearance: ${p.clearance||'None'}
+Technical Skills: ${(p.technicalSkills||[]).join(', ')||'None'}
+Target Industries: ${targetIndustries}
+
+TOP EXPERIENCE:
+${topAssignments}
+
+RULES — every one is non-negotiable:
+- Exactly ONE sentence. No more.
+- Must name the specific intersection of capabilities that makes this person unique — not generic strengths
+- Must be written in third-person positioning style (like "Operational strategist who..." or "Technology leader who...")
+- Must reference at least two distinct domains this person bridges (e.g., operations + technology, military + business development, intelligence + product)
+- Must be something a hiring manager would read and think "I haven't seen that combination before"
+- NO buzzwords: "passionate", "results-driven", "proven track record", "dynamic", "leverages", "synergizes"
+- NO rank-first framing: do not open with "Retired [Rank]" or "20-year veteran"
+- Sound like it was written by a sharp career strategist, not a resume template
+- Under 35 words
+
+Return ONLY the sentence. Nothing else.`;
+
+    const result = await callClaude(
+      'You are a senior executive career strategist who specializes in positioning high-performing military veterans for civilian leadership roles. You write identity frames that make hiring managers stop and say "I need to meet this person." You never write generic positioning statements.',
+      prompt
+    );
+
+    const frame = result.trim().replace(/^["']|["']$/g, '');
+    const el = document.getElementById('p-identityFrame');
+    if (el) {
+      el.value = frame;
+      showToast('✅ Identity frame generated — edit to make it yours.');
+    }
+    setState({ profile: { ...state.profile, identityFrame: frame } }, false);
   } catch(err) {
     showToast('Error: ' + err.message, false);
   }
