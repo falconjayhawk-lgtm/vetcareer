@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T2T Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #12151c;
+    --border: #1e2330;
+    --border-hi: #2a3045;
+    --text: #e8eaf0;
+    --muted: #5a6180;
+    --dim: #8892a8;
+    --accent: #4f8fff;
+    --accent-dim: #1a2d4f;
+    --green: #22d47a;
+    --green-dim: #0d2e1e;
+    --yellow: #f5c842;
+    --yellow-dim: #2e2410;
+    --red: #ff5b5b;
+    --red-dim: #2e1010;
+    --purple: #a78bfa;
+    --purple-dim: #1e1535;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── Lock screen ── */
+  #lockscreen {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+
+  .lock-card {
+    width: 360px;
+    background: var(--surface);
+    border: 1px solid var(--border-hi);
+    border-radius: 16px;
+    padding: 40px 32px;
+    text-align: center;
+  }
+
+  .lock-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .lock-logo::before, .lock-logo::after {
+    content: '';
+    height: 1px;
+    flex: 1;
+    background: var(--border-hi);
+  }
+
+  .lock-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .lock-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .lock-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+
+  .lock-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border-hi);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.1em;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 12px;
+  }
+
+  .lock-input:focus { border-color: var(--accent); }
+  .lock-input.shake { animation: shake 0.4s; }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%,60% { transform: translateX(-6px); }
+    40%,80% { transform: translateX(6px); }
+  }
+
+  .lock-btn {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .lock-btn:hover { opacity: 0.85; }
+  .lock-err { font-size: 12px; color: var(--red); margin-top: 10px; min-height: 18px; }
+
+  /* ── App shell ── */
+  #app { display: none; }
+
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .header-brand {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .header-brand span {
+    background: var(--accent);
+    color: white;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.1em;
+  }
+
+  .header-right {
+    display: flex; align-items: center; gap: 16px;
+    font-size: 12px; color: var(--muted);
+  }
+
+  .header-right .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ── Nav tabs ── */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    display: flex; gap: 4px;
+  }
+
+  .nav-tab {
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── Main content ── */
+  main { padding: 28px; max-width: 1100px; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── Stat cards ── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .stat-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .stat-delta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    margin-top: 8px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .badge-green { background: var(--green-dim); color: var(--green); }
+  .badge-yellow { background: var(--yellow-dim); color: var(--yellow); }
+  .badge-red { background: var(--red-dim); color: var(--red); }
+  .badge-blue { background: var(--accent-dim); color: var(--accent); }
+  .badge-purple { background: var(--purple-dim); color: var(--purple); }
+
+  /* ── Form elements ── */
+  input, select, textarea {
+    background: var(--bg);
+    border: 1px solid var(--border-hi);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+  .btn {
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { opacity: 0.8; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-danger { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-dim); }
+  .btn-ghost { background: var(--border); color: var(--dim); }
+
+  .input-row { display: flex; gap: 8px; align-items: center; }
+  .field-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; display: block; }
+
+  /* ── Bar charts ── */
+  .bar-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .bar-row:last-child { border-bottom: none; }
+  .bar-label { width: 180px; font-size: 12px; color: var(--dim); flex-shrink: 0; }
+  .bar-track { flex: 1; background: var(--border); border-radius: 999px; height: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 999px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+  .bar-count { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; width: 32px; text-align: right; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border-hi);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 13px;
+    color: var(--text);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.25s;
+    z-index: 200;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── Mono text ── */
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  .muted { color: var(--muted); }
+
+  /* ── Empty state ── */
+  .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+  /* ── Feedback log ── */
+  .feedback-item {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .feedback-item:last-child { border-bottom: none; }
+  .feedback-meta { font-size: 11px; color: var(--muted); margin-bottom: 6px; font-family: 'IBM Plex Mono', monospace; }
+  .feedback-text { font-size: 13px; color: var(--dim); line-height: 1.6; }
+
+  /* ── Revenue placeholder ── */
+  .coming-soon {
+    text-align: center; padding: 60px 40px;
+    border: 1px dashed var(--border-hi);
+    border-radius: 12px;
+    color: var(--muted);
+  }
+  .coming-soon .cs-icon { font-size: 36px; margin-bottom: 12px; }
+  .coming-soon h3 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--dim); margin-bottom: 8px; }
+
+  select option { background: #1a1d26; }
+</style>
+</head>
+<body>
+
+<!-- ── Lock Screen ── -->
+<div id="lockscreen">
+  <div class="lock-card">
+    <div class="lock-logo">Tactics 2 Talent</div>
+    <span class="lock-icon">🔐</span>
+    <div class="lock-title">Admin Access</div>
+    <div class="lock-sub">Enter your admin password to continue</div>
+    <input type="password" id="pw-input" class="lock-input" placeholder="••••••••••••"
+      onkeydown="if(event.key==='Enter') tryLogin()">
+    <button class="lock-btn" onclick="tryLogin()">Unlock Dashboard</button>
+    <div class="lock-err" id="pw-err"></div>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="app">
+  <header>
+    <div class="header-brand">
+      T2T <span>ADMIN</span>
+    </div>
+    <div class="header-right">
+      <div class="dot"></div>
+      <span id="last-refresh">Loading...</span>
+      <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="refreshAll()">↻ Refresh</button>
+      <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="logout()">Lock</button>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-tab active" onclick="showTab('overview')">📊 Overview</div>
+    <div class="nav-tab" onclick="showTab('promo')">🎟️ Promo Codes</div>
+    <div class="nav-tab" onclick="showTab('analytics')">📈 Analytics</div>
+    <div class="nav-tab" onclick="showTab('revenue')">💰 Revenue</div>
+    <div class="nav-tab" onclick="showTab('feedback')">💬 Feedback</div>
+  </nav>
+
+  <main>
+
+    <!-- ── OVERVIEW ── -->
+    <section id="tab-overview" class="section active">
+      <div class="stat-grid" id="overview-stats">
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--accent)" id="stat-total-views">—</div>
+          <div class="stat-label">Total Page Views</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--green)" id="stat-total-actions">—</div>
+          <div class="stat-label">AI Feature Uses</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--yellow)" id="stat-resumes">—</div>
+          <div class="stat-label">Resumes Generated</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--purple)" id="stat-codes-active">—</div>
+          <div class="stat-label">Active Promo Codes</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚡ Top Features This Period</div>
+        <div id="overview-features">
+          <div class="empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎟️ Recent Code Redemptions</div>
+        <div id="overview-redemptions">
+          <div class="empty">Loading...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PROMO CODES ── -->
+    <section id="tab-promo" class="section">
+
+      <div class="card">
+        <div class="card-title">✨ Create New Code</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
+          <div>
+            <label class="field-label">Code (leave blank to generate random)</label>
+            <input id="new-code" placeholder="e.g. SARAH or BETA" style="text-transform:uppercase"
+              oninput="this.value=this.value.toUpperCase()">
+          </div>
+          <div>
+            <label class="field-label">Duration</label>
+            <select id="new-duration">
+              <option value="30">30 days</option>
+              <option value="90" selected>3 months (90 days)</option>
+              <option value="180">6 months</option>
+              <option value="365">1 year</option>
+              <option value="-1">Lifetime</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">Note (who is this for?)</label>
+            <input id="new-note" placeholder="e.g. Beta tester, John's referral">
+          </div>
+          <button class="btn btn-primary" onclick="createCode()">Create</button>
+        </div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
+          <label class="field-label" style="margin:0">Or generate</label>
+          <input id="batch-prefix" value="T2T" style="width:80px;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+          <input id="batch-count" type="number" value="5" min="1" max="50" style="width:70px">
+          <label class="field-label" style="margin:0">random codes</label>
+          <button class="btn btn-ghost" onclick="generateBatch()">Generate Batch</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          <span>🗂️ All Codes</span>
+          <span class="mono muted" id="code-count" style="font-size:11px"></span>
+        </div>
+        <div id="promo-table">
+          <div class="empty">Loading...</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── ANALYTICS ── -->
+    <section id="tab-analytics" class="section">
+
+      <div class="card">
+        <div class="card-title">🗺️ Page Navigation</div>
+        <div id="analytics-views"><div class="empty">Loading...</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚡ Feature Usage</div>
+        <div id="analytics-actions"><div class="empty">Loading...</div></div>
+      </div>
+
+    </section>
+
+    <!-- ── REVENUE ── -->
+    <section id="tab-revenue" class="section">
+      <div class="coming-soon">
+        <div class="cs-icon">💳</div>
+        <h3>Revenue Dashboard</h3>
+        <p style="font-size:13px;line-height:1.6;max-width:360px;margin:0 auto">
+          Stripe integration coming soon. Once connected, you'll see MRR, subscriber count,
+          churn, and trial conversion rates here.
+        </p>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-title">📋 Pricing Reference</div>
+        <table>
+          <thead><tr><th>Plan</th><th>Price</th><th>Annual</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Free</strong></td>
+              <td class="mono">$0</td>
+              <td class="mono muted">—</td>
+              <td><span class="badge badge-green">Active</span></td>
+            </tr>
+            <tr>
+              <td><strong>Pro</strong></td>
+              <td class="mono">$19 / mo</td>
+              <td class="mono">$149 / yr</td>
+              <td><span class="badge badge-yellow">Pending Stripe</span></td>
+            </tr>
+            <tr>
+              <td><strong>Clearance Pro</strong></td>
+              <td class="mono">$49 / mo</td>
+              <td class="mono">$399 / yr</td>
+              <td><span class="badge badge-purple">V2 Roadmap</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── FEEDBACK ── -->
+    <section id="tab-feedback" class="section">
+      <div class="card">
+        <div class="card-title">💬 Tester Feedback</div>
+        <div id="feedback-list">
+          <div class="empty">Loading...</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────
+const WORKER = 'https://vetcareer-api.falconjayhawk.workers.dev';
+// Password is hashed — default is "t2tadmin2026"
+// To change: run btoa('your-new-password') in console and update HASH
+const HASH = btoa('t2tadmin2026');
+
+// ── Auth ────────────────────────────────────────────────────────────
+function tryLogin() {
+  const val = document.getElementById('pw-input').value;
+  const err = document.getElementById('pw-err');
+  if (btoa(val) === HASH) {
+    sessionStorage.setItem('t2t_admin', '1');
+    document.getElementById('lockscreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    refreshAll();
+  } else {
+    err.textContent = 'Incorrect password.';
+    const input = document.getElementById('pw-input');
+    input.classList.add('shake');
+    setTimeout(() => input.classList.remove('shake'), 500);
+    input.value = '';
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('t2t_admin');
+  location.reload();
+}
+
+// Auto-unlock if session still active
+if (sessionStorage.getItem('t2t_admin')) {
+  document.getElementById('lockscreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────────
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'analytics') loadAnalytics();
+  if (id === 'feedback') loadFeedback();
+  if (id === 'promo') loadPromos();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────
+function toast(msg, ok = true) {
+  const t = document.getElementById('toast');
+  t.textContent = (ok ? '✅ ' : '❌ ') + msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Refresh all ───────────────────────────────────────────────────────
+async function refreshAll() {
+  document.getElementById('last-refresh').textContent = 'Refreshing...';
+  await Promise.all([loadOverview(), loadPromos()]);
+  document.getElementById('last-refresh').textContent =
+    'Updated ' + new Date().toLocaleTimeString();
+}
+
+// ── Promo Codes ───────────────────────────────────────────────────────
+// Codes stored in localStorage for now; worker endpoint when ready
+const PROMO_KEY = 't2t_admin_codes';
+
+function getCodes() {
+  try { return JSON.parse(localStorage.getItem(PROMO_KEY) || '[]'); } catch { return []; }
+}
+
+function saveCodes(codes) {
+  localStorage.setItem(PROMO_KEY, JSON.stringify(codes));
+}
+
+function initDefaultCodes() {
+  const existing = getCodes();
+  if (existing.length === 0) {
+    const defaults = [
+      { code: 'BETA2026', durationDays: 90, note: 'Beta tester — 3 months free', createdAt: new Date().toISOString(), redemptions: [], active: true },
+      { code: 'FRIEND2026', durationDays: 90, note: 'Friends & family — 3 months free', createdAt: new Date().toISOString(), redemptions: [], active: true },
+      { code: 'LIFETIME', durationDays: -1, note: 'Lifetime access', createdAt: new Date().toISOString(), redemptions: [], active: true },
+    ];
+    saveCodes(defaults);
+  }
+}
+
+function createCode() {
+  let code = document.getElementById('new-code').value.trim().toUpperCase();
+  const duration = parseInt(document.getElementById('new-duration').value);
+  const note = document.getElementById('new-note').value.trim();
+
+  if (!code) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let rand = '';
+    for (let i = 0; i < 6; i++) rand += chars[Math.floor(Math.random() * chars.length)];
+    code = 'T2T-' + rand;
+  }
+
+  const codes = getCodes();
+  if (codes.find(c => c.code === code)) { toast('Code already exists.', false); return; }
+
+  codes.push({ code, durationDays: duration, note: note || 'Manual code', createdAt: new Date().toISOString(), redemptions: [], active: true });
+  saveCodes(codes);
+
+  document.getElementById('new-code').value = '';
+  document.getElementById('new-note').value = '';
+  toast(`Code ${code} created!`);
+  loadPromos();
+  copyToClipboard(code);
+}
+
+function generateBatch() {
+  const prefix = document.getElementById('batch-prefix').value.trim().toUpperCase() || 'T2T';
+  const count = Math.min(50, Math.max(1, parseInt(document.getElementById('batch-count').value) || 5));
+  const duration = 90;
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const codes = getCodes();
+  const newCodes = [];
+
+  for (let i = 0; i < count; i++) {
+    let rand = '';
+    for (let j = 0; j < 6; j++) rand += chars[Math.floor(Math.random() * chars.length)];
+    const code = `${prefix}-${rand}`;
+    if (!codes.find(c => c.code === code)) {
+      codes.push({ code, durationDays: duration, note: `Batch generated — ${prefix}`, createdAt: new Date().toISOString(), redemptions: [], active: true });
+      newCodes.push(code);
+    }
+  }
+
+  saveCodes(codes);
+  toast(`${newCodes.length} codes generated!`);
+  loadPromos();
+
+  // Copy all new codes to clipboard
+  navigator.clipboard?.writeText(newCodes.join('\n')).catch(() => {});
+}
+
+function toggleCode(code) {
+  const codes = getCodes();
+  const idx = codes.findIndex(c => c.code === code);
+  if (idx === -1) return;
+  codes[idx].active = !codes[idx].active;
+  saveCodes(codes);
+  loadPromos();
+  toast(codes[idx].active ? `${code} activated.` : `${code} deactivated.`);
+}
+
+function deleteCode(code) {
+  if (!confirm(`Delete code ${code}? This cannot be undone.`)) return;
+  const codes = getCodes().filter(c => c.code !== code);
+  saveCodes(codes);
+  loadPromos();
+  toast(`${code} deleted.`);
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard?.writeText(text).then(() => toast(`${text} copied to clipboard!`)).catch(() => {});
+}
+
+function loadPromos() {
+  initDefaultCodes();
+  const codes = getCodes();
+  const el = document.getElementById('promo-table');
+  const countEl = document.getElementById('code-count');
+
+  const active = codes.filter(c => c.active).length;
+  countEl.textContent = `${codes.length} total · ${active} active`;
+  document.getElementById('stat-codes-active').textContent = active;
+
+  if (codes.length === 0) {
+    el.innerHTML = '<div class="empty">No codes yet. Create one above.</div>';
+    return;
+  }
+
+  el.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Duration</th>
+          <th>Note</th>
+          <th>Redemptions</th>
+          <th>Created</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${codes.map(c => `
+          <tr>
+            <td>
+              <span class="mono" style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent)" onclick="copyToClipboard('${c.code}')" title="Click to copy">
+                ${c.code}
+              </span>
+            </td>
+            <td class="mono">${c.durationDays === -1 ? 'Lifetime' : c.durationDays + 'd'}</td>
+            <td style="color:var(--dim)">${c.note || '—'}</td>
+            <td>
+              <span class="badge ${c.redemptions.length > 0 ? 'badge-green' : 'badge-blue'}">
+                ${c.redemptions.length}
+              </span>
+            </td>
+            <td class="mono muted">${new Date(c.createdAt).toLocaleDateString()}</td>
+            <td>
+              <span class="badge ${c.active ? 'badge-green' : 'badge-red'}">
+                ${c.active ? 'Active' : 'Off'}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-ghost" style="font-size:11px;padding:4px 8px" onclick="toggleCode('${c.code}')">${c.active ? 'Disable' : 'Enable'}</button>
+                <button class="btn btn-danger" style="font-size:11px;padding:4px 8px" onclick="deleteCode('${c.code}')">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Analytics ─────────────────────────────────────────────────────────
+async function loadAnalytics() {
+  const viewsEl = document.getElementById('analytics-views');
+  const actionsEl = document.getElementById('analytics-actions');
+  viewsEl.innerHTML = '<div class="empty">Loading...</div>';
+  actionsEl.innerHTML = '<div class="empty">Loading...</div>';
+
+  try {
+    const res = await fetch(`${WORKER}/api/analytics`);
+    if (!res.ok) throw new Error('Worker not available');
+    const data = await res.json();
+    renderAnalytics(data);
+  } catch {
+    // Show placeholder
+    viewsEl.innerHTML = '<div class="empty">Connect Cloudflare worker to see live data.</div>';
+    actionsEl.innerHTML = '<div class="empty">Connect Cloudflare worker to see live data.</div>';
+  }
+}
+
+function renderAnalytics(data) {
+  const VIEW_LABELS = {
+    dashboard:'Dashboard', documents:'Upload Docs', profile:'Profile',
+    experience:'Experience', jobs:'Job Tracker', scout:'Job Scout',
+    resume:'Resume Builder', linkedin:'LinkedIn Generator',
+    interview:'Interview Prep', salary:'Salary Intel',
+    network:'Networking Emails', refletter:'Reference Letter',
+    sf86:'SF-86 Prep', gap:'Gap Analysis', settings:'Settings', faq:'Help & FAQ'
+  };
+  const ACTION_LABELS = {
+    resume_generate:'Resumes Generated', linkedin_generate:'LinkedIn Generated',
+    interview_generate:'Interview Prep Run', salary_generate:'Salary Reports Run',
+    network_generate:'Networking Emails Written', refletter_generate:'Reference Letters Generated',
+    scout_search:'Job Scout Searches', doc_upload:'Documents Uploaded',
+    doc_paste:'Documents Pasted', job_added:'Jobs Added to Tracker',
+    gap_analyze:'Gap Analyses Run', feedback_sent:'Feedback Submitted'
+  };
+
+  const totalViews = Object.values(data.views||{}).reduce((a,b)=>a+b,0);
+  const totalActions = Object.values(data.actions||{}).reduce((a,b)=>a+b,0);
+  document.getElementById('stat-total-views').textContent = totalViews;
+  document.getElementById('stat-total-actions').textContent = totalActions;
+  document.getElementById('stat-resumes').textContent = data.actions?.resume_generate || 0;
+
+  const maxView = Math.max(...Object.values(data.views||{}), 1);
+  const maxAction = Math.max(...Object.values(data.actions||{}), 1);
+
+  const makeBar = (label, count, max, color) => `
+    <div class="bar-row">
+      <div class="bar-label">${label}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${Math.round(count/max*100)}%;background:${color}"></div>
+      </div>
+      <div class="bar-count" style="color:${color}">${count}</div>
+    </div>`;
+
+  document.getElementById('analytics-views').innerHTML =
+    Object.entries(data.views||{}).sort((a,b)=>b[1]-a[1]).length
+    ? Object.entries(data.views||{}).sort((a,b)=>b[1]-a[1])
+        .map(([k,v]) => makeBar(VIEW_LABELS[k]||k, v, maxView, 'var(--accent)')).join('')
+    : '<div class="empty">No data yet.</div>';
+
+  document.getElementById('analytics-actions').innerHTML =
+    Object.entries(data.actions||{}).sort((a,b)=>b[1]-a[1]).length
+    ? Object.entries(data.actions||{}).sort((a,b)=>b[1]-a[1])
+        .map(([k,v]) => makeBar(ACTION_LABELS[k]||k, v, maxAction, 'var(--green)')).join('')
+    : '<div class="empty">No data yet.</div>';
+
+  // Top 3 for overview
+  const top3 = Object.entries(data.actions||{}).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById('overview-features').innerHTML = top3.length
+    ? top3.map(([k,v]) => makeBar(ACTION_LABELS[k]||k, v, maxAction, 'var(--green)')).join('')
+    : '<div class="empty">No feature usage data yet.</div>';
+}
+
+// ── Feedback ──────────────────────────────────────────────────────────
+async function loadFeedback() {
+  const el = document.getElementById('feedback-list');
+  el.innerHTML = '<div class="empty">Loading...</div>';
+
+  try {
+    const res = await fetch(`${WORKER}/api/feedback`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const items = data.feedback || [];
+    if (!items.length) {
+      el.innerHTML = '<div class="empty">No feedback submitted yet.</div>';
+      return;
+    }
+    el.innerHTML = items.reverse().map(f => `
+      <div class="feedback-item">
+        <div class="feedback-meta">${new Date(f.date||f.createdAt).toLocaleString()} · ${f.type || 'General'}</div>
+        <div class="feedback-text">${f.message || f.text || JSON.stringify(f)}</div>
+      </div>`).join('');
+  } catch {
+    el.innerHTML = '<div class="empty">Connect Cloudflare worker to see feedback.</div>';
+  }
+}
+
+// ── Overview ──────────────────────────────────────────────────────────
+async function loadOverview() {
+  loadPromos();
+  // Load recent redemptions (from localStorage for now)
+  const codes = getCodes();
+  const redemptions = codes.flatMap(c =>
+    (c.redemptions||[]).map(r => ({ ...r, code: c.code, note: c.note }))
+  ).sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
+
+  document.getElementById('overview-redemptions').innerHTML = redemptions.length
+    ? `<table>
+        <thead><tr><th>Code</th><th>User</th><th>Date</th></tr></thead>
+        <tbody>
+          ${redemptions.map(r => `
+            <tr>
+              <td><span class="mono badge badge-blue">${r.code}</span></td>
+              <td class="muted">${r.userId || 'anonymous'}</td>
+              <td class="mono muted">${new Date(r.date).toLocaleDateString()}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`
+    : '<div class="empty">No redemptions yet.</div>';
+
+  // Try to load analytics for overview
+  try {
+    const res = await fetch(`${WORKER}/api/analytics`);
+    if (res.ok) {
+      const data = await res.json();
+      renderAnalytics(data);
+    }
+  } catch { /* silent */ }
+}
+</script>
+</body>
+</html>
