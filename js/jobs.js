@@ -52,10 +52,39 @@ function renderJobs() {
             <select id="${pre}-status">${STATUSES.map(s=>`<option ${j.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
           <div class="field"><label class="field-label">Date Added</label><input type="date" id="${pre}-dateAdded" value="${j.dateAdded}"></div>
           <div class="field"><label class="field-label">Date Applied</label><input type="date" id="${pre}-dateApplied" value="${j.dateApplied||''}"></div>
-          <div class="field"><label class="field-label">Contact Name</label><input id="${pre}-contactName" value="${esc(j.contactName||'')}" placeholder="Recruiter name"></div>
+          <div class="field"><label class="field-label">Contact Name</label><input id="${pre}-contactName" value="${esc(j.contactName||'')}" placeholder="Recruiter or hiring manager name"></div>
+          <div class="field"><label class="field-label">Salary Offered</label><input id="${pre}-salaryOffered" value="${esc(j.salaryOffered||'')}" placeholder="e.g. $115,000 + 10% bonus"></div>
         </div>
+
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:14px">
+          <div style="font-weight:700;font-size:13px;color:#374151;margin-bottom:10px">🔍 Pipeline Intelligence</div>
+          <div class="grid2">
+            <div class="field"><label class="field-label">Hiring Manager</label><input id="${pre}-hiringManager" value="${esc(j.hiringManager||'')}" placeholder="Name / title if known"></div>
+            <div class="field"><label class="field-label">Team Size</label><input id="${pre}-teamSize" value="${esc(j.teamSize||'')}" placeholder="e.g. 8-person BD team"></div>
+            <div class="field"><label class="field-label">Budget / Contract Cycle</label><input id="${pre}-budgetCycle" value="${esc(j.budgetCycle||'')}" placeholder="e.g. FY26 budget, IDIQ, open headcount"></div>
+            <div class="field"><label class="field-label">Referral / Warm Intro</label><input id="${pre}-warmIntro" value="${esc(j.warmIntro||'')}" placeholder="Name of connection, if any"></div>
+          </div>
+        </div>
+
         <div class="field"><label class="field-label">Interview Dates & Details</label><textarea id="${pre}-interviewDates" rows="2" placeholder="Phone screen: 2/15 @ 2pm">${esc(j.interviewDates||'')}</textarea></div>
         <div class="field"><label class="field-label">Notes</label><textarea id="${pre}-notes" rows="3" placeholder="Key requirements, culture, follow-ups...">${esc(j.notes||'')}</textarea></div>
+
+        ${job && (job.status === 'rejected' || job.status === 'withdrawn') ? `
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-bottom:14px">
+          <div style="font-weight:700;font-size:13px;color:#991b1b;margin-bottom:8px">📋 Loss Library — What Happened?</div>
+          <div class="field" style="margin-bottom:8px">
+            <label class="field-label">Rejection Reason</label>
+            <select id="${pre}-rejectionReason">
+              <option value="">Select reason...</option>
+              ${['No response','Resume screened out','Phone screen failed','Interview — cultural fit','Interview — technical gap','Interview — salary mismatch','Offer declined by me','Position filled internally','Req cancelled','Overqualified','Underqualified','Unknown'].map(r=>`<option value="${r}" ${j.rejectionReason===r?'selected':''}>${r}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">Lessons Learned</label>
+            <textarea id="${pre}-lessonsLearned" rows="3" placeholder="What would you do differently? What did you learn about this company, role, or your approach?">${esc(j.lessonsLearned||'')}</textarea>
+          </div>
+        </div>
+        ` : ''}
         <div style="display:flex;gap:8px">
           <button class="btn btn-primary btn-sm" onclick="${job?`updateJob('${job.id}')`:'saveJob()'}">${job?'Update':'Save'}</button>
           <button class="btn btn-secondary btn-sm" onclick="toggleUI('addJob',false);toggleUI('editJobId',null);toggleUI('jobAnalysisResult',null)">Cancel</button>
@@ -111,7 +140,25 @@ function renderJobs() {
           `}
         </div>
 
+        <!-- Pipeline intel chips -->
+        ${(j.hiringManager||j.teamSize||j.budgetCycle||j.warmIntro||j.salaryOffered) ? `
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          ${j.salaryOffered?`<span style="background:#f0fdf4;color:#15803d;border:1px solid #86efac;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600">💰 ${esc(j.salaryOffered)}</span>`:''}
+          ${j.hiringManager?`<span style="background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;border-radius:999px;padding:2px 8px;font-size:11px">👤 ${esc(j.hiringManager)}</span>`:''}
+          ${j.teamSize?`<span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:999px;padding:2px 8px;font-size:11px">👥 ${esc(j.teamSize)}</span>`:''}
+          ${j.budgetCycle?`<span style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;border-radius:999px;padding:2px 8px;font-size:11px">📅 ${esc(j.budgetCycle)}</span>`:''}
+          ${j.warmIntro?`<span style="background:#fdf2f8;color:#9d174d;border:1px solid #fbcfe8;border-radius:999px;padding:2px 8px;font-size:11px">🤝 Via ${esc(j.warmIntro)}</span>`:''}
+        </div>` : ''}
+
         ${j.notes?`<div style="background:#f9fafb;border-radius:6px;padding:8px;font-size:12px;margin-top:8px;color:#374151">${esc(j.notes)}</div>`:''}
+
+        <!-- Loss library -->
+        ${(j.status==='rejected'||j.status==='withdrawn') ? `
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;margin-top:8px">
+          <div style="font-size:11px;font-weight:700;color:#991b1b;margin-bottom:4px">📋 LOSS LIBRARY</div>
+          ${j.rejectionReason?`<div style="font-size:12px;color:#7f1d1d;margin-bottom:2px"><strong>Reason:</strong> ${esc(j.rejectionReason)}</div>`:`<div style="font-size:12px;color:#9ca3af;font-style:italic">No rejection reason recorded — <button onclick="toggleUI('editJobId','${j.id}')" style="background:none;border:none;color:#2563eb;font-size:12px;cursor:pointer;padding:0">edit to add</button></div>`}
+          ${j.lessonsLearned?`<div style="font-size:12px;color:#7f1d1d;margin-top:4px"><strong>Lessons:</strong> ${esc(j.lessonsLearned)}</div>`:''}
+        </div>` : ''}
 
         <!-- Quick status advance -->
         ${NEXT_STATUS[j.status]?`
@@ -192,6 +239,13 @@ function saveJob() {
     contactName:document.getElementById(pre+'-contactName')?.value,
     interviewDates:document.getElementById(pre+'-interviewDates')?.value,
     notes:document.getElementById(pre+'-notes')?.value,
+    salaryOffered:document.getElementById(pre+'-salaryOffered')?.value || '',
+    hiringManager:document.getElementById(pre+'-hiringManager')?.value || '',
+    teamSize:document.getElementById(pre+'-teamSize')?.value || '',
+    budgetCycle:document.getElementById(pre+'-budgetCycle')?.value || '',
+    warmIntro:document.getElementById(pre+'-warmIntro')?.value || '',
+    rejectionReason: '',
+    lessonsLearned: '',
     // Carry over match score from job analysis if available
     fitScore: state.ui.jobAnalysisResult?.fitScore || null,
     fitLabel: state.ui.jobAnalysisResult?.fitLabel || null,
@@ -226,6 +280,13 @@ function updateJob(jid) {
     contactName:document.getElementById(pre+'-contactName')?.value,
     interviewDates:document.getElementById(pre+'-interviewDates')?.value,
     notes:document.getElementById(pre+'-notes')?.value,
+    salaryOffered:document.getElementById(pre+'-salaryOffered')?.value || existing?.salaryOffered || '',
+    hiringManager:document.getElementById(pre+'-hiringManager')?.value || existing?.hiringManager || '',
+    teamSize:document.getElementById(pre+'-teamSize')?.value || existing?.teamSize || '',
+    budgetCycle:document.getElementById(pre+'-budgetCycle')?.value || existing?.budgetCycle || '',
+    warmIntro:document.getElementById(pre+'-warmIntro')?.value || existing?.warmIntro || '',
+    rejectionReason:document.getElementById(pre+'-rejectionReason')?.value || existing?.rejectionReason || '',
+    lessonsLearned:document.getElementById(pre+'-lessonsLearned')?.value || existing?.lessonsLearned || '',
     activityLog: log,
   };
   setState({ jobs:state.jobs.map(j=>j.id===jid?updated:j), ui:{...state.ui,editJobId:null} });

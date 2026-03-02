@@ -33,6 +33,25 @@ function renderDashboard() {
   const pct = Math.round(checksWithStatus.filter(c=>c.done).length/checksWithStatus.length*100);
   const doneCount = checksWithStatus.filter(c=>c.done).length;
   const totalCount = checksWithStatus.length;
+
+  // Profile completeness — based on key fields that actually matter for generation
+  const profileFields = [
+    !!(p.fullName),
+    !!(p.branch),
+    !!(p.rank),
+    !!(p.yearsOfService),
+    !!(p.mosRate),
+    !!(p.location),
+    !!(p.email || p.phone),
+    !!(p.clearance),
+    !!(p.elevatorPitch),
+    !!(p.identityFrame),
+    !!(p.technicalSkills?.length),
+    !!(p.softSkills?.length),
+    !!(p.targetIndustries?.length),
+    !!(state.assignments.length > 0),
+  ];
+  const profilePct = Math.round(profileFields.filter(Boolean).length / profileFields.length * 100);
   const name = p.fullName ? ', ' + p.fullName.split(' ')[0] : '';
   const isNewUser = state.documents.length === 0 && !p.fullName && state.assignments.length === 0;
   const needsSkillsGen = state.assignments.length > 0 && (state.profile.technicalSkills||[]).length === 0 && !state.ui.skillsGenDismissed;
@@ -53,7 +72,7 @@ function renderDashboard() {
     </div>` : ''}
     
     <div class="grid3" style="margin-bottom:20px">
-      ${[['Active Applications',active+'/'+total,'#2563eb'],['Profile Complete',pct+'%',pct===100?'#16a34a':'#ca8a04'],['Documents', (() => { const n = state.documents.length; return n > 0 ? n + ' ✓' : (state.assignments.length > 0 ? '✓' : '0'); })(), '#7c3aed']].map(([l,v,c])=>`
+      ${[['Active Applications',active+'/'+total,'#2563eb'],['Profile Complete',profilePct+'%',profilePct===100?'#16a34a':profilePct>=70?'#ca8a04':'#dc2626'],['Documents', (() => { const n = state.documents.length; return n > 0 ? n + ' ✓' : (state.assignments.length > 0 ? '✓' : '0'); })(), '#7c3aed']].map(([l,v,c])=>`
         <div class="card" style="margin-bottom:0;text-align:center">
           <div style="font-size:32px;font-weight:800;color:${c}">${v}</div>
           <div style="font-size:12px;color:#6b7280;margin-top:4px">${l}</div>
