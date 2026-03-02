@@ -98,6 +98,20 @@ function renderResume() {
       ` : ''}
 
       <div class="field" style="margin-bottom:16px">
+        <label class="field-label">Company Tone</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div onclick="toggleUI('resumeTone','startup')" style="padding:10px;border:2px solid ${(state.ui.resumeTone||'startup')==='startup'?'#2563eb':'#e5e7eb'};background:${(state.ui.resumeTone||'startup')==='startup'?'#eff6ff':'white'};border-radius:8px;cursor:pointer">
+            <div style="font-weight:600;font-size:13px">🚀 Startup / Growth</div>
+            <div style="font-size:11px;color:#6b7280">Scrappy, builder, wore-many-hats. For tech companies, startups, and innovation-focused orgs.</div>
+          </div>
+          <div onclick="toggleUI('resumeTone','prime')" style="padding:10px;border:2px solid ${(state.ui.resumeTone||'startup')==='prime'?'#2563eb':'#e5e7eb'};background:${(state.ui.resumeTone||'startup')==='prime'?'#eff6ff':'white'};border-radius:8px;cursor:pointer">
+            <div style="font-weight:600;font-size:13px">🏛️ Prime Contractor / Gov</div>
+            <div style="font-size:11px;color:#6b7280">Structured, process-driven, compliant. For defense primes, federal agencies, and large enterprises.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:16px">
         <label class="field-label">Optional: Special instructions for this resume</label>
         <textarea id="resume-instructions" rows="3" placeholder="e.g., Consolidate all active duty into one section called 'Military Experience'&#10;Emphasize leadership over technical skills&#10;Keep it to one page&#10;Lead with my security clearance" style="font-size:13px" onchange="toggleUI('resumeInstructions',this.value)">${esc(state.ui.resumeInstructions||'')}</textarea>
         <div style="font-size:11px;color:#9ca3af;margin-top:3px">Tell Claude how you want this specific resume structured or weighted — it will follow your lead.</div>
@@ -497,11 +511,32 @@ async function generateResume() {
     ].filter(Boolean).join('\n');
 
     const userInstructions = state.ui.resumeInstructions?.trim() || '';
+    const resumeTone = state.ui.resumeTone || 'startup';
+    const toneLabel = resumeTone === 'prime' ? 'Prime Contractor / Government' : 'Startup / Growth Company';
 
     // Pre-compute awards flag from user instructions
     const wantNoAwards = /no.*(award|medal|decoration|recognition)/i.test(userInstructions || '');
 
     const resumeSystemPrompt = `You are an expert military-to-civilian resume translator. A civilian hiring manager reads this resume — they have zero military context. Your job is translating every military title, unit, and term into the corporate equivalent a Fortune 500 recruiter would immediately recognize. Secondary job: keep it to 2 pages.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TONE SETTING — APPLY THIS TO EVERY WORD CHOICE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Target Company Type: ${toneLabel}
+
+${resumeTone === 'startup' ? `STARTUP / GROWTH TONE:
+- Emphasize building from scratch, wearing many hats, doing more with less
+- Use words like: built, launched, pioneered, scaled, drove, created, shipped
+- Show bias for action, speed, and impact over process and compliance
+- Highlight versatility — times you operated outside your lane
+- Frame leadership as influence and outcomes, not authority and rank
+- The reader is a founder, VP, or team lead who values resourcefulness` : `PRIME CONTRACTOR / GOVERNMENT TONE:
+- Emphasize process rigor, compliance, structured execution, and program management
+- Use words like: directed, managed, executed, coordinated, ensured, delivered, maintained
+- Show discipline in scope, schedule, and cost management
+- Highlight certifications, clearances, and regulatory experience prominently
+- Frame leadership as authority, accountability, and organizational structure
+- The reader is a program manager, contracts officer, or senior director who values dependability`}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TRANSLATION RULE #1 — RANK-TO-TITLE MAPPING
@@ -611,6 +646,45 @@ AFTER:  "Certified 150 flight crews at 98% on-time rate through a consolidated t
 BEFORE: "Built $900,000 classified mission planning network reducing monthly workload by 200 person-hours"
 AFTER:  "Designed and deployed $900K classified planning system, cutting monthly workload by 200 hours"
 
+MILITARY-TO-CIVILIAN TRANSLATION TABLE (apply to every document):
+
+JOB TITLE TRANSLATIONS:
+- MAAP Cell Chief              → Director of Strategic Operations Planning
+- Chief, Combat Plans          → Director of Operations Strategy
+- Deputy, Combat Ops           → Deputy Director of Operations
+- Wing EWO / Weapons Officer   → Director of Technical Operations & Tactics
+- 609th/613th Air Operations Center → Regional Operations Center
+- 453d Electronic Warfare Squadron  → Electronic Systems Group
+- FTU Instructor               → Training Director & Instructor
+
+TERM TRANSLATIONS:
+- Air Tasking Orders (ATO)     → daily operations plans allocating assets (also: "operational planning cycle")
+- JFACC                        → senior theater commander
+- COCOM / Combatant Command    → geographic command / regional military command
+- OIR / OFS                    → counter-terrorism combat operations in Middle East
+- AOR                          → area of responsibility / region
+- EW / Electronic Warfare      → electromagnetic spectrum operations / technical countermeasures
+- EWIR                         → electronic threat intelligence reporting
+- TCD                          → automated threat detection system
+- KEEN EDGE / PACIFIC FURY     → large-scale joint exercises / enterprise-wide war games
+- RED FLAG / LFE               → multi-organization joint training exercise
+- Bomber Task Force            → forward-deployed strategic deterrence missions
+- FTU / Total Force Integration → training organization / organizational merger
+- KADIZ                        → Korean airspace deterrence mission
+- OPLAN                        → operational plan
+- TTPs                         → standard operating procedures / tactical procedures
+- CJOAs                        → operational regions
+- JDPIs                        → precision targets
+- NSI                          → nuclear compliance inspection
+
+TERMS THAT CAN STAY (recognized by civilian / defense audiences):
+- DARPA — universally recognized
+- Kessel Run — always explain as "the Air Force's software factory"
+- TS/SCI clearance — defense hiring managers know this
+- Weapons School — always explain as "the military's top 1% tactical leadership program"
+- Five Eyes — widely known intelligence alliance (U.S./UK/AUS/CAN/NZ)
+- DevSecOps, cATO, POM — keep in competencies blocks only
+
 KEY JARGON → CIVILIAN DICTIONARY (translate every occurrence):
 - "sorties"                  → "missions" or "flight operations"
 - "air tasking order / ATO"  → "operational planning cycle" or "mission directive"
@@ -647,6 +721,22 @@ BEFORE: "Command-and-control systems, Air Operations Centers management, Joint o
 AFTER:  "C2 & Operations Management, Strategic Planning & Execution, Cross-Functional Team Leadership"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MANDATORY: "WHAT SETS ME APART" SECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Every resume MUST include a "What Sets Me Apart" section. This is non-negotiable.
+This is the paragraph that makes a hiring manager stop scrolling.
+
+RULES for this section:
+- 3-4 sentences maximum. Narrative prose, NOT bullets.
+- Must reference something specific to THIS company or THIS role — not generic.
+- Must name at least one concrete differentiator (clearance, rare experience, specific skill combination).
+- Must connect the veteran's unique background to a specific pain point or opportunity the company has.
+- For defense/gov roles: lead with clearance + operational experience combination.
+- For tech/startup roles: lead with the rare combination of operational credibility + technical bridge.
+- NEVER use: "passionate", "results-driven", "team player", "hard worker", or any filler phrase.
+- This section appears AFTER Core Competencies, BEFORE Professional Experience.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TWO-PAGE RULES (absolute)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - Max 20 bullets total. Count them.
@@ -661,23 +751,34 @@ USER INSTRUCTIONS (follow exactly): ${userInstructions || 'None'}
 
 FINAL CHECK: Every bullet has a strong opening verb and one metric. Zero unexplained military acronyms.`;
 
+    const identityFrame = state.profile.identityFrame?.trim() || '';
+
     const resumeUserPrompt = `Write a tailored 2-page resume for this veteran.
 
 ${context}
+${identityFrame ? `VETERAN IDENTITY FRAME — anchor the summary and differentiator to this: ${identityFrame}` : ''}
+
+TONE: ${toneLabel} — apply this to every word choice.
 
 START with this contact block verbatim:
 ${contactBlock}
 
 SECTIONS — use EXACTLY === SECTION NAME === format for all headers, no dashes:
+
 === PROFESSIONAL SUMMARY ===
-2 sentences only.
+2-3 sentences. Lead with civilian value proposition. NOT rank or branch opener.
 
 === CORE COMPETENCIES ===
-Single comma-separated line.
+Single comma-separated line. Business language only.
+
+=== WHAT SETS ME APART ===
+3-4 sentences of narrative prose — NO bullets. Make a hiring manager stop scrolling.
+Reference something specific to this company or role. Name at least one concrete differentiator (clearance, rare skill combo, unique experience bridge).
+MANDATORY — do not skip this section.
 
 === PROFESSIONAL EXPERIENCE ===
 Per role: **Title** | Org | Location | Years
-Then max 3 bullets, each under 12 words with one metric.
+Then max 3 bullets, each under 15 words with one metric.
 
 === EDUCATION ===
 === CERTIFICATIONS ===
@@ -700,17 +801,38 @@ FINAL CHECK: Count your bullets. If more than 20, delete the weakest ones until 
 
     setStatus('✉️ Writing cover letter...');
     const coverLetter = await callClaude(
-      `You are a career coach who writes cover letters that actually get read. You write them the way a confident, accomplished person would write them — specific, direct, and human. You avoid every cliché in the book.
+      `You are a career coach who writes cover letters that actually get read. Three-section structure, every time. Confident, specific, human. No clichés.
 
-COVER LETTER RULES:
-- Open with something specific and compelling — NOT "I am writing to express my interest in..."
-- Never use: "I am passionate about", "I believe I would be a great fit", "Please find attached", "Thank you for your consideration", "I look forward to hearing from you"
-- Mention 2-3 real accomplishments with actual numbers
-- Connect military experience to business outcomes the company cares about
-- Sound like a real person wrote this at 9pm after doing research on the company — not like a template
-- Close with confidence, not desperation
-- Under 380 words. Plain text paragraphs only.`,
-      `Write a tailored cover letter for this veteran. Return it in this EXACT format:
+COVER LETTER DOCTRINE — THREE SECTIONS:
+
+SECTION 1 — WHY THIS ROLE:
+Show you understand what this company is actually trying to accomplish — not just what the job posting says.
+Reference the company's current moment (funding, growth, product, market position) if known.
+Lead with your biggest relevant strength in sentence 1. Never open with "I am applying for..."
+1 paragraph, 3-4 sentences.
+
+SECTION 2 — WHY ME:
+Three concrete differentiators — specific, numbered, verifiable.
+Each differentiator must connect directly to something this company needs.
+Format: accomplishment with number → what it means for this company.
+1-2 paragraphs.
+
+SECTION 3 — WHY THIS COMPANY:
+Show you've done your homework. Reference something specific: a product, a partnership, a mission statement, a recent announcement.
+Close with confidence — what you bring, what happens next. No desperation.
+1 paragraph.
+
+TONE: ${toneLabel}
+
+HARD RULES:
+- Never use: "passionate", "I believe I would be a great fit", "Please find attached", "Thank you for your consideration", "I look forward to hearing from you", "results-driven", "team player"
+- Under 400 words total
+- Plain text paragraphs only — no bullets, no headers in the letter itself
+- Sound like a real person, not a template`,
+
+      `Write a tailored cover letter using the WHY THIS ROLE / WHY ME / WHY THIS COMPANY framework.
+
+Return it in this EXACT format:
 
 [TODAY'S DATE]
 
@@ -720,26 +842,26 @@ ${job?.location || ''}
 
 Re: ${job?.title || 'Open Position'}
 
-[LETTER BODY - 3-4 paragraphs]
+[SECTION 1 — WHY THIS ROLE: 1 paragraph showing you understand the company's moment and need]
+
+[SECTION 2 — WHY ME: 1-2 paragraphs with 3 specific accomplishments with numbers]
+
+[SECTION 3 — WHY THIS COMPANY: 1 paragraph showing company-specific research, confident close]
 
 Sincerely,
 
-${p.fullName || 'Your Name'}
+${displayName}
 ${p.phone || ''}
 ${p.email || ''}
-${p.linkedIn ? p.linkedIn : ''}
+${p.linkedin ? p.linkedin.replace(/^https?:\/\//, '') : ''}
 
 ---
 
 VETERAN BACKGROUND:
 ${context}
+${identityFrame ? 'IDENTITY FRAME: ' + identityFrame : ''}
 
-LETTER BODY RULES:
-Paragraph 1: Strong opening hook — lead with your biggest relevant strength, NOT "I am applying for..."
-Paragraph 2-3: Two specific accomplishments with numbers that directly connect to what this company needs
-Final paragraph: Direct confident close — why this role, what you bring, what happens next
-
-Output the complete letter exactly as formatted above. Use today's date. No extra commentary.`
+Output the complete letter exactly as formatted above. Use today's date. Three distinct paragraphs matching the three sections. No commentary.`
     );
 
     setStatus('🔍 Analyzing fit & transferable skills...');

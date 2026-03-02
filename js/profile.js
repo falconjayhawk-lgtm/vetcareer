@@ -139,6 +139,18 @@ function renderProfile() {
       <p style="font-size:13px;color:#6b7280;margin:-8px 0 12px">This is your baseline. AI will tailor it for each specific job during resume generation.</p>
       <div class="field"><label class="field-label">30-second summary for resume header & cover letters</label>
         <textarea id="p-elevatorPitch" rows="4" placeholder="Results-driven operations leader with 12 years directing teams of 50+, managing $5M budgets, and delivering mission-critical outcomes. Seeking to bring proven leadership to a civilian management role.">${esc(p.elevatorPitch)}</textarea></div>
+
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f3f4f6">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <label class="field-label" style="margin:0">🧭 Identity Frame</label>
+          <span style="font-size:11px;color:#6b7280">Used in every resume, cover letter, and interview answer</span>
+        </div>
+        <p style="font-size:12px;color:#6b7280;margin:0 0 8px">One sentence that anchors your entire narrative. What unique combination of experience makes you different from every other candidate? Be specific.</p>
+        <textarea id="p-identityFrame" rows="2"
+          placeholder='e.g. "Operational strategist who understands how warfighters think, how program offices buy, how requirements evolve, and where friction lives."'
+          style="font-size:13px">${esc(p.identityFrame||'')}</textarea>
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px">This phrase appears verbatim in your "What Sets Me Apart" resume section and anchors your cover letter narrative.</div>
+      </div>
     </div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
       <button class="btn btn-primary" style="padding:12px 24px" onclick="saveProfile()">💾 Save Profile</button>
@@ -181,7 +193,7 @@ function normalizeProfileName() {
 }
 
 function saveProfile() {
-  const fields = ['fullName','email','phone','location','linkedin','branch','rank','yearsOfService','mosRate','clearance','clearanceStatus','workPreference','willingToRelocate','targetLocations','education','certifications','training','elevatorPitch'];
+  const fields = ['fullName','email','phone','location','linkedin','branch','rank','yearsOfService','mosRate','clearance','clearanceStatus','workPreference','willingToRelocate','targetLocations','education','certifications','training','elevatorPitch','identityFrame'];
   const updated = { ...state.profile };
   fields.forEach(f => {
     const el = document.getElementById('p-' + f);
