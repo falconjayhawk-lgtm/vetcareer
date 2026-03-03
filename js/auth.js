@@ -1,15 +1,11 @@
 // ── Clerk Authentication ───────────────────────────────────────────────
 const CLERK_PUBLISHABLE_KEY = 'pk_test_dW5iaWFzZWQtYmx1ZWpheS0zMS5jbGVyay5hY2NvdW50cy5kZXYk';
-
 let clerkInstance = null;
 
 // Waits for the Clerk script to finish loading, then initializes.
-// The script tag is async so window.Clerk may not exist yet at page load.
 async function initClerk() {
   try {
-    // Poll for window.Clerk up to 10 seconds — async script may still be loading
     await waitForClerk();
-
     const clerk = window.Clerk;
     await clerk.load({ publishableKey: CLERK_PUBLISHABLE_KEY });
     clerkInstance = clerk;
@@ -18,27 +14,30 @@ async function initClerk() {
       syncClerkUserToState(clerk.user);
       setState({ loggedIn: true });
       if (typeof initFeedback === 'function') initFeedback();
-      // ?reset=1 URL param — developer shortcut to wipe data and restart onboarding
+
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('reset') === '1') {
         if (typeof resetAllData === 'function') {
           resetAllData();
-          // Clean the URL so refresh doesn't re-trigger
           window.history.replaceState({}, '', window.location.pathname);
           return;
         }
       }
-      // Show onboarding for new users
+
       if (typeof shouldShowOnboarding === 'function' && shouldShowOnboarding()) {
         setState({ view: 'onboarding', ui: { ...state.ui, onboardStep: 1 } });
       }
     } else {
+      // Not logged in — re-render so mountClerkSignIn runs AFTER clerkInstance is set
       setState({ loggedIn: false });
+      render();
+      setTimeout(() => mountClerkSignIn('clerk-signin-container'), 50);
     }
+
   } catch (err) {
     console.error('Clerk init error:', err);
-    // Fall back to showing the login page with an error message
     setState({ loggedIn: false, ui: { clerkError: true } });
+    render();
   }
 }
 
@@ -89,6 +88,8 @@ async function clerkSignOut() {
     console.error('Sign out error:', err);
   }
   setState({ loggedIn: false, view: 'dashboard', ui: {} });
+  render();
+  setTimeout(() => mountClerkSignIn('clerk-signin-container'), 50);
 }
 
 // Returns the current user's display name for the sidebar
