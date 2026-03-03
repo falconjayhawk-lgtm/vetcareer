@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms of Service — Tactics 2 Talent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Familjen+Grotesk:wght@600;700&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #0e1117; --paper: #f5f2eb; --paper-dark: #ede9df; --rule: #d6d0c4;
+  --rule-dark: #b8b2a6; --accent: #1a3a6b; --accent-light: #e8edf5;
+  --gold: #b8860b; --gold-light: #fdf6e3; --text: #1c1f26; --muted: #6b6558; --dim: #9b9589;
+}
+body {
+  font-family: 'Lora', Georgia, serif;
+  background: var(--paper);
+  color: var(--text);
+  line-height: 1.8;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, var(--rule) 27px, var(--rule) 28px);
+  background-attachment: fixed;
+}
+/* Nav */
+header {
+  background: var(--accent);
+  padding: 0 32px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.brand {
+  font-family: 'Familjen Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: white;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-badge {
+  background: rgba(255,255,255,0.18);
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  letter-spacing: 0.15em;
+}
+.back-link {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.back-link:hover { color: white; }
+/* Hero */
+.hero {
+  background: var(--accent);
+  padding: 48px 32px 40px;
+  text-align: center;
+  border-bottom: 3px solid var(--gold);
+}
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 12px;
+}
+.hero h1 {
+  font-family: 'Familjen Grotesk', sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 8px;
+}
+.hero-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.05em;
+}
+/* Layout */
+.page-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+/* TOC */
+.toc {
+  background: white;
+  border: 1px solid var(--rule-dark);
+  border-left: 4px solid var(--gold);
+  border-radius: 2px;
+  padding: 24px 28px;
+  margin-bottom: 40px;
+}
+.toc-title {
+  font-family: 'Familjen Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 14px;
+}
+.toc ol {
+  padding-left: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 24px;
+}
+.toc li { font-size: 13px; }
+.toc a { color: var(--accent); text-decoration: none; font-family: 'Familjen Grotesk', sans-serif; font-weight: 600; font-size: 13px; }
+.toc a:hover { text-decoration: underline; }
+/* Sections */
+.section {
+  background: white;
+  border: 1px solid var(--rule-dark);
+  border-radius: 2px;
+  padding: 28px 32px;
+  margin-bottom: 16px;
+}
+.section-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+.section h2 {
+  font-family: 'Familjen Grotesk', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+.section h3 {
+  font-family: 'Familjen Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 20px 0 8px;
+  letter-spacing: 0.02em;
+}
+.section p { font-size: 14px; color: var(--text); margin-bottom: 12px; line-height: 1.8; }
+.section p:last-child { margin-bottom: 0; }
+.section ul, .section ol { padding-left: 22px; margin-bottom: 12px; }
+.section li { font-size: 14px; line-height: 1.8; margin-bottom: 4px; }
+.section strong { font-weight: 600; color: var(--text); font-style: normal; }
+/* Contact box */
+.contact-box {
+  background: var(--accent-light);
+  border: 1px solid #c0cfe0;
+  border-left: 4px solid var(--accent);
+  border-radius: 2px;
+  padding: 20px 24px;
+  margin-top: 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  line-height: 2;
+}
+.contact-box a { color: var(--accent); }
+/* Footer */
+footer {
+  text-align: center;
+  padding: 32px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  border-top: 1px solid var(--rule-dark);
+  margin-top: 40px;
+}
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<header>
+  <a href="https://tactics2talent.com" class="brand">Tactics 2 Talent <span class="brand-badge">BETA</span></a>
+  <a href="https://tactics2talent.com" class="back-link">← Back to app</a>
+</header>
+<div class="hero">
+  <div class="hero-eyebrow">Legal</div>
+  <h1>Terms of Service</h1>
+  <div class="hero-meta">Effective February 25, 2026 &nbsp;·&nbsp; Last updated February 25, 2026</div>
+</div>
+<div class="page-wrap">
+</div>
+
+  <div class="container">
+
+    <div class="toc">
+      <div class="toc-title">Contents</div>
+      <ol>
+        <li><a href="#s1">1. Eligibility and Registration</a></li>
+        <li><a href="#s2">2. Description of Service</a></li>
+        <li><a href="#s3">3. Acceptable Use</a></li>
+        <li><a href="#s4">4. AI Content Disclaimers</a></li>
+        <li><a href="#s5">5. Intellectual Property</a></li>
+        <li><a href="#s6">6. Subscription and Billing</a></li>
+        <li><a href="#s7">7. Privacy</a></li>
+        <li><a href="#s8">8. Third-Party Services</a></li>
+        <li><a href="#s9">9. Disclaimers and Liability</a></li>
+        <li><a href="#s10">10. Indemnification</a></li>
+        <li><a href="#s11">11. Termination</a></li>
+        <li><a href="#s12">12. Governing Law</a></li>
+        <li><a href="#s13">13. General Provisions</a></li>
+        <li><a href="#s14">14. Contact Information</a></li>
+      </ol>
+    </div>
+
+    <div class="section" style="margin-bottom:32px;">
+      <div class="warning">⚠️ Please read these Terms of Service carefully before using Tactics 2 Talent. By accessing or using the Service, you agree to be bound by these Terms. If you do not agree, do not use the Service.</div>
+      <p style="margin-bottom:0">These Terms of Service ("Terms") constitute a legally binding agreement between you and National Advisory &amp; Domain Strategies LLC ("Tactics 2 Talent," "we," "us," or "our") governing your use of the Tactics 2 Talent career transition platform accessible at tactics2talent.com (the "Service").</p>
+    </div>
+
+    <div id="s1" class="section">
+      <div class="section-num">Section 1</div>
+      <h2>Eligibility and Account Registration</h2>
+      <p>To use Tactics 2 Talent, you must:</p>
+      <ul>
+        <li>Be at least 18 years of age</li>
+        <li>Be a current or former member of the United States Armed Forces, or an individual supporting such a person</li>
+        <li>Have the legal capacity to enter into a binding contract</li>
+        <li>Not be prohibited from using the Service under applicable law</li>
+      </ul>
+      <p style="margin-bottom:0">By creating an account, you represent that you meet all eligibility requirements. You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. Notify us immediately at <a href="mailto:support@tactics2talent.com">support@tactics2talent.com</a> if you suspect unauthorized access.</p>
+    </div>
+
+    <div id="s2" class="section">
+      <div class="section-num">Section 2</div>
+      <h2>Description of Service</h2>
+      <p>Tactics 2 Talent is a career transition platform designed to help military veterans translate their service experience into civilian career opportunities. The Service includes AI-powered tools for:</p>
+      <ul>
+        <li>Resume generation and civilian translation of military experience</li>
+        <li>LinkedIn profile optimization</li>
+        <li>Interview preparation and coaching</li>
+        <li>Salary research and negotiation guidance</li>
+        <li>Federal and civilian job search</li>
+        <li>Professional networking email drafting</li>
+        <li>Reference letter generation</li>
+        <li>Security clearance background form (SF-86) guidance</li>
+      </ul>
+      <p style="margin-bottom:0">The Service is powered in part by the Anthropic Claude API. AI-generated content is provided as a starting point and should be reviewed and verified before use.</p>
+    </div>
+
+    <div id="s3" class="section">
+      <div class="section-num">Section 3</div>
+      <h2>Acceptable Use</h2>
+      <h3>3.1 Permitted Uses</h3>
+      <p>You may use Tactics 2 Talent solely for your personal, non-commercial career transition purposes, including job searching, resume preparation, and professional development.</p>
+      <div class="divider"></div>
+      <h3>3.2 Prohibited Uses</h3>
+      <p>You agree NOT to:</p>
+      <ul>
+        <li>Use the Service for any unlawful purpose or in violation of any applicable law</li>
+        <li>Impersonate any person or misrepresent your affiliation with any entity</li>
+        <li>Submit false, misleading, or inaccurate information, including fabricated military service records</li>
+        <li>Attempt to gain unauthorized access to any portion of the Service or related systems</li>
+        <li>Use automated scripts, bots, or scrapers to access or extract data from the Service</li>
+        <li>Reverse engineer or attempt to derive the source code of the Service</li>
+        <li>Resell, sublicense, or commercially exploit the Service without written permission</li>
+        <li>Upload or transmit malicious code or content intended to damage the Service</li>
+        <li>Circumvent any rate limits, access controls, or usage restrictions</li>
+      </ul>
+    </div>
+
+    <div id="s4" class="section">
+      <div class="section-num">Section 4</div>
+      <h2>AI-Generated Content — Important Disclaimers</h2>
+      <div class="warning">⚠️ AI-generated content from Tactics 2 Talent is not professional legal, financial, medical, or security clearance advice. Always verify AI outputs before submitting resumes, applications, or official documents.</div>
+      <p>Tactics 2 Talent uses artificial intelligence to generate career-related content. You acknowledge and agree that:</p>
+      <ul>
+        <li>AI-generated content may contain errors, inaccuracies, or outdated information</li>
+        <li>Resume content, salary figures, interview answers, and job match scores are suggestions only</li>
+        <li>Tactics 2 Talent makes no guarantee that AI-generated content will result in employment or any particular outcome</li>
+        <li>SF-86 and security clearance guidance is informational only and not a substitute for advice from a licensed attorney</li>
+        <li>Salary ranges are estimates based on publicly available information and may not reflect actual offers</li>
+        <li>Job listings are sourced from third parties; Tactics 2 Talent does not guarantee their accuracy or availability</li>
+      </ul>
+      <p style="margin-bottom:0">You are solely responsible for reviewing and verifying any content you submit to employers or government agencies, regardless of whether Tactics 2 Talent assisted in its creation.</p>
+    </div>
+
+    <div id="s5" class="section">
+      <div class="section-num">Section 5</div>
+      <h2>Intellectual Property</h2>
+      <h3>5.1 Tactics 2 Talent's Intellectual Property</h3>
+      <p>Tactics 2 Talent and its licensors own all right, title, and interest in and to the Service, including all software, design, trademarks, and proprietary methodologies. Nothing in these Terms grants you any right to use Tactics 2 Talent's trademarks or brand elements without prior written consent.</p>
+      <div class="divider"></div>
+      <h3>5.2 Your Content</h3>
+      <p>You retain ownership of the personal information, military records, and other content you submit to Tactics 2 Talent ("Your Content"). By submitting Your Content, you grant Tactics 2 Talent a limited, non-exclusive license to process and use Your Content solely to provide the Service to you.</p>
+      <div class="divider"></div>
+      <h3>5.3 AI Output</h3>
+      <p style="margin-bottom:0">AI-generated outputs produced using Your Content are provided for your personal use. Tactics 2 Talent does not claim ownership of AI outputs generated from your specific inputs. However, similar outputs may be generated for other users as AI outputs are not unique.</p>
+    </div>
+
+    <div id="s6" class="section">
+      <div class="section-num">Section 6</div>
+      <h2>Subscription, Billing, and Payment</h2>
+      <p>Tactics 2 Talent may offer free and paid subscription tiers. By selecting a paid tier:</p>
+      <ul>
+        <li>You authorize Tactics 2 Talent to charge your payment method on a recurring basis at the disclosed rate</li>
+        <li>Subscription fees are billed in advance and are non-refundable except as required by law</li>
+        <li>You may cancel your subscription at any time; cancellation takes effect at the end of the current billing period</li>
+        <li>Tactics 2 Talent reserves the right to change pricing with at least 30 days' notice</li>
+        <li>All payments are processed by Stripe; Tactics 2 Talent does not store your payment card information</li>
+      </ul>
+      <div class="highlight">For beta users and early access participants, special pricing terms may apply and will be communicated separately.</div>
+    </div>
+
+    <div id="s7" class="section">
+      <div class="section-num">Section 7</div>
+      <h2>Privacy</h2>
+      <p style="margin-bottom:0">Your use of Tactics 2 Talent is also governed by our <a href="privacy.html">Privacy Policy</a>, incorporated herein by reference. The Privacy Policy explains how we collect, use, and protect your personal information, including sensitive military data. Please review it carefully.</p>
+    </div>
+
+    <div id="s8" class="section">
+      <div class="section-num">Section 8</div>
+      <h2>Third-Party Services</h2>
+      <p>Tactics 2 Talent integrates with third-party services including Anthropic, Clerk, USAJobs, Cloudflare, Supabase, and Netlify. Your use of these services is subject to their respective terms and privacy policies. Tactics 2 Talent is not responsible for the practices of these third parties.</p>
+      <p style="margin-bottom:0">Job listings and external links on Tactics 2 Talent direct you to third-party websites. Tactics 2 Talent does not endorse or guarantee the accuracy of any third-party content, job listings, or hiring outcomes.</p>
+    </div>
+
+    <div id="s9" class="section">
+      <div class="section-num">Section 9</div>
+      <h2>Disclaimers and Limitation of Liability</h2>
+      <div class="warning">⚠️ Read this section carefully — it limits Tactics 2 Talent's liability to you.</div>
+      <h3>9.1 No Warranties</h3>
+      <p class="caps">THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED. VETCAREER DOES NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, ERROR-FREE, OR FREE OF HARMFUL COMPONENTS.</p>
+      <div class="divider"></div>
+      <h3>9.2 No Employment Guarantee</h3>
+      <p class="caps">VETCAREER MAKES NO REPRESENTATION THAT USE OF THE SERVICE WILL RESULT IN EMPLOYMENT, JOB INTERVIEWS, SECURITY CLEARANCE APPROVAL, OR ANY OTHER SPECIFIC OUTCOME.</p>
+      <div class="divider"></div>
+      <h3>9.3 Limitation of Liability</h3>
+      <p class="caps">TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, VETCAREER LLC SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATED TO YOUR USE OF THE SERVICE.</p>
+      <p class="caps" style="margin-bottom:0">IN NO EVENT SHALL VETCAREER'S TOTAL LIABILITY TO YOU EXCEED THE GREATER OF (A) THE AMOUNT YOU PAID TO VETCAREER IN THE 12 MONTHS PRECEDING THE CLAIM OR (B) ONE HUNDRED DOLLARS ($100.00).</p>
+    </div>
+
+    <div id="s10" class="section">
+      <div class="section-num">Section 10</div>
+      <h2>Indemnification</h2>
+      <p style="margin-bottom:0">You agree to indemnify and hold harmless National Advisory &amp; Domain Strategies LLC and its officers, employees, and agents from any claims, damages, losses, and expenses arising out of: (a) your use of the Service; (b) Your Content; (c) your violation of these Terms; or (d) your violation of any third-party rights.</p>
+    </div>
+
+    <div id="s11" class="section">
+      <div class="section-num">Section 11</div>
+      <h2>Termination</h2>
+      <p>Tactics 2 Talent reserves the right to suspend or terminate your access to the Service at any time, with or without notice, for any reason, including violation of these Terms.</p>
+      <p style="margin-bottom:0">You may terminate your account at any time by contacting <a href="mailto:support@tactics2talent.com">support@tactics2talent.com</a>. Sections 5, 9, 10, 12, and 13 survive termination.</p>
+    </div>
+
+    <div id="s12" class="section">
+      <div class="section-num">Section 12</div>
+      <h2>Governing Law and Dispute Resolution</h2>
+      <p>These Terms shall be governed by the laws of the State of Kansas, without regard to its conflict of law principles.</p>
+      <p style="margin-bottom:0">Disputes shall be resolved first through good-faith negotiation. If negotiation fails, disputes shall be submitted to binding arbitration in Kansas City, Kansas under the rules of the American Arbitration Association. You waive any right to a jury trial or class action proceeding.</p>
+    </div>
+
+    <div id="s13" class="section">
+      <div class="section-num">Section 13</div>
+      <h2>General Provisions</h2>
+      <h3>13.1 Entire Agreement</h3>
+      <p>These Terms, together with the Privacy Policy, constitute the entire agreement between you and Tactics 2 Talent regarding the Service.</p>
+      <div class="divider"></div>
+      <h3>13.2 Severability</h3>
+      <p>If any provision of these Terms is found unenforceable, that provision will be modified to the minimum extent necessary, and the remaining provisions remain in full force.</p>
+      <div class="divider"></div>
+      <h3>13.3 Modifications</h3>
+      <p style="margin-bottom:0">Tactics 2 Talent may modify these Terms at any time. Material changes will be communicated at least 30 days before taking effect. Continued use after changes take effect constitutes acceptance.</p>
+    </div>
+
+    <div id="s14" class="section">
+      <div class="section-num">Section 14</div>
+      <h2>Contact Information</h2>
+      <p>For questions about these Terms of Service:</p>
+      <div class="contact-box">
+        <strong>National Advisory &amp; Domain Strategies LLC</strong><br>
+        Legal inquiries: <a href="mailto:legal@vetcareer.com">legal@vetcareer.com</a><br>
+        Support: <a href="mailto:support@tactics2talent.com">support@tactics2talent.com</a><br>
+        Website: <a href="https://tactics2talent.com">tactics2talent.com</a>
+      </div>
+    </div>
+</div>
+<footer>
+  <div style="margin-bottom:8px">
+    <a href="/privacy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/terms.html">Terms of Service</a> &nbsp;·&nbsp; <a href="https://tactics2talent.com">Return to App</a>
+  </div>
+  © 2026 National Advisory &amp; Domain Strategies LLC · Tactics 2 Talent
+</footer>
+</body>
+</html>
