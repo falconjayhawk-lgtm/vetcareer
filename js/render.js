@@ -24,53 +24,47 @@ function render() {
 function renderLogin() {
   const clerkError = state.ui && state.ui.clerkError;
 
-  // Chevron SVG logo (inline, white version)
-  const logoSVG = `<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-    <polygon points="4,12 14,12 24,22 34,12 44,12 24,32" fill="none" stroke="#b8860b" stroke-width="3.5" stroke-linejoin="round"/>
-    <polygon points="4,22 14,22 24,32 34,22 44,22 24,42" fill="none" stroke="rgba(184,134,11,0.45)" stroke-width="3" stroke-linejoin="round"/>
-    <polygon points="30,32 44,32 44,38 36,38" fill="#b8860b" opacity="0.9"/>
+  const logoSVG = `<svg width="56" height="44" viewBox="0 0 56 44" xmlns="http://www.w3.org/2000/svg">
+    <polyline points="4,4 28,24 52,4" fill="none" stroke="#1a3a6b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="4,18 28,38 52,18" fill="none" stroke="#b8860b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 
   return `
     <div class="login-page">
-      <div class="login-card">
+      <div class="login-card" style="text-align:center">
 
-        <!-- Header -->
-        <div style="text-align:center;margin-bottom:32px">
-          <div style="margin-bottom:14px">${logoSVG}</div>
-          <div style="font-family:'Familjen Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Veteran Career Platform</div>
-          <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:28px;font-weight:700;margin:0 0 4px;color:var(--accent);letter-spacing:-0.02em">Tactics 2 Talent</h1>
-          <p style="font-family:'Lora',serif;font-style:italic;color:var(--muted);font-size:14px;margin:0">Your military-to-civilian transition platform</p>
-        </div>
+        <div style="margin-bottom:20px">${logoSVG}</div>
 
-        <!-- Divider -->
+        <div style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Veteran Career Platform</div>
+        <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:30px;font-weight:700;margin:0 0 6px;color:var(--accent)">Tactics 2 Talent</h1>
+        <p style="font-family:'Lora',serif;font-style:italic;color:var(--muted);font-size:14px;margin:0 0 28px">Your military-to-civilian transition platform</p>
+
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
           <div style="flex:1;height:1px;background:var(--rule-dark)"></div>
-          <div style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--dim)">Sign In</div>
+          <div style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--dim)">Sign In</div>
           <div style="flex:1;height:1px;background:var(--rule-dark)"></div>
         </div>
 
         ${clerkError
-          ? `<div style="background:var(--red-light);border:1px solid #e8c0c0;border-radius:2px;padding:14px;text-align:center;font-size:13px;color:var(--red)">
+          ? `<div style="background:var(--red-light);border:1px solid #e8c0c0;border-radius:2px;padding:14px;font-size:13px;color:var(--red);margin-bottom:16px">
                Sign-in failed to load. Please refresh the page.<br>
                <button onclick="location.reload()" class="btn btn-primary btn-sm" style="margin-top:8px">Refresh</button>
              </div>`
-          : `<div id="clerk-signin-container" style="min-height:100px">
-               <div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">
+          : `<div id="clerk-signin-container" style="min-height:80px;text-align:left">
+               <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">
                  <div class="spinner" style="margin:0 auto 8px"></div>
                  Loading sign-in...
                </div>
              </div>`
         }
 
-        <!-- Footer note -->
-        <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--rule);text-align:center">
-          <p style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;letter-spacing:0.08em;color:var(--dim);margin:0">
+        <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--rule)">
+          <p style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;letter-spacing:0.08em;color:var(--dim);margin:0 0 8px">
             YOUR DATA IS ENCRYPTED AND NEVER SOLD &nbsp;·&nbsp; BUILT FOR VETERANS, BY A VETERAN
           </p>
-          <div style="margin-top:8px;display:flex;gap:14px;justify-content:center">
-            <a href="/privacy.html" target="_blank" style="font-size:10px;color:var(--muted);text-decoration:none;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.05em">Privacy Policy</a>
-            <a href="/terms.html" target="_blank" style="font-size:10px;color:var(--muted);text-decoration:none;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.05em">Terms of Service</a>
+          <div style="display:flex;gap:16px;justify-content:center">
+            <a href="/privacy.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'Familjen Grotesk',sans-serif">Privacy Policy</a>
+            <a href="/terms.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'Familjen Grotesk',sans-serif">Terms of Service</a>
           </div>
         </div>
 
