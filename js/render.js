@@ -84,8 +84,12 @@ function renderSidebar() {
       <nav style="flex:1;padding:8px;overflow-y:auto">
         ${items.map(i=>`<button class="nav-btn${state.view===i.id?' active':''}${i.highlight&&state.documents.length===0?' start-here':''}" onclick="setState({view:'${i.id}'}); closeNav()">${i.label}${i.highlight&&state.documents.length===0?' <span style="font-size:10px;background:#22c55e;color:white;padding:2px 6px;border-radius:999px;margin-left:4px">START</span>':''}</button>`).join('')}
       </nav>
-      <div style="padding:8px;border-top:1px solid #f3f4f6">
+     <div style="padding:8px;border-top:1px solid #f3f4f6">
         <button class="nav-btn" style="color:#ef4444" onclick="clerkSignOut()">&#128682; Sign Out</button>
+        <div style="padding:4px 10px 8px;display:flex;gap:12px">
+          <a href="/privacy.html" target="_blank" style="font-size:10px;color:#9ca3af;text-decoration:none">Privacy Policy</a>
+          <a href="/terms.html" target="_blank" style="font-size:10px;color:#9ca3af;text-decoration:none">Terms of Service</a>
+        </div>
       </div>
     </div>`;
 }
