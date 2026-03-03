@@ -25,8 +25,8 @@ function renderLogin() {
   const clerkError = state.ui && state.ui.clerkError;
 
   const logoSVG = `<svg width="56" height="44" viewBox="0 0 56 44" xmlns="http://www.w3.org/2000/svg">
-    <polyline points="4,4 28,24 52,4" fill="none" stroke="#1a3a6b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-    <polyline points="4,18 28,38 52,18" fill="none" stroke="#b8860b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="4,24 28,4 52,24" fill="none" stroke="#1a3a6b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="4,40 28,20 52,40" fill="none" stroke="#b8860b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 
   return `
@@ -95,9 +95,9 @@ function renderSidebar() {
   const displayName = getDisplayName();
 
   // Chevron mark inline SVG for sidebar
-  const chevronMark = `<svg width="22" height="22" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
-    <polygon points="4,12 14,12 24,22 34,12 44,12 24,32" fill="none" stroke="#b8860b" stroke-width="4" stroke-linejoin="round"/>
-    <polygon points="4,22 14,22 24,32 34,22 44,22 24,42" fill="none" stroke="rgba(184,134,11,0.4)" stroke-width="3.5" stroke-linejoin="round"/>
+  const chevronMark = `<svg width="22" height="22" viewBox="0 0 56 44" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+    <polyline points="4,24 28,4 52,24" fill="none" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="4,40 28,20 52,40" fill="none" stroke="#b8860b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 
   return `
