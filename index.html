@@ -7,6 +7,12 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Familjen+Grotesk:wght@600;700&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <!-- Clerk: handles authentication (sign up, sign in, sessions) -->
+  <script async crossorigin="anonymous"
+    data-clerk-publishable-key="pk_test_dW5iaWFzZWQtYmx1ZWpheS0zMS5jbGVyay5hY2NvdW50cy5kZXYk"
+    src="https://unbiased-bluejay-31.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+    type="text/javascript">
+  </script>
   <style>
     /* ── T2T Design System ─────────────────────────────────────────── */
     :root {
@@ -35,6 +41,173 @@
       color: var(--text);
       background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, var(--rule) 27px, var(--rule) 28px);
       background-attachment: fixed;
+    }
+    .sidebar {
+      width: 220px;
+      min-height: 100vh;
+      background: var(--accent);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      box-shadow: 3px 0 12px rgba(0,0,0,0.2);
+    }
+    .main { margin-left: 220px; min-height: 100vh; padding: 32px; max-width: 960px; }
+    .nav-btn {
+      display: block; width: 100%; text-align: left; padding: 9px 14px;
+      border: none; background: none; cursor: pointer; font-size: 13px;
+      font-family: 'Familjen Grotesk', sans-serif; font-weight: 600;
+      color: rgba(255,255,255,0.65); border-radius: 2px; margin: 1px 0;
+      letter-spacing: 0.01em; transition: all 0.15s;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+    .nav-btn.active { background: rgba(255,255,255,0.18); color: white; border-left: 3px solid var(--gold); }
+    .nav-btn.start-here { background: rgba(184,134,11,0.2); color: #fde68a; border-left: 3px solid var(--gold); }
+    .card {
+      background: var(--white); border: 1px solid var(--rule-dark);
+      border-radius: 2px; padding: 20px 24px; margin-bottom: 16px;
+      box-shadow: 2px 2px 0 var(--rule);
+    }
+    .card h2 {
+      font-family: 'Familjen Grotesk', sans-serif; font-size: 15px; font-weight: 700;
+      margin: 0 0 16px; color: var(--accent); letter-spacing: 0.04em;
+      text-transform: uppercase; padding-bottom: 10px; border-bottom: 1px solid var(--rule);
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+      border-radius: 2px; border: none; cursor: pointer; font-size: 13px;
+      font-family: 'Familjen Grotesk', sans-serif; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase; transition: all 0.15s;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #0f2347; }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-secondary { background: var(--paper-dark); color: var(--muted); border: 1px solid var(--rule-dark); }
+    .btn-secondary:hover { background: var(--rule); }
+    .btn-danger { background: var(--red-light); color: var(--red); border: 1px solid #e8c0c0; }
+    .btn-danger:hover { background: #fae0e0; }
+    .btn-sm { padding: 4px 10px; font-size: 11px; }
+    input, select, textarea {
+      width: 100%; padding: 8px 12px; border: 1px solid var(--rule-dark);
+      border-radius: 2px; font-size: 14px; font-family: 'Lora', serif;
+      background: var(--paper); color: var(--text); outline: none; transition: border 0.15s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent); background: white;
+      box-shadow: 0 0 0 2px rgba(26,58,107,0.1);
+    }
+    label.field-label {
+      display: block; font-size: 10px; font-weight: 700;
+      font-family: 'Familjen Grotesk', sans-serif; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 5px;
+    }
+    .field { margin-bottom: 14px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 2px; font-size: 11px; font-weight: 600; font-family: 'Familjen Grotesk', sans-serif; }
+    .tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 2px; font-size: 12px; margin: 2px; }
+    .tag-blue { background: var(--accent-light); color: var(--accent); border: 1px solid #c0cfe0; }
+    .tag-purple { background: #f0eefe; color: #5b21b6; border: 1px solid #d4c8f8; }
+    .tag-orange { background: var(--gold-light); color: var(--gold); border: 1px solid #e8d5a0; }
+    .timeline-line { position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: var(--rule-dark); }
+    .timeline-dot { position: absolute; left: 4px; top: 12px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid white; box-shadow: 0 0 0 2px var(--accent); }
+    .timeline-item { position: relative; padding-left: 36px; margin-bottom: 16px; }
+    .checklist-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 2px; border: 1px solid var(--rule); margin-bottom: 8px; cursor: pointer; font-size: 14px; background: white; }
+    .checklist-item:hover { border-color: var(--accent); background: var(--accent-light); }
+    .checklist-item.done { background: var(--green-light); border-color: #c8e6cd; cursor: default; }
+    .check-circle { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; }
+    .check-circle.done { background: var(--green); color: white; }
+    .check-circle.todo { background: var(--rule); }
+    .score-circle { width: 110px; height: 110px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+    .gap-high { background: var(--red-light); border: 1px solid #e8c0c0; border-radius: 2px; padding: 12px; margin-bottom: 8px; }
+    .gap-med { background: var(--gold-light); border: 1px solid #e8d5a0; border-radius: 2px; padding: 12px; margin-bottom: 8px; }
+    .gap-low { background: var(--accent-light); border: 1px solid #c0cfe0; border-radius: 2px; padding: 12px; margin-bottom: 8px; }
+    .gap-good { background: var(--green-light); border: 1px solid #c8e6cd; border-radius: 2px; padding: 8px 12px; margin-bottom: 6px; }
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--rule-dark); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .resume-preview { border: 1px solid var(--rule-dark); border-radius: 2px; padding: 32px; background: white; font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.6; white-space: pre-wrap; }
+    .login-page {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: var(--accent);
+      background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(255,255,255,0.06) 27px, rgba(255,255,255,0.06) 28px);
+    }
+    .login-card {
+      background: var(--paper); border: 1px solid var(--rule-dark); border-radius: 2px;
+      padding: 48px 40px; width: 420px; max-width: 95vw;
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.2), 12px 12px 0 rgba(0,0,0,0.08);
+    }
+    #mobile-bar { display: none; position: fixed; top: 0; left: 0; right: 0; height: 52px; background: var(--accent); align-items: center; padding: 0 16px; gap: 12px; z-index: 200; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border-bottom: 2px solid var(--gold); }
+    #mobile-bar span { color: white; font-family: 'Familjen Grotesk', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.06em; }
+    #hamburger { background: none; border: none; color: white; font-size: 26px; cursor: pointer; padding: 4px; line-height: 1; }
+    #mobile-back { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 12px; font-family: 'Familjen Grotesk', sans-serif; font-weight: 700; cursor: pointer; padding: 5px 10px; border-radius: 2px; white-space: nowrap; }
+    #nav-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 150; }
+    @media (max-width: 700px) {
+      .grid2 { grid-template-columns: 1fr; }
+      .grid3 { grid-template-columns: 1fr 1fr; }
+      .main { margin-left: 0 !important; padding: 16px; padding-top: 68px; }
+      .sidebar { transform: translateX(-230px); transition: transform 0.25s; z-index: 160; }
+      .sidebar.open { transform: translateX(0); }
+      #mobile-bar { display: flex; }
+      #nav-overlay.show { display: block; }
+    }
+  </style>
+</head>
+<body>
+<!-- Mobile top bar -->
+<div id="mobile-bar">
+  <button id="hamburger" onclick="openNav()">&#9776;</button>
+  <span>TACTICS 2 TALENT</span>
+  <button id="mobile-back" onclick="setState({view:'dashboard'})" style="display:none">&#127968; Home</button>
+</div>
+<!-- Overlay to close nav on mobile -->
+<div id="nav-overlay" onclick="closeNav()"></div>
+<div id="app"></div>
+
+<!-- Core -->
+<script src="js/state.js"></script>
+<script src="js/api.js"></script>
+<script src="js/helpers.js"></script>
+<script src="js/auth.js"></script>
+
+<!-- Sync & Settings -->
+<script src="js/sync.js"></script>
+<script src="js/promo.js"></script>
+
+<!-- Views -->
+<script src="js/dashboard.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/experience.js"></script>
+<script src="js/documents.js"></script>
+<script src="js/onboarding.js"></script>
+<script src="js/jobs.js"></script>
+<script src="js/resume.js"></script>
+<script src="js/export.js"></script>
+<script src="js/scout.js"></script>
+<script src="js/linkedin.js"></script>
+<script src="js/interview.js"></script>
+<script src="js/salary.js"></script>
+<script src="js/network.js"></script>
+<script src="js/refletter.js"></script>
+<script src="js/sf86.js"></script>
+<script src="js/gap.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/analytics-dashboard.js"></script>
+<script src="js/faq.js"></script>
+<script src="js/feedback.js"></script>
+
+<!-- Render engine (last — depends on all views) -->
+<script src="js/render.js"></script>
+
+<!-- Utilities & Init -->
+<script src="js/utils.js"></script>
+<script>
+  loadState();
+  render();
+  initClerk();
+</script>
+</body>
+</html>      background-attachment: fixed;
     }
     /* ── Sidebar ── */
     .sidebar {
