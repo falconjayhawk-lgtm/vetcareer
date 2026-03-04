@@ -3,7 +3,7 @@ function renderResume() {
   const jobs = state.jobs;
   const selJob = state.ui.resumeJob || '';
   const fmt = state.ui.resumeFmt || 'professional';
-  const mode = state.ui.resumeMode || 'targeted'; // 'targeted' or 'generic'
+  const mode = state.ui.resumeMode || 'targeted';
   const job = jobs.find(j=>j.id===selJob);
   const busy = state.ui.resumeBusy || false;
   const status = state.ui.resumeStatus || '';
@@ -11,102 +11,119 @@ function renderResume() {
   const error = state.ui.resumeError || '';
 
   const jobOptions = jobs.map(j=>`<option value="${j.id}" ${selJob===j.id?'selected':''}>${esc(j.title)} — ${esc(j.company)}</option>`).join('');
-
   const canGenTargeted = !busy && !!selJob;
   const canGenGeneric  = !busy && !!!!state.profile?.fullName;
-
   const showModal = state.ui.resumeModal && result;
+
+  // Format definitions — ATS flag drives warning display
+  const formats = [
+    {
+      id: 'professional',
+      l: 'Professional',
+      d: 'Arial · Clean headers · Corporate',
+      ats: true,
+      badge: '✓ ATS Safe'
+    },
+    {
+      id: 'federal',
+      l: 'Federal / Gov',
+      d: 'Georgia serif · Zero color · GS/Defense',
+      ats: true,
+      badge: '✓ ATS Safe'
+    },
+    {
+      id: 'executive',
+      l: 'Executive',
+      d: 'Two-column · Navy accent · Visual',
+      ats: false,
+      badge: '⚠️ Not ATS Safe'
+    }
+  ];
+
+  const fmtCards = (formats) => formats.map(f=>`
+    <div onclick="toggleUI('resumeFmt','${f.id}')" style="padding:10px;border:2px solid ${fmt===f.id?'var(--accent)':'var(--rule)'};background:${fmt===f.id?'var(--gold-light)':'white'};border-radius:2px;cursor:pointer;position:relative">
+      <div style="font-weight:700;font-size:13px;font-family:'Familjen Grotesk',sans-serif;color:var(--accent)">${f.l}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">${f.d}</div>
+      <div style="margin-top:5px;display:inline-block;font-size:10px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;padding:2px 6px;border-radius:2px;background:${f.ats?'#e8f5e9':'#fff3e0'};color:${f.ats?'#2e7d32':'#e65100'}">${f.badge}</div>
+    </div>`).join('');
 
   return `
     ${showModal ? `
-    <!-- Post-generation success modal -->
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="toggleUI('resumeModal',false)">
-      <div style="background:white;border-radius:16px;padding:28px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)" onclick="event.stopPropagation()">
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="toggleUI('resumeModal',false)">
+      <div style="background:white;border-radius:2px;padding:28px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);border-top:4px solid var(--gold)" onclick="event.stopPropagation()">
         <div style="text-align:center;margin-bottom:20px">
-          <div style="font-size:48px;margin-bottom:8px">🎉</div>
-          <div style="font-size:20px;font-weight:800;color:#1f2937;margin-bottom:4px">Your resume is ready!</div>
-          <div style="font-size:13px;color:#6b7280">Scroll down to view, download, or print it. What would you like to do next?</div>
+          <div style="font-size:42px;margin-bottom:8px">🎉</div>
+          <div style="font-size:18px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;color:var(--accent);letter-spacing:0.02em;margin-bottom:4px">YOUR RESUME IS READY</div>
+          <div style="font-size:13px;color:var(--muted)">Scroll down to view, download, or print. What's next?</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <button onclick="exportResumeToWord();toggleUI('resumeModal',false)" style="padding:12px;border:none;background:#2563eb;color:white;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-align:left">
-            📝 Download as Word Document
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button onclick="exportResumeToWord();toggleUI('resumeModal',false)" style="padding:12px;border:none;background:var(--accent);color:white;border-radius:2px;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;cursor:pointer;text-align:left">
+            📝 DOWNLOAD AS WORD DOCUMENT
           </button>
-          <button onclick="printResume();toggleUI('resumeModal',false)" style="padding:12px;border:none;background:#f9fafb;border:1.5px solid #e5e7eb;color:#1f2937;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-align:left">
+          <button onclick="printResume();toggleUI('resumeModal',false)" style="padding:12px;border:1.5px solid var(--rule-dark);background:white;color:var(--text);border-radius:2px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
             🖨 Print / Save as PDF
           </button>
-          ${!result.isGeneric ? `<button onclick="setState({view:'interview'});toggleUI('resumeModal',false)" style="padding:12px;border:none;background:#f9fafb;border:1.5px solid #e5e7eb;color:#1f2937;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-align:left">
+          ${!result.isGeneric ? `<button onclick="setState({view:'interview'});toggleUI('resumeModal',false)" style="padding:12px;border:1.5px solid var(--rule-dark);background:white;color:var(--text);border-radius:2px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
             🎤 Prep for the Interview
           </button>` : ''}
-          <button onclick="toggleUI('resumeModal',false)" style="padding:10px;border:none;background:none;color:#6b7280;font-size:13px;cursor:pointer">
+          <button onclick="toggleUI('resumeModal',false)" style="padding:8px;border:none;background:none;color:var(--muted);font-size:12px;cursor:pointer">
             Keep reviewing my resume
           </button>
         </div>
       </div>
     </div>` : ''}
-    <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">Resume Builder</h1>
-    <p style="color:#6b7280;font-size:14px;margin:0 0 20px">AI-powered resume writing — Claude reads your actual experience and writes a real resume</p>
-    
 
-    <!-- Mode selector tabs -->
-    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb;width:fit-content">
-      <button onclick="toggleUI('resumeMode','targeted')" style="padding:10px 22px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:${mode==='targeted'?'#2563eb':'white'};color:${mode==='targeted'?'white':'#6b7280'};transition:all 0.15s">🎯 Tailored to a Job</button>
-      <button onclick="toggleUI('resumeMode','generic')" style="padding:10px 22px;border:none;cursor:pointer;font-size:14px;font-weight:600;background:${mode==='generic'?'#2563eb':'white'};color:${mode==='generic'?'white':'#6b7280'};transition:all 0.15s;border-left:1.5px solid #e5e7eb">📋 General Resume</button>
+    <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0 0 4px;color:var(--accent);letter-spacing:0.02em">Resume Builder</h1>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 20px">AI-powered resume writing — Claude reads your actual experience and writes a real resume</p>
+
+    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:2px;overflow:hidden;border:1.5px solid var(--rule-dark);width:fit-content">
+      <button onclick="toggleUI('resumeMode','targeted')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='targeted'?'var(--accent)':'white'};color:${mode==='targeted'?'white':'var(--muted)'};transition:all 0.15s">🎯 TAILORED TO A JOB</button>
+      <button onclick="toggleUI('resumeMode','generic')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='generic'?'var(--accent)':'white'};color:${mode==='generic'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">📋 GENERAL RESUME</button>
     </div>
 
     <div class="card">
       <h2>${mode==='targeted'?'Configure & Generate Tailored Resume':'Generate General-Purpose Resume'}</h2>
 
       ${mode==='targeted'?`
-      <p style="font-size:13px;color:#6b7280;margin:-8px 0 16px">Select a job from your tracker — Claude will tailor your resume and cover letter specifically for it.</p>
+      <p style="font-size:13px;color:var(--muted);margin:-8px 0 16px">Select a job from your tracker — Claude will tailor your resume and cover letter specifically for it.</p>
       <div class="grid2">
         <div class="field"><label class="field-label">Target Job</label>
-          <select id="resume-job" onchange="toggleUI('resumeJob',this.value)"><option value="">Select a job...</option>${jobOptions}</select></div>
+          <select id="resume-job" onchange="toggleUI('resumeJob',this.value)"><option value="">Select a job...</option>${jobOptions}</select>
+        </div>
         <div class="field"><label class="field-label">Resume Format</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            ${[
-              {id:'professional',l:'Professional',d:'Navy headers · Calibri · Corporate'},
-              {id:'modern',l:'Modern',d:'Bold accents · Clean · Tech/Business'},
-              {id:'classic',l:'Classic',d:'Traditional · No color · Gov/Federal'}
-            ].map(f=>`
-              <div onclick="toggleUI('resumeFmt','${f.id}')" style="padding:10px;border:2px solid ${fmt===f.id?'#2563eb':'#e5e7eb'};background:${fmt===f.id?'#eff6ff':'white'};border-radius:8px;cursor:pointer">
-                <div style="font-weight:600;font-size:13px">${f.l}</div>
-                <div style="font-size:11px;color:#6b7280">${f.d}</div>
-              </div>`).join('')}
-          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">${fmtCards(formats)}</div>
         </div>
       </div>
-      ${job?`<div style="background:#f9fafb;border-radius:8px;padding:10px;font-size:13px;margin-bottom:14px"><strong>${esc(job.title)}</strong> at <span style="color:#2563eb">${esc(job.company)}</span>${job.location?' — '+esc(job.location):''}${job.salaryRange?` <span style="color:#16a34a;font-weight:600">· ${esc(job.salaryRange)}</span>`:''}</div>`:''}
+      ${job?`<div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:10px;font-size:13px;margin-bottom:14px"><strong>${esc(job.title)}</strong> at <span style="color:var(--accent)">${esc(job.company)}</span>${job.location?' — '+esc(job.location):''}${job.salaryRange?` <span style="color:var(--green);font-weight:600">· ${esc(job.salaryRange)}</span>`:''}</div>`:''}
 
       ${job && (job.resumeVersions||[]).length > 0 ? `
-      <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px;margin-bottom:16px">
-        <div style="font-weight:700;font-size:13px;color:#15803d;margin-bottom:10px">📁 Saved Versions (${job.resumeVersions.length})</div>
+      <div style="background:var(--green-light);border:1.5px solid #c8e6cd;border-radius:2px;padding:14px;margin-bottom:16px">
+        <div style="font-weight:700;font-size:12px;color:var(--green);margin-bottom:10px;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.06em;text-transform:uppercase">📁 Saved Versions (${job.resumeVersions.length})</div>
         <div style="display:flex;flex-direction:column;gap:6px">
           ${[...job.resumeVersions].reverse().map((v,i) => `
-            <div style="display:flex;justify-content:space-between;align-items:center;background:white;border:1px solid #d1fae5;border-radius:8px;padding:8px 12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;background:white;border:1px solid #c8e6cd;border-radius:2px;padding:8px 12px">
               <div>
-                <div style="font-size:13px;font-weight:600;color:#1f2937">Version ${job.resumeVersions.length - i}</div>
-                <div style="font-size:11px;color:#6b7280">${esc(v.label)} · ${esc(v.fmt||'professional')} format${v.ats?` · ATS ${v.ats.score||'?'}/100`:''}</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Version ${job.resumeVersions.length - i}</div>
+                <div style="font-size:11px;color:var(--muted)">${esc(v.label)} · ${esc(v.fmt||'professional')} format${v.ats?` · ATS ${v.ats.score||'?'}/100`:''}</div>
               </div>
               <div style="display:flex;gap:6px">
                 <button class="btn btn-secondary btn-sm" onclick="loadResumeVersion('${esc(job.id)}','${esc(v.id)}')" style="font-size:11px">Load</button>
                 <button class="btn btn-danger btn-sm" onclick="deleteResumeVersion('${esc(job.id)}','${esc(v.id)}')" style="font-size:11px">✕</button>
               </div>
-            </div>
-          `).join('')}
+            </div>`).join('')}
         </div>
-      </div>
-      ` : ''}
+      </div>` : ''}
 
       <div class="field" style="margin-bottom:16px">
         <label class="field-label">Company Tone</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div onclick="toggleUI('resumeTone','startup')" style="padding:10px;border:2px solid ${(state.ui.resumeTone||'startup')==='startup'?'#2563eb':'#e5e7eb'};background:${(state.ui.resumeTone||'startup')==='startup'?'#eff6ff':'white'};border-radius:8px;cursor:pointer">
-            <div style="font-weight:600;font-size:13px">🚀 Startup / Growth</div>
-            <div style="font-size:11px;color:#6b7280">Scrappy, builder, wore-many-hats. For tech companies, startups, and innovation-focused orgs.</div>
+          <div onclick="toggleUI('resumeTone','startup')" style="padding:10px;border:2px solid ${(state.ui.resumeTone||'startup')==='startup'?'var(--accent)':'var(--rule)'};background:${(state.ui.resumeTone||'startup')==='startup'?'var(--gold-light)':'white'};border-radius:2px;cursor:pointer">
+            <div style="font-weight:700;font-size:13px;font-family:'Familjen Grotesk',sans-serif">🚀 Startup / Growth</div>
+            <div style="font-size:11px;color:var(--muted)">Scrappy, builder, wore-many-hats. For tech companies, startups, and innovation-focused orgs.</div>
           </div>
-          <div onclick="toggleUI('resumeTone','prime')" style="padding:10px;border:2px solid ${(state.ui.resumeTone||'startup')==='prime'?'#2563eb':'#e5e7eb'};background:${(state.ui.resumeTone||'startup')==='prime'?'#eff6ff':'white'};border-radius:8px;cursor:pointer">
-            <div style="font-weight:600;font-size:13px">🏛️ Prime Contractor / Gov</div>
-            <div style="font-size:11px;color:#6b7280">Structured, process-driven, compliant. For defense primes, federal agencies, and large enterprises.</div>
+          <div onclick="toggleUI('resumeTone','prime')" style="padding:10px;border:2px solid ${(state.ui.resumeTone||'startup')==='prime'?'var(--accent)':'var(--rule)'};background:${(state.ui.resumeTone||'startup')==='prime'?'var(--gold-light)':'white'};border-radius:2px;cursor:pointer">
+            <div style="font-weight:700;font-size:13px;font-family:'Familjen Grotesk',sans-serif">🏛️ Prime Contractor / Gov</div>
+            <div style="font-size:11px;color:var(--muted)">Structured, process-driven, compliant. For defense primes, federal agencies, and large enterprises.</div>
           </div>
         </div>
       </div>
@@ -114,86 +131,75 @@ function renderResume() {
       <div class="field" style="margin-bottom:16px">
         <label class="field-label">Optional: Special instructions for this resume</label>
         <textarea id="resume-instructions" rows="3" placeholder="e.g., Consolidate all active duty into one section called 'Military Experience'&#10;Emphasize leadership over technical skills&#10;Keep it to one page&#10;Lead with my security clearance" style="font-size:13px" onchange="toggleUI('resumeInstructions',this.value)">${esc(state.ui.resumeInstructions||'')}</textarea>
-        <div style="font-size:11px;color:#9ca3af;margin-top:3px">Tell Claude how you want this specific resume structured or weighted — it will follow your lead.</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:3px">Tell Claude how you want this specific resume structured or weighted — it will follow your lead.</div>
       </div>
       <button class="btn btn-primary" onclick="generateResume()" ${canGenTargeted?'':'disabled'} style="padding:12px 24px">
         ${busy?'<div class="spinner"></div> Building...':'🚀 Generate Resume & Cover Letter'}
       </button>
-      ${!state.jobs.length&&!busy?`<p style="font-size:13px;color:#f59e0b;margin-top:10px">💡 No jobs in your tracker yet — <button onclick="setState({view:'jobs'})" style="background:none;border:none;color:#2563eb;cursor:pointer;font-size:13px;font-weight:600;padding:0">add one</button>, or use the General Resume tab instead.</p>`:''}
+      ${!state.jobs.length&&!busy?`<p style="font-size:13px;color:var(--gold);margin-top:10px">💡 No jobs in your tracker yet — <button onclick="setState({view:'jobs'})" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;font-weight:600;padding:0">add one</button>, or use the General Resume tab instead.</p>`:''}
       `:`
-      <p style="font-size:13px;color:#6b7280;margin:-8px 0 16px">Generates a strong all-purpose resume you can hand out at career fairs, networking events, or any job posting. Also creates a short professional bio you can use on LinkedIn or email.</p>
-      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-size:13px;color:#1e40af;margin-bottom:16px">
+      <p style="font-size:13px;color:var(--muted);margin:-8px 0 16px">Generates a strong all-purpose resume you can hand out at career fairs, networking events, or any job posting. Also creates a short professional bio you can use on LinkedIn or email.</p>
+      <div style="background:var(--gold-light);border:1px solid var(--gold);border-radius:2px;padding:12px;font-size:13px;color:var(--accent);margin-bottom:16px">
         💡 This resume highlights your strongest experience across all industries. Use it when you don't have a specific job posting yet.
       </div>
       <div class="grid2" style="margin-bottom:14px">
         <div class="field"><label class="field-label">Resume Format</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            ${[
-              {id:'professional',l:'Professional',d:'Navy headers · Calibri · Corporate'},
-              {id:'modern',l:'Modern',d:'Bold accents · Clean · Tech/Business'},
-              {id:'classic',l:'Classic',d:'Traditional · No color · Gov/Federal'}
-            ].map(f=>`
-              <div onclick="toggleUI('resumeFmt','${f.id}')" style="padding:10px;border:2px solid ${fmt===f.id?'#2563eb':'#e5e7eb'};background:${fmt===f.id?'#eff6ff':'white'};border-radius:8px;cursor:pointer">
-                <div style="font-weight:600;font-size:13px">${f.l}</div>
-                <div style="font-size:11px;color:#6b7280">${f.d}</div>
-              </div>`).join('')}
-          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">${fmtCards(formats)}</div>
         </div>
         <div class="field"><label class="field-label">Optional: Any specific focus areas?</label>
           <input id="generic-focus" placeholder="e.g., leadership roles, project management, defense sector..." value="${esc(state.ui.genericFocus||'')}">
-          <div style="font-size:11px;color:#9ca3af;margin-top:4px">Leave blank for a broad general resume</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:4px">Leave blank for a broad general resume</div>
         </div>
       </div>
       <button class="btn btn-primary" onclick="generateGenericResume()" ${canGenGeneric?'':'disabled'} style="padding:12px 24px">
         ${busy?'<div class="spinner"></div> Building...':'📋 Generate General Resume & Bio'}
       </button>
-      ${!state.profile?.fullName&&!busy?`<p style="font-size:13px;color:#f59e0b;margin-top:10px">⚠️ Complete your profile first — <button onclick="setState({view:'profile'})" style="background:none;border:none;color:#2563eb;cursor:pointer;font-size:13px;font-weight:600;padding:0">go to Profile</button>.</p>`:''}
+      ${!state.profile?.fullName&&!busy?`<p style="font-size:13px;color:var(--gold);margin-top:10px">⚠️ Complete your profile first — <button onclick="setState({view:'profile'})" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;font-weight:600;padding:0">go to Profile</button>.</p>`:''}
       `}
 
-      ${busy?`<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px;margin-top:12px">
-        <div style="font-weight:700;color:#1e40af;font-size:14px;margin-bottom:12px">🤖 Claude is building your resume...</div>
+      ${busy?`<div style="background:var(--gold-light);border:1px solid var(--gold);border-radius:2px;padding:16px;margin-top:12px">
+        <div style="font-weight:700;color:var(--accent);font-size:13px;margin-bottom:12px;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em">🤖 CLAUDE IS BUILDING YOUR RESUME...</div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'#22c55e':'#2563eb'};color:white">
+          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'var(--green)':'var(--accent)'};color:white">
             ${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'✓':'1'}
           </div>
-          <div style="font-size:13px;color:${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'#16a34a':status.startsWith('✍️')?'#1e40af':'#9ca3af'};font-weight:${status.startsWith('✍️')?'600':'400'}">
+          <div style="font-size:13px;color:${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'var(--green)':status.startsWith('✍️')?'var(--accent)':'var(--dim)'};font-weight:${status.startsWith('✍️')?'600':'400'}">
             Analyzing experience &amp; job requirements${status.startsWith('✍️')?' ...':''}
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:${['🔍','✉️'].some(s=>status.startsWith(s))?'#22c55e':status.startsWith('✍️')||status.startsWith('✂️')?'#2563eb':'#e5e7eb'};color:${status.startsWith('✍️')||['🔍','✉️','✂️'].some(s=>status.startsWith(s))?'white':'#9ca3af'}">
+          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${['🔍','✉️'].some(s=>status.startsWith(s))?'var(--green)':status.startsWith('✍️')||status.startsWith('✂️')?'var(--accent)':'var(--rule-dark)'};color:${status.startsWith('✍️')||['🔍','✉️','✂️'].some(s=>status.startsWith(s))?'white':'var(--muted)'}">
             ${['🔍','✉️'].some(s=>status.startsWith(s))?'✓':'2'}
           </div>
-          <div style="font-size:13px;color:${['🔍','✉️'].some(s=>status.startsWith(s))?'#16a34a':status.startsWith('✍️')||status.startsWith('✂️')?'#1e40af':'#9ca3af'};font-weight:${status.startsWith('✍️')||status.startsWith('✂️')?'600':'400'}">
+          <div style="font-size:13px;color:${['🔍','✉️'].some(s=>status.startsWith(s))?'var(--green)':status.startsWith('✍️')||status.startsWith('✂️')?'var(--accent)':'var(--dim)'};font-weight:${status.startsWith('✍️')||status.startsWith('✂️')?'600':'400'}">
             Writing your tailored resume${status.startsWith('✍️')||status.startsWith('✂️')?' ...':''}
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:${['🔍','✉️'].some(s=>status.startsWith(s))?'#2563eb':'#e5e7eb'};color:${['🔍','✉️'].some(s=>status.startsWith(s))?'white':'#9ca3af'}">
-            3
-          </div>
-          <div style="font-size:13px;color:${['🔍','✉️'].some(s=>status.startsWith(s))?'#1e40af':'#9ca3af'};font-weight:${['🔍','✉️'].some(s=>status.startsWith(s))?'600':'400'}">
+          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${['🔍','✉️'].some(s=>status.startsWith(s))?'var(--accent)':'var(--rule-dark)'};color:${['🔍','✉️'].some(s=>status.startsWith(s))?'white':'var(--muted)'}">3</div>
+          <div style="font-size:13px;color:${['🔍','✉️'].some(s=>status.startsWith(s))?'var(--accent)':'var(--dim)'};font-weight:${['🔍','✉️'].some(s=>status.startsWith(s))?'600':'400'}">
             Scoring fit &amp; writing cover letter${['🔍','✉️'].some(s=>status.startsWith(s))?' ...':''}
           </div>
         </div>
-        <div style="font-size:11px;color:#3b82f6">Takes 20–40 seconds — Claude reads your actual experience</div>
+        <div style="font-size:11px;color:var(--gold)">Takes 20–40 seconds — Claude reads your actual experience</div>
       </div>`:''}
-      ${error?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;color:#dc2626">${esc(error)}</div>`:''}
+      ${error?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:12px;margin-top:12px;font-size:13px;color:#dc2626">${esc(error)}</div>`:''}
     </div>
     ${result?renderResumeResult(result,fmt):''}`;
 }
 
 function renderResumeResult(result, fmt) {
   const sc = result.ats?.score;
-  const scoreGrad = sc>=85?'linear-gradient(135deg,#22c55e,#16a34a)':sc>=70?'linear-gradient(135deg,#3b82f6,#2563eb)':sc>=55?'linear-gradient(135deg,#f59e0b,#d97706)':'linear-gradient(135deg,#ef4444,#dc2626)';
-  const scoreBg = sc>=85?'#f0fdf4':sc>=70?'#eff6ff':sc>=55?'#fffbeb':'#fef2f2';
-  const scoreBorder = sc>=85?'#86efac':sc>=70?'#bfdbfe':sc>=55?'#fde68a':'#fecaca';
+  const scoreGrad = sc>=85?'linear-gradient(135deg,#2e7d32,#1b5e20)':sc>=70?'linear-gradient(135deg,#1a3a6b,#0d2444)':sc>=55?'linear-gradient(135deg,#b8860b,#8b6508)':'linear-gradient(135deg,#8b1a1a,#5c1010)';
+  const scoreBg = sc>=85?'var(--green-light)':sc>=70?'var(--gold-light)':sc>=55?'#fffbeb':'#fef2f2';
+  const scoreBorder = sc>=85?'#c8e6cd':sc>=70?'var(--gold)':sc>=55?'#fde68a':'#fecaca';
   const scoreLabel = sc>=85?'Strong Match — Apply with confidence':sc>=70?'Good Match — Address gaps in cover letter':sc>=55?'Moderate Fit — Emphasize transferable skills':'Stretch Role — Lead with cover letter';
   const isGeneric = result.isGeneric || false;
+  const isExecutive = fmt === 'executive';
+  const fmtLabel = {professional:'Professional',federal:'Federal / Gov',executive:'Executive'}[fmt] || 'Professional';
 
   return `
     ${!isGeneric && result.ats ? `
-    <!-- Overall Score -->
     <div class="card" style="background:${scoreBg};border:2px solid ${scoreBorder}">
       <h2 style="margin-bottom:12px">🎯 Resume Fit Analysis</h2>
       <div style="display:flex;gap:20px;align-items:center;margin-bottom:16px">
@@ -202,51 +208,48 @@ function renderResumeResult(result, fmt) {
           <span style="font-size:11px;opacity:0.9">Grade: ${result.ats.grade}</span>
         </div>
         <div>
-          <div style="font-weight:700;font-size:17px;margin-bottom:4px">${scoreLabel}</div>
-          <div style="font-size:14px;color:#4b5563;line-height:1.5">${esc(result.ats.summary||'')}</div>
-          ${result.ats.clearance_value ? `<div style="margin-top:8px;background:#ede9fe;border:1px solid #c4b5fd;border-radius:6px;padding:6px 10px;font-size:12px;color:#6d28d9;font-weight:600">🔐 ${esc(result.ats.clearance_value)}</div>` : ''}
+          <div style="font-weight:700;font-size:16px;margin-bottom:4px;font-family:'Familjen Grotesk',sans-serif">${scoreLabel}</div>
+          <div style="font-size:14px;color:var(--text);line-height:1.5">${esc(result.ats.summary||'')}</div>
+          ${result.ats.clearance_value ? `<div style="margin-top:8px;background:#ede9fe;border:1px solid #c4b5fd;border-radius:2px;padding:6px 10px;font-size:12px;color:#6d28d9;font-weight:600">🔐 ${esc(result.ats.clearance_value)}</div>` : ''}
         </div>
       </div>
     </div>
 
-    <!-- Transferable Skills — the key veteran section -->
     ${(result.ats.transferable_strengths||[]).length ? `
-    <div class="card" style="border-left:4px solid #2563eb">
+    <div class="card" style="border-left:4px solid var(--accent)">
       <h2 style="margin-bottom:4px">🪖 → 💼 Your Military Experience Translates</h2>
-      <p style="font-size:13px;color:#6b7280;margin:0 0 12px">Here's how your military background maps to what this employer needs — even if the words look different on paper.</p>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Here's how your military background maps to what this employer needs — even if the words look different on paper.</p>
       ${(result.ats.transferable_strengths||[]).map(s=>`
-        <div style="display:flex;gap:10px;align-items:start;padding:10px;background:#eff6ff;border-radius:8px;margin-bottom:8px">
-          <span style="font-size:18px;flex-shrink:0">✓</span>
-          <span style="font-size:14px;color:#1e3a8a;line-height:1.5">${esc(s)}</span>
+        <div style="display:flex;gap:10px;align-items:start;padding:10px;background:var(--gold-light);border-left:3px solid var(--gold);margin-bottom:8px">
+          <span style="font-size:16px;flex-shrink:0">✓</span>
+          <span style="font-size:14px;color:var(--accent);line-height:1.5">${esc(s)}</span>
         </div>`).join('')}
     </div>` : ''}
 
-    <!-- Coaching tip -->
     ${result.ats.coaching_tip ? `
     <div class="card" style="background:#fffbeb;border:1px solid #fde68a">
       <h2 style="margin-bottom:6px">💡 Top Coaching Tip</h2>
       <p style="font-size:14px;color:#92400e;margin:0;line-height:1.6">${esc(result.ats.coaching_tip)}</p>
     </div>` : ''}
 
-    <!-- Strengths & Gaps -->
     <div class="card">
       <h2 style="margin-bottom:12px">📋 Detailed Breakdown</h2>
       <div class="grid2">
         <div>
           ${(result.ats.strengths||[]).length?`
-          <div style="font-size:12px;font-weight:700;color:#16a34a;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">✅ Resume Strengths</div>
-          ${(result.ats.strengths||[]).map(s=>`<div style="font-size:13px;color:#166534;padding:6px 8px;background:#f0fdf4;border-radius:6px;margin-bottom:6px">• ${esc(s)}</div>`).join('')}`:''}
+          <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;font-family:'Familjen Grotesk',sans-serif">✅ Resume Strengths</div>
+          ${(result.ats.strengths||[]).map(s=>`<div style="font-size:13px;color:#1b5e20;padding:6px 8px;background:var(--green-light);border-radius:2px;margin-bottom:6px">• ${esc(s)}</div>`).join('')}`:''}
         </div>
         <div>
           ${(result.ats.gaps||[]).length?`
-          <div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">⚠️ Areas to Strengthen</div>
-          ${(result.ats.gaps||[]).map(g=>`<div style="font-size:13px;color:#92400e;padding:6px 8px;background:#fffbeb;border-radius:6px;margin-bottom:6px">• ${esc(g)}</div>`).join('')}`:''}
+          <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;font-family:'Familjen Grotesk',sans-serif">⚠️ Areas to Strengthen</div>
+          ${(result.ats.gaps||[]).map(g=>`<div style="font-size:13px;color:#92400e;padding:6px 8px;background:#fffbeb;border-radius:2px;margin-bottom:6px">• ${esc(g)}</div>`).join('')}`:''}
         </div>
       </div>
       ${(result.ats.keywords_missing||[]).length?`
-      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f3f4f6">
-        <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">🔑 Keywords to Add (ATS Screening)</div>
-        <div style="font-size:12px;color:#6b7280;margin-bottom:8px">Consider weaving these into your resume naturally — these terms help get past automated screening.</div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--rule)">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;font-family:'Familjen Grotesk',sans-serif">🔑 Keywords to Add (ATS Screening)</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Weave these in naturally — they help get past automated screening.</div>
         <div>${(result.ats.keywords_missing||[]).map(k=>`<span class="tag tag-orange">${esc(k)}</span>`).join('')}</div>
       </div>`:''}
     </div>` : ''}
@@ -254,28 +257,31 @@ function renderResumeResult(result, fmt) {
     <!-- Resume output -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
-        <h2 style="margin:0">📄 ${isGeneric?'General Resume':'Resume'} — ${{professional:'Professional',modern:'Modern',classic:'Classic'}[fmt]||'Professional'} Format</h2>
+        <div>
+          <h2 style="margin:0">📄 ${isGeneric?'General Resume':'Resume'} — ${fmtLabel} Format</h2>
+          ${isExecutive ? `<div style="margin-top:4px;font-size:11px;font-weight:700;color:#e65100;background:#fff3e0;padding:3px 8px;border-radius:2px;display:inline-block">⚠️ VISUAL FORMAT — May not pass ATS screening. Use for networking, referrals, and direct applications.</div>` : `<div style="margin-top:4px;font-size:11px;font-weight:700;color:#2e7d32;background:var(--green-light);padding:3px 8px;border-radius:2px;display:inline-block">✓ ATS SAFE — Passes automated screening systems</div>`}
+        </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           ${state.ui.resumeEditing ? `
-            <button class="btn btn-secondary btn-sm" onclick="cancelResumeEdit()" style="color:#6b7280">✕ Cancel</button>
-            <button class="btn btn-primary btn-sm" onclick="saveResumeEdit()" style="background:#16a34a">✅ Done Editing</button>
+            <button class="btn btn-secondary btn-sm" onclick="cancelResumeEdit()" style="color:var(--muted)">✕ Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="saveResumeEdit()" style="background:var(--green)">✅ Done Editing</button>
           ` : `
             <button class="btn btn-secondary btn-sm" onclick="startResumeEdit()">✏️ Edit</button>
             <button class="btn btn-secondary btn-sm" onclick="toggleUI('resumeRewriteOpen',!state.ui.resumeRewriteOpen)">🔄 Rewrite Section</button>
             <button class="btn btn-secondary btn-sm" onclick="copyResumeToClipboard()">📋 Copy Text</button>
             <button class="btn btn-secondary btn-sm" onclick="exportResumeToWord()">📥 Download .docx</button>
             <button class="btn btn-primary btn-sm" onclick="printResume()">🖨 Print / Save PDF</button>
-            ${state.ui.resumeJob ? `<button class="btn btn-secondary btn-sm" onclick="saveCurrentResumeVersion()" style="background:#f0fdf4;border-color:#86efac;color:#15803d">💾 Save Version</button>` : ""}
+            ${state.ui.resumeJob ? `<button class="btn btn-secondary btn-sm" onclick="saveCurrentResumeVersion()" style="background:var(--green-light);border-color:#c8e6cd;color:var(--green)">💾 Save Version</button>` : ""}
           `}
         </div>
       </div>
       ${state.ui.resumeEditing ? `
-        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:10px">
-          ✏️ <strong>Editing mode</strong> — click anywhere in the resume to make changes. Hit <strong>Done Editing</strong> when finished to save your changes.
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:10px">
+          ✏️ <strong>Editing mode</strong> — click anywhere in the resume to make changes. Hit <strong>Done Editing</strong> when finished.
         </div>
       ` : state.ui.resumeRewriteOpen ? `
-        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;margin-bottom:14px">
-          <div style="font-weight:700;color:#15803d;font-size:13px;margin-bottom:10px">🔄 Rewrite a Section</div>
+        <div style="background:var(--green-light);border:1px solid #c8e6cd;border-radius:2px;padding:14px;margin-bottom:14px">
+          <div style="font-weight:700;color:var(--green);font-size:12px;margin-bottom:10px;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.06em;text-transform:uppercase">🔄 Rewrite a Section</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <div class="field">
               <label class="field-label">Which section?</label>
@@ -297,7 +303,7 @@ function renderResumeResult(result, fmt) {
             </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
-            <button class="btn btn-primary btn-sm" onclick="rewriteSection()" style="background:#16a34a">
+            <button class="btn btn-primary btn-sm" onclick="rewriteSection()" style="background:var(--green)">
               ${state.ui.rewriteBusy?'<div class="spinner"></div> Rewriting...':'🔄 Rewrite It'}
             </button>
             <button class="btn btn-secondary btn-sm" onclick="toggleUI('resumeRewriteOpen',false)">Cancel</button>
@@ -305,11 +311,11 @@ function renderResumeResult(result, fmt) {
           </div>
         </div>
       ` : `
-        <p style="font-size:12px;color:#6b7280;margin:0 0 12px">Print / Save PDF → in print dialog choose <strong>Save as PDF</strong> · Or click <strong>Edit</strong> to make changes before downloading</p>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px">Print / Save PDF → choose <strong>Save as PDF</strong> in the print dialog · Or click <strong>Edit</strong> to make changes first</p>
       `}
       <div class="resume-preview" id="resume-text-output"
         contenteditable="${state.ui.resumeEditing ? 'true' : 'false'}"
-        style="font-family:${fmt==='classic'?'Georgia,serif':'Arial,sans-serif'};${fmt==='modern'?'border-left:4px solid #1e3a8a;padding-left:16px':''};${state.ui.resumeEditing?'outline:2px solid #2563eb;border-radius:6px;padding:12px;min-height:200px;':''}"
+        style="font-family:${fmt==='federal'?'Georgia,serif':'Arial,sans-serif'};${fmt==='executive'?'border-left:4px solid #1a3a6b;padding-left:16px':''};${state.ui.resumeEditing?'outline:2px solid var(--accent);border-radius:2px;padding:12px;min-height:200px;':''}"
         data-resume-content="${esc(result.resume)}">
         ${state.ui.resumeEditing ? '' : esc(result.resume)}
       </div>
@@ -320,15 +326,15 @@ function renderResumeResult(result, fmt) {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div>
           <h2 style="margin:0">🙋 Professional Bio</h2>
-          <p style="font-size:12px;color:#6b7280;margin:4px 0 0">Use on LinkedIn "About" section, email intros, or anywhere you need a quick summary.</p>
+          <p style="font-size:12px;color:var(--muted);margin:4px 0 0">Use on LinkedIn "About" section, email intros, or anywhere you need a quick summary.</p>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-secondary btn-sm" onclick="copyBioToClipboard()">📋 Copy for LinkedIn</button>
           <button class="btn btn-primary btn-sm" onclick="downloadBio()">📥 Download .docx</button>
         </div>
       </div>
-      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 12px;font-size:12px;color:#1e40af;margin-bottom:10px">
-        💡 <strong>LinkedIn tip:</strong> Paste this into your LinkedIn "About" section. Then add 3-5 bullet points below it listing your key skills and clearance level.
+      <div style="background:var(--gold-light);border:1px solid var(--gold);border-radius:2px;padding:8px 12px;font-size:12px;color:var(--accent);margin-bottom:10px">
+        💡 <strong>LinkedIn tip:</strong> Paste this into your LinkedIn "About" section. Then add 3–5 bullet points listing your key skills and clearance level.
       </div>
       <div class="resume-preview" id="bio-text">${esc(result.bio)}</div>
     </div>` : ''}
@@ -343,6 +349,152 @@ function renderResumeResult(result, fmt) {
     </div>` : ''}`;
 }
 
+// ── Print / PDF — three distinct visual layouts ───────────────────────
+function printResume() {
+  const text = state.ui.resumeResult?.resume || document.getElementById('resume-text-output')?.innerText || '';
+  const fmt = state.ui.resumeFmt || 'professional';
+  const name = state.profile.fullName || 'Resume';
+  const w = window.open('', '_blank');
+
+  // Parse resume text into structured sections
+  const lines = text.split('\n');
+  const contactLines = [];
+  const sections = [];
+  let currentSection = null;
+  let inContact = true;
+
+  for (const line of lines) {
+    const sectionMatch = line.match(/^={2,}\s*(.+?)\s*={2,}$/);
+    if (sectionMatch) {
+      inContact = false;
+      if (currentSection) sections.push(currentSection);
+      currentSection = { title: sectionMatch[1].trim(), lines: [] };
+    } else if (inContact && line.trim()) {
+      contactLines.push(line.trim());
+    } else if (currentSection) {
+      currentSection.lines.push(line);
+    }
+  }
+  if (currentSection) sections.push(currentSection);
+
+  const contactName = contactLines[0] || name;
+  const contactRest = contactLines.slice(1).join(' · ');
+
+  // Convert section lines to HTML bullets/paragraphs
+  const sectionToHtml = (lines, fmt) => {
+    return lines.map(l => {
+      const trimmed = l.trim();
+      if (!trimmed) return '';
+      // Role header: **Title** | Org | Location | Years
+      if (trimmed.startsWith('**') && trimmed.includes('|')) {
+        const parts = trimmed.replace(/\*\*/g, '').split('|').map(p => p.trim());
+        return `<div class="role-header"><span class="role-title">${parts[0]}</span>${parts.slice(1).map(p=>`<span class="role-meta">${p}</span>`).join('')}</div>`;
+      }
+      // Bullet point
+      if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('·')) {
+        return `<div class="bullet">${trimmed.replace(/^[•\-·]\s*/,'')}</div>`;
+      }
+      // Regular line
+      return `<p class="prose">${trimmed}</p>`;
+    }).filter(Boolean).join('');
+  };
+
+  const sectionsHtml = sections.map(s => `
+    <div class="section">
+      <div class="section-title">${s.title}</div>
+      <div class="section-body">${sectionToHtml(s.lines, fmt)}</div>
+    </div>`).join('');
+
+  // ── PROFESSIONAL: Clean Arial, navy section rules, corporate ──
+  const professionalStyles = `
+    @page { margin: 0.7in; size: letter; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; color: #111; line-height: 1.5; margin: 0; }
+    .contact-name { font-size: 18pt; font-weight: 700; color: #1a3a6b; letter-spacing: 0.02em; margin-bottom: 3pt; }
+    .contact-rest { font-size: 9.5pt; color: #444; margin-bottom: 14pt; }
+    .section { margin-bottom: 12pt; }
+    .section-title { font-size: 10pt; font-weight: 700; color: #1a3a6b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1.5pt solid #1a3a6b; padding-bottom: 2pt; margin-bottom: 6pt; }
+    .role-header { margin: 6pt 0 3pt; }
+    .role-title { font-weight: 700; font-size: 10.5pt; }
+    .role-meta { font-size: 9.5pt; color: #444; margin-left: 6pt; }
+    .role-meta::before { content: "· "; color: #b8860b; }
+    .bullet { padding-left: 12pt; text-indent: -12pt; margin: 2pt 0; font-size: 10pt; }
+    .bullet::before { content: "▪ "; color: #1a3a6b; }
+    .prose { margin: 3pt 0; font-size: 10pt; }
+    @media print { body { margin: 0; } }`;
+
+  // ── FEDERAL: Georgia serif, zero color, GS/defense conservative ──
+  const federalStyles = `
+    @page { margin: 1in; size: letter; }
+    body { font-family: Georgia, 'Times New Roman', serif; font-size: 11pt; color: #000; line-height: 1.6; margin: 0; }
+    .contact-name { font-size: 14pt; font-weight: 700; text-align: center; margin-bottom: 2pt; text-transform: uppercase; letter-spacing: 0.05em; }
+    .contact-rest { font-size: 10pt; color: #000; text-align: center; margin-bottom: 14pt; }
+    .section { margin-bottom: 12pt; }
+    .section-title { font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1pt solid #000; border-top: 1pt solid #000; padding: 2pt 0; margin-bottom: 6pt; text-align: center; }
+    .role-header { margin: 6pt 0 3pt; }
+    .role-title { font-weight: 700; font-size: 11pt; }
+    .role-meta { font-size: 10pt; color: #222; margin-left: 6pt; }
+    .role-meta::before { content: " | "; }
+    .bullet { padding-left: 14pt; text-indent: -14pt; margin: 3pt 0; font-size: 10.5pt; }
+    .bullet::before { content: "• "; }
+    .prose { margin: 3pt 0; font-size: 10.5pt; }
+    @media print { body { margin: 0; } }`;
+
+  // ── EXECUTIVE: Two-column header, navy left bar, gold accent rule ──
+  const executiveStyles = `
+    @page { margin: 0; size: letter; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #111; line-height: 1.5; margin: 0; padding: 0; }
+    .header-block { background: #1a3a6b; color: white; padding: 28pt 36pt 20pt; display: flex; justify-content: space-between; align-items: flex-end; }
+    .contact-name { font-size: 22pt; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: white; margin: 0 0 4pt; }
+    .header-gold-rule { height: 2pt; background: #b8860b; margin: 0 0 8pt; }
+    .contact-rest { font-size: 9pt; color: #c8d4e8; letter-spacing: 0.02em; }
+    .body-content { padding: 20pt 36pt; }
+    .section { margin-bottom: 12pt; }
+    .section-title { font-size: 9pt; font-weight: 700; color: #1a3a6b; text-transform: uppercase; letter-spacing: 0.12em; border-bottom: 2pt solid #b8860b; padding-bottom: 2pt; margin-bottom: 6pt; }
+    .role-header { margin: 6pt 0 3pt; display: flex; flex-wrap: wrap; gap: 4pt; }
+    .role-title { font-weight: 700; font-size: 10.5pt; color: #1a3a6b; }
+    .role-meta { font-size: 9.5pt; color: #555; }
+    .role-meta::before { content: "· "; color: #b8860b; font-weight: 700; }
+    .bullet { padding-left: 12pt; text-indent: -12pt; margin: 2pt 0; font-size: 9.5pt; color: #222; }
+    .bullet::before { content: "▸ "; color: #b8860b; font-weight: 700; }
+    .prose { margin: 3pt 0; font-size: 10pt; }
+    @media print { body { margin: 0; } }`;
+
+  const styles = fmt === 'federal' ? federalStyles : fmt === 'executive' ? executiveStyles : professionalStyles;
+
+  const headerHtml = fmt === 'executive' ? `
+    <div class="header-block">
+      <div>
+        <div class="contact-name">${contactName.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+        <div class="header-gold-rule"></div>
+        <div class="contact-rest">${contactRest.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+      </div>
+    </div>
+    <div class="body-content">` : `
+    <div class="contact-name">${contactName.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+    <div class="contact-rest">${contactRest.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>`;
+
+  const bodyClose = fmt === 'executive' ? '</div>' : '';
+
+  const atsWarning = fmt === 'executive' ? `
+    <div style="background:#fff3e0;border:1pt solid #ff9800;padding:6pt 10pt;margin-bottom:14pt;font-size:8.5pt;color:#e65100;font-weight:bold">
+      ⚠ VISUAL FORMAT: This resume is optimized for human readers, not automated ATS screening systems. Use for networking, referrals, and direct applications only.
+    </div>` : '';
+
+  w.document.write(`<!DOCTYPE html>
+<html><head>
+<title>${contactName} — Resume</title>
+<style>${styles}</style>
+</head><body>
+${headerHtml}
+${atsWarning}
+${sectionsHtml}
+${bodyClose}
+</body></html>`);
+
+  w.document.close();
+  setTimeout(() => { w.focus(); w.print(); }, 600);
+}
+
 // ── Section rewriter ─────────────────────────────────────────────────
 async function rewriteSection() {
   const sectionName = document.getElementById('rewrite-section')?.value;
@@ -352,15 +504,12 @@ async function rewriteSection() {
   const resume = state.ui.resumeResult?.resume || '';
   if (!resume) { showToast('No resume found', false); return; }
 
-  // Extract the target section from the resume
-  const sectionRegex = new RegExp(`(=== ${sectionName} ===)([\s\S]*?)(?===== |$)`, 'i');
+  const sectionRegex = new RegExp(`(=== ${sectionName} ===)([\\s\\S]*?)(?====|$)`, 'i');
   const match = resume.match(sectionRegex);
-
-  // Also try without === markers (AI sometimes uses plain headers)
-  const plainRegex = new RegExp(`(^${sectionName}$)([\s\S]*?)(?=^[A-Z ]{4,}$|$)`, 'im');
+  const plainRegex = new RegExp(`(^${sectionName}$)([\\s\\S]*?)(?=^[A-Z ]{4,}$|$)`, 'im');
   const plainMatch = !match ? resume.match(plainRegex) : null;
-
   const sectionContent = match ? match[0] : plainMatch ? plainMatch[0] : '';
+
   if (!sectionContent) {
     setState({ ui: { ...state.ui, rewriteError: `Could not find "${sectionName}" section in your resume` } });
     return;
@@ -396,7 +545,6 @@ RULES:
       'resume'
     );
 
-    // Splice the rewritten section back into the full resume
     let newResume;
     if (match) {
       newResume = resume.replace(sectionRegex, rewritten.trim());
@@ -424,11 +572,10 @@ RULES:
 function startResumeEdit() {
   const resumeText = state.ui.resumeResult?.resume || '';
   setState({ ui: { ...state.ui, resumeEditing: true, resumeEditOriginal: resumeText } });
-  // Populate and focus the editor after render
   setTimeout(() => {
     const el = document.getElementById('resume-text-output');
     if (el) {
-      el.innerText = resumeText; // Set plain text content for editing
+      el.innerText = resumeText;
       el.focus();
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -440,7 +587,6 @@ function saveResumeEdit() {
   if (!el) return;
   const edited = el.innerText || el.textContent || '';
   if (edited.trim().length < 50) { showToast('Resume seems too short — check your edits', false); return; }
-  // Save edited text back to state so downloads use the new version
   setState({ ui: {
     ...state.ui,
     resumeEditing: false,
@@ -456,46 +602,40 @@ function cancelResumeEdit() {
     ...state.ui,
     resumeEditing: false,
     resumeEditOriginal: null,
-    // Restore original if cancelled
     resumeResult: original ? { ...state.ui.resumeResult, resume: original } : state.ui.resumeResult
   }});
 }
+
 
 async function generateResume() {
   const selJob = state.ui.resumeJob;
   if (!selJob) { alert('Select a job first'); return; }
   if (!state.profile?.fullName) { alert('Complete your profile first (add your name in Profile)'); return; }
-    const job = state.jobs.find(j=>j.id===selJob);
+  const job = state.jobs.find(j=>j.id===selJob);
 
-  // Capture latest instructions value from textarea before generating
   const instrEl = document.getElementById('resume-instructions');
   if (instrEl) toggleUI('resumeInstructions', instrEl.value);
 
   const setStatus = (s) => setState({ ui:{...state.ui, resumeBusy:true, resumeStatus:s, resumeError:'', resumeResult:null} });
-
   const context = buildResumeContext(job);
 
   try {
     setStatus('✍️ Writing tailored resume...');
-    // Snapshot any unsaved profile fields from the DOM before generating
     const p = { ...state.profile };
     ['fullName','email','phone','location','linkedin'].forEach(f => {
       const el = document.getElementById('p-'+f); if(el && el.value) p[f] = el.value;
     });
 
-    // Normalize name from military "LAST, FIRST MIDDLE" to "First Last"
     const normalizeVetName = (raw) => {
       if (!raw) return '[Name]';
-      // If it matches "LAST, FIRST MIDDLE" format, reorder and title-case
       const commaMatch = raw.match(/^([^,]+),\s*(.+)$/);
       if (commaMatch) {
         const last = commaMatch[1].trim();
         const rest = commaMatch[2].trim().split(/\s+/);
-        const first = rest[0]; // drop middle name
+        const first = rest[0];
         const name = `${first} ${last}`;
         return name.replace(/\b\w/g, c => c.toUpperCase()).replace(/\b\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
       }
-      // Already in normal order — just ensure title case if ALL CAPS
       if (raw === raw.toUpperCase()) {
         return raw.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
       }
@@ -513,8 +653,6 @@ async function generateResume() {
     const userInstructions = state.ui.resumeInstructions?.trim() || '';
     const resumeTone = state.ui.resumeTone || 'startup';
     const toneLabel = resumeTone === 'prime' ? 'Prime Contractor / Government' : 'Startup / Growth Company';
-
-    // Pre-compute awards flag from user instructions
     const wantNoAwards = /no.*(award|medal|decoration|recognition)/i.test(userInstructions || '');
 
     const resumeSystemPrompt = `You are an expert military-to-civilian resume translator. A civilian hiring manager reads this resume — they have zero military context. Your job is translating every military title, unit, and term into the corporate equivalent a Fortune 500 recruiter would immediately recognize. Secondary job: keep it to 2 pages.
@@ -586,154 +724,54 @@ CELL / SHOP / BRANCH CHIEFS (translate the function, drop the military label):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TRANSLATION RULE #2 — UNIT SIZE = ORG SIZE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-When writing bullets about scope, translate organizational scale this way:
-
   Flight / Company (~20-100 people)       = Team
   Squadron / Battalion (~200-600 people)  = Division
   Group / Brigade (~1,000-4,000 people)   = Vertical (business vertical)
   Wing / Division (~5,000-15,000 people)  = Company
   Corps / MAJCOM and above                = Enterprise / Corporation
 
-EXAMPLES:
-  "Led a flight of 24 personnel"          → "Led a team of 24 professionals"
-  "Commanded a 450-person squadron"       → "Directed a 450-person division"
-  "Led operations across the group"       → "Led operations across the business vertical"
-  "Wing-level policy"                     → "Company-wide policy"
-  "MAJCOM-level program"                  → "Enterprise-wide program"
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TRANSLATION RULE #3 — ORGANIZATION NAMES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Strip ALL unit numbers. Keep branch + functional description only.
-
-"479th Operations Support Squadron, U.S. Air Force" → "U.S. Air Force"
-"613th Air Operations Center (Pacific Air Forces)"  → "Air Operations Center, U.S. Air Force (Pacific)"
-"453rd Electronic Warfare Squadron, U.S. Air Force" → "U.S. Air Force"
-"2nd Bomb Wing (Air Force Global Strike Command)"   → "Air Force Global Strike Command"
-"11th Bomb Squadron, U.S. Air Force"                → "U.S. Air Force"
-"1st Special Forces Group, U.S. Army"               → "U.S. Army Special Forces"
-"3rd Infantry Division"                             → "U.S. Army"
-"Joint Base [Name]"                                 → use just City, State
-
 Rule: Civilians care about BRANCH and FUNCTION. Never show unit numbers.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TRANSLATION RULE #4 — BULLET POINT LANGUAGE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Every military term in a bullet must be translated. Exact before/after examples:
-
-BEFORE: "Managed 17,000+ training events achieving 99% effectiveness for seven major commands"
-AFTER:  "Led enterprise-scale training programs for 7 commands, achieving 99% completion rate across 17,000+ annual sessions"
-
-BEFORE: "Graduated 330 students annually meeting national training objectives"
-AFTER:  "Certified 330 professionals annually against national performance standards"
-
-BEFORE: "Directed 365 air tasking orders supporting 20,000+ international missions"
-AFTER:  "Directed daily operational planning cycles supporting 20,000+ international missions at 100% on-time rate"
-
-BEFORE: "Coordinated 18 combined international joint fire strikes"
-AFTER:  "Coordinated 18 multinational operations with allied partner nations"
-
-BEFORE: "Built inaugural electronic warfare training plan transitioning 80 personnel to operational roles"
-AFTER:  "Built organization's first formal training program, qualifying 80 personnel for operational assignments"
-
-BEFORE: "Coordinated 1,700 combat sorties across four operating areas totaling 43,000+ missions annually"
-AFTER:  "Coordinated 1,700+ flight operations across 4 theaters supporting 43,000+ annual missions"
-
-BEFORE: "Graduated 150 combat crews at 98% on-time rate through consolidation training"
-AFTER:  "Certified 150 flight crews at 98% on-time rate through a consolidated training program"
-
-BEFORE: "Built $900,000 classified mission planning network reducing monthly workload by 200 person-hours"
-AFTER:  "Designed and deployed $900K classified planning system, cutting monthly workload by 200 hours"
-
-MILITARY-TO-CIVILIAN TRANSLATION TABLE (apply to every document):
-
-JOB TITLE TRANSLATIONS:
-- MAAP Cell Chief              → Director of Strategic Operations Planning
-- Chief, Combat Plans          → Director of Operations Strategy
-- Deputy, Combat Ops           → Deputy Director of Operations
-- Wing EWO / Weapons Officer   → Director of Technical Operations & Tactics
-- 609th/613th Air Operations Center → Regional Operations Center
-- 453d Electronic Warfare Squadron  → Electronic Systems Group
-- FTU Instructor               → Training Director & Instructor
-
-TERM TRANSLATIONS:
-- Air Tasking Orders (ATO)     → daily operations plans allocating assets (also: "operational planning cycle")
-- JFACC                        → senior theater commander
-- COCOM / Combatant Command    → geographic command / regional military command
-- OIR / OFS                    → counter-terrorism combat operations in Middle East
-- AOR                          → area of responsibility / region
-- EW / Electronic Warfare      → electromagnetic spectrum operations / technical countermeasures
-- EWIR                         → electronic threat intelligence reporting
-- TCD                          → automated threat detection system
-- KEEN EDGE / PACIFIC FURY     → large-scale joint exercises / enterprise-wide war games
-- RED FLAG / LFE               → multi-organization joint training exercise
-- Bomber Task Force            → forward-deployed strategic deterrence missions
-- FTU / Total Force Integration → training organization / organizational merger
-- KADIZ                        → Korean airspace deterrence mission
-- OPLAN                        → operational plan
-- TTPs                         → standard operating procedures / tactical procedures
-- CJOAs                        → operational regions
-- JDPIs                        → precision targets
-- NSI                          → nuclear compliance inspection
-
-TERMS THAT CAN STAY (recognized by civilian / defense audiences):
-- DARPA — universally recognized
-- Kessel Run — always explain as "the Air Force's software factory"
-- TS/SCI clearance — defense hiring managers know this
-- Weapons School — always explain as "the military's top 1% tactical leadership program"
-- Five Eyes — widely known intelligence alliance (U.S./UK/AUS/CAN/NZ)
-- DevSecOps, cATO, POM — keep in competencies blocks only
-
 KEY JARGON → CIVILIAN DICTIONARY (translate every occurrence):
-- "sorties"                  → "missions" or "flight operations"
-- "air tasking order / ATO"  → "operational planning cycle" or "mission directive"
-- "joint fires"              → "coordinated joint operations" or "multinational strike operations"
-- "combat crews"             → "flight crews" or "operational crews"
-- "graduated [N] students"   → "certified [N] professionals"
-- "training events"          → "training programs" or "training sessions"
-- "major commands / MAJCOM"  → "major commands" or "enterprise commands"
-- "ISR"                      → "intelligence, surveillance & reconnaissance"
-- "OPORD / CONOP / TASKORD"  → "operational plan" or "mission directive"
-- "FOB / AOR / FARP"         → omit or use "operational theater"
-- "OIC / NCOIC"              → "program director" or "department manager"
+- "sorties" → "missions" or "flight operations"
+- "air tasking order / ATO" → "operational planning cycle"
+- "joint fires" → "coordinated joint operations"
+- "combat crews" → "flight crews"
+- "graduated [N] students" → "certified [N] professionals"
+- "training events" → "training programs"
+- "major commands / MAJCOM" → "major commands" or "enterprise commands"
+- "ISR" → "intelligence, surveillance & reconnaissance"
+- "OPORD / CONOP / TASKORD" → "operational plan"
+- "FOB / AOR / FARP" → omit or use "operational theater"
+- "OIC / NCOIC" → "program director" or "department manager"
 - "NCO / SNCO / E-7 through E-9" → "senior manager" or "team lead"
-- "Task Force"               → "cross-functional team"
-- "expeditionary"            → "deployed" or "forward-deployed"
-- "G/J/N/A-staff"            → describe the function (logistics, ops, intel)
-- "COCOM / CENTCOM / PACAF"  → spell out, or "combatant command"
-- "PCS / TDY"                → omit or "relocation" / "temporary assignment"
-- "MOS / AFSC / NEC / DMOS"  → "specialty" or omit
-- "clearance / TS/SCI"       → keep as-is (valued in civilian market)
-- "AOC / Air Operations Center" → keep as-is (defense industry knows it)
-- "C2 / command and control" → keep "C2" as acronym (recognized in defense/tech)
+- "Task Force" → "cross-functional team"
+- "expeditionary" → "deployed" or "forward-deployed"
+- "clearance / TS/SCI" → keep as-is (valued in civilian market)
+- "AOC / Air Operations Center" → keep as-is
+- "C2 / command and control" → keep "C2" as acronym
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TRANSLATION RULE #5 — SUMMARY & COMPETENCIES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Summary: Lead with the civilian VALUE PROPOSITION, not rank or branch.
-BEFORE: "Retired Lieutenant Colonel with 21 years leading large-scale operations..."
-AFTER:  "Operations and business development leader with 20+ years driving results at the intersection of technology, strategy, and execution..."
-— Mention rank/branch only in sentence 2, as credibility context, not the opener.
-
 Competencies: Use business language. No military program names.
-BEFORE: "Command-and-control systems, Air Operations Centers management, Joint operational planning"
-AFTER:  "C2 & Operations Management, Strategic Planning & Execution, Cross-Functional Team Leadership"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MANDATORY: "WHAT SETS ME APART" SECTION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Every resume MUST include a "What Sets Me Apart" section. This is non-negotiable.
-This is the paragraph that makes a hiring manager stop scrolling.
-
-RULES for this section:
+Every resume MUST include a "What Sets Me Apart" section.
 - 3-4 sentences maximum. Narrative prose, NOT bullets.
-- Must reference something specific to THIS company or THIS role — not generic.
+- Must reference something specific to THIS company or THIS role.
 - Must name at least one concrete differentiator (clearance, rare experience, specific skill combination).
-- Must connect the veteran's unique background to a specific pain point or opportunity the company has.
-- For defense/gov roles: lead with clearance + operational experience combination.
-- For tech/startup roles: lead with the rare combination of operational credibility + technical bridge.
-- NEVER use: "passionate", "results-driven", "team player", "hard worker", or any filler phrase.
+- NEVER use: "passionate", "results-driven", "team player", "hard worker".
 - This section appears AFTER Core Competencies, BEFORE Professional Experience.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -743,7 +781,7 @@ TWO-PAGE RULES (absolute)
 - Max 15 words per bullet.
 - Summary: 2-3 sentences.
 - Core Competencies: one comma-separated line.
-- NO awards or medals section — civilian employers don't value military decorations. Use awards data only as supporting context for experience bullets.
+- NO awards or medals section.
 - Combine or omit roles pre-2010.
 - Return ONLY the resume. No preamble or commentary.
 
@@ -773,7 +811,6 @@ Single comma-separated line. Business language only.
 
 === WHAT SETS ME APART ===
 3-4 sentences of narrative prose — NO bullets. Make a hiring manager stop scrolling.
-Reference something specific to this company or role. Name at least one concrete differentiator (clearance, rare skill combo, unique experience bridge).
 MANDATORY — do not skip this section.
 
 === PROFESSIONAL EXPERIENCE ===
@@ -783,11 +820,10 @@ Then max 3 bullets, each under 15 words with one metric.
 === EDUCATION ===
 === CERTIFICATIONS ===
 
-FINAL CHECK: Count your bullets. If more than 20, delete the weakest ones until you have 20 or fewer.`;
+FINAL CHECK: Count your bullets. If more than 20, delete the weakest ones.`;
 
     const resume = await callClaude(resumeSystemPrompt, resumeUserPrompt);
 
-    // Post-generation trim: if resume has > 25 bullets, ask Claude to trim it
     const bulletCount = (resume.match(/^[•\-·]/gm) || []).length;
     let finalResume = resume;
     if (bulletCount > 25) {
@@ -806,29 +842,24 @@ FINAL CHECK: Count your bullets. If more than 20, delete the weakest ones until 
 COVER LETTER DOCTRINE — THREE SECTIONS:
 
 SECTION 1 — WHY THIS ROLE:
-Show you understand what this company is actually trying to accomplish — not just what the job posting says.
-Reference the company's current moment (funding, growth, product, market position) if known.
+Show you understand what this company is actually trying to accomplish.
 Lead with your biggest relevant strength in sentence 1. Never open with "I am applying for..."
 1 paragraph, 3-4 sentences.
 
 SECTION 2 — WHY ME:
 Three concrete differentiators — specific, numbered, verifiable.
-Each differentiator must connect directly to something this company needs.
-Format: accomplishment with number → what it means for this company.
 1-2 paragraphs.
 
 SECTION 3 — WHY THIS COMPANY:
-Show you've done your homework. Reference something specific: a product, a partnership, a mission statement, a recent announcement.
-Close with confidence — what you bring, what happens next. No desperation.
+Reference something specific about the company. Close with confidence.
 1 paragraph.
 
 TONE: ${toneLabel}
 
 HARD RULES:
-- Never use: "passionate", "I believe I would be a great fit", "Please find attached", "Thank you for your consideration", "I look forward to hearing from you", "results-driven", "team player"
+- Never use: "passionate", "I believe I would be a great fit", "Please find attached", "Thank you for your consideration", "results-driven", "team player"
 - Under 400 words total
-- Plain text paragraphs only — no bullets, no headers in the letter itself
-- Sound like a real person, not a template`,
+- Plain text paragraphs only`,
 
       `Write a tailored cover letter using the WHY THIS ROLE / WHY ME / WHY THIS COMPANY framework.
 
@@ -842,11 +873,11 @@ ${job?.location || ''}
 
 Re: ${job?.title || 'Open Position'}
 
-[SECTION 1 — WHY THIS ROLE: 1 paragraph showing you understand the company's moment and need]
+[SECTION 1 — WHY THIS ROLE]
 
-[SECTION 2 — WHY ME: 1-2 paragraphs with 3 specific accomplishments with numbers]
+[SECTION 2 — WHY ME]
 
-[SECTION 3 — WHY THIS COMPANY: 1 paragraph showing company-specific research, confident close]
+[SECTION 3 — WHY THIS COMPANY]
 
 Sincerely,
 
@@ -861,7 +892,7 @@ VETERAN BACKGROUND:
 ${context}
 ${identityFrame ? 'IDENTITY FRAME: ' + identityFrame : ''}
 
-Output the complete letter exactly as formatted above. Use today's date. Three distinct paragraphs matching the three sections. No commentary.`
+Output the complete letter exactly as formatted above. Use today's date. No commentary.`
     );
 
     setStatus('🔍 Analyzing fit & transferable skills...');
@@ -870,14 +901,9 @@ Output the complete letter exactly as formatted above. Use today's date. Three d
 
 CRITICAL SCORING PHILOSOPHY:
 - Score based on DEMONSTRATED CAPABILITY, not keyword matching alone
-- A veteran who "led logistics for 200 personnel across 3 FOBs" has supply chain and operations management experience — score it accordingly
-- A veteran who "managed $4M equipment accountability program" has budget management and asset tracking experience
-- Military leadership roles (platoon sergeant, XO, OIC) translate directly to team management, project leadership, operations roles
-- Intelligence analysts have data analysis, reporting, and pattern recognition skills
-- Combat arms veterans have crisis management, decision-making under pressure, team leadership
 - Security clearances are a SIGNIFICANT positive differentiator — always call this out
 - Do NOT penalize for lack of corporate buzzwords if the underlying competency is clearly demonstrated
-- NEVER score a veteran below 55 purely because of keyword gaps — focus on transferable capability`,
+- NEVER score a veteran below 55 purely because of keyword gaps`,
 
       `You are evaluating a MILITARY VETERAN's resume for a civilian job. Score generously for transferable skills, not just keyword matches.
 
@@ -891,27 +917,17 @@ VETERAN BACKGROUND:
 Branch: ${state.profile.branch||'N/A'} | Rank: ${state.profile.rank||'N/A'} | Years: ${state.profile.yearsOfService||'N/A'}
 Clearance: ${state.profile.clearance||'None'} (${state.profile.clearanceStatus||'N/A'})
 
-SCORING INSTRUCTIONS:
-1. Identify what the job REALLY needs (core competencies behind the job title)
-2. Map military experience to those core competencies — look for equivalence, not exact matches
-3. Score 0-100 where:
-   - 85-100: Strong match, military background directly applicable
-   - 70-84: Good match, most core competencies covered via transferable experience
-   - 55-69: Moderate match, solid foundation but some real gaps to address
-   - 40-54: Stretch role, significant gaps but worth attempting with strong cover letter
-   - Below 40: Poor fit, fundamental requirements not met
-
 Return ONLY this JSON (no markdown, no extra text):
 {
   "score": <0-100>,
   "grade": "A/B/C/D/F",
   "summary": "One plain-English sentence on overall fit",
-  "transferable_strengths": ["3-5 specific military-to-civilian translations — e.g., 'Combat logistics experience directly maps to supply chain management'"],
+  "transferable_strengths": ["3-5 specific military-to-civilian translations"],
   "strengths": ["3-4 resume strengths as written"],
-  "gaps": ["2-4 genuine gaps or areas to strengthen — be specific and actionable, not just 'lacks X keyword'"],
-  "keywords_missing": ["5-8 keywords from the job posting not in the resume that would help ATS screening"],
+  "gaps": ["2-4 genuine gaps or areas to strengthen"],
+  "keywords_missing": ["5-8 keywords from the job posting not in the resume"],
   "keywords_found": ["5-8 important keywords present"],
-  "clearance_value": "Brief note on clearance value for this role, or empty string if not applicable",
+  "clearance_value": "Brief note on clearance value for this role, or empty string",
   "coaching_tip": "One specific, actionable tip to improve this application"
 }`
     );
@@ -921,7 +937,6 @@ Return ONLY this JSON (no markdown, no extra text):
 
     if (typeof trackAction==='function') trackAction('resume_generate');
 
-    // Auto-save version to the linked job
     const jobId = state.ui.resumeJob;
     if (jobId) {
       const version = {
@@ -995,23 +1010,19 @@ OUTPUT: Resume content only — no preamble, no "Here is your resume:", no comme
 
   try {
     setStatus('✍️ Writing your general resume...');
-    // Snapshot any unsaved profile fields from the DOM
     ['fullName','email','phone','location','linkedin'].forEach(f => {
       const el = document.getElementById('p-'+f); if(el && el.value) p[f] = el.value;
     });
-    // Normalize name from military "LAST, FIRST MIDDLE" to "First Last"
     const normalizeVetName = (raw) => {
       if (!raw) return '[Name]';
-      // If it matches "LAST, FIRST MIDDLE" format, reorder and title-case
       const commaMatch = raw.match(/^([^,]+),\s*(.+)$/);
       if (commaMatch) {
         const last = commaMatch[1].trim();
         const rest = commaMatch[2].trim().split(/\s+/);
-        const first = rest[0]; // drop middle name
+        const first = rest[0];
         const name = `${first} ${last}`;
         return name.replace(/\b\w/g, c => c.toUpperCase()).replace(/\b\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
       }
-      // Already in normal order — just ensure title case if ALL CAPS
       if (raw === raw.toUpperCase()) {
         return raw.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
       }
@@ -1028,28 +1039,29 @@ OUTPUT: Resume content only — no preamble, no "Here is your resume:", no comme
 
     const resume = await callClaude(
       systemPrompt,
-      `Write a strong, versatile general-purpose resume for this veteran. This resume should present them at their best without being targeted to a single job.
+      `Write a strong, versatile general-purpose resume for this veteran.
 
 ${context}
 
-Use this EXACT contact block at the very top (copy it verbatim, do not change it):
+Use this EXACT contact block at the very top:
 ${contactBlock}
 
-SECTIONS — CRITICAL: Use EXACTLY this format for section headers: === SECTION NAME === (three equals signs on each side, no dashes, no other formatting):
+SECTIONS — use EXACTLY this format: === SECTION NAME ===
+
 1. === PROFESSIONAL SUMMARY === (2 sentences MAX)
-2. === CORE COMPETENCIES === (single comma-separated line, no bullets, 14-18 skills)
-3. === PROFESSIONAL EXPERIENCE === (reverse chronological — most recent first)
-4. NO awards section — skip military medals entirely. Civilian hiring managers don't value decorations. Use awards data only as context for experience bullets.
+2. === CORE COMPETENCIES === (single comma-separated line, 14-18 skills)
+3. === PROFESSIONAL EXPERIENCE === (reverse chronological)
+4. NO awards section.
 5. === EDUCATION ===
 6. === CERTIFICATIONS ===
 
-EXPERIENCE FORMAT — each role:
+EXPERIENCE FORMAT per role:
 **Job Title** | Organization | Location | Start–End Year
 • Bullet (max 15 words)
 • Bullet (max 15 words)
 • Bullet (max 15 words — 3 bullets max per role)
 
-TWO-PAGE HARD LIMIT: You have room for 18–22 bullets total across ALL roles. Count them. Do not exceed this. Prioritize the last 10–12 years. Combine roles at the same organization. Omit any role before 2005 unless exceptional.`
+TWO-PAGE HARD LIMIT: 18–22 bullets total. Prioritize last 10–12 years. Omit any role before 2005 unless exceptional.`
     );
 
     setStatus('🙋 Writing your professional bio...');
@@ -1059,15 +1071,14 @@ TWO-PAGE HARD LIMIT: You have room for 18–22 bullets total across ALL roles. C
 
 ${context}
 
-Paragraph 1 (3-4 sentences): Who they are, years of service, branch, and their career-defining achievement — be specific with numbers.
-Paragraph 2 (3-4 sentences): The skills and experiences that make them uniquely valuable to civilian employers — translate military strengths into business impact.
-Paragraph 3 (2-3 sentences): What they're looking for next and what they bring to the table — forward-looking and confident.
+Paragraph 1 (3-4 sentences): Who they are, years of service, branch, and their career-defining achievement.
+Paragraph 2 (3-4 sentences): Skills and experiences that make them uniquely valuable to civilian employers.
+Paragraph 3 (2-3 sentences): What they're looking for next and what they bring to the table.
 
 Rules:
 - First person ("I" voice)
 - No military jargon
-- No clichés: "passionate about", "proven track record", "results-driven", "seeking to leverage"
-- Sound like a real, confident human who knows their value
+- No clichés
 - Plain text paragraphs only`
     );
 
@@ -1094,8 +1105,6 @@ async function downloadBio() {
 
 function buildResumeContext(job) {
   const p = state.profile;
-
-  // Cap text per role — prevents AI from writing a 5-page resume when given pages of raw input
   const cap = (t, max) => !t ? '' : t.length > max ? t.slice(0, max) + '...' : t;
 
   const assignmentText = state.assignments.map(a => {
@@ -1117,8 +1126,8 @@ function buildResumeContext(job) {
   const awards = state.awards.map(a => a.name).join(', ');
   const docs = state.documents.map(d=>`[${d.type}] ${d.name}:\n${(d.content||'').slice(0,300)}`).join('\n---\n');
 
-  return `VETERAN CONTACT INFO (copy exactly into resume header — do not omit or alter):
-Full Name: ${p.fullName||'[Name not set — ask veteran to complete Profile]'}
+  return `VETERAN CONTACT INFO (copy exactly into resume header):
+Full Name: ${p.fullName||'[Name not set]'}
 Phone: ${p.phone||'[Phone not set]'}
 Email: ${p.email||'[Email not set]'}
 LinkedIn: ${p.linkedin||''}
@@ -1157,7 +1166,6 @@ Job Notes / Requirements: ${job.notes||'None'}`;
 function copyResumeToClipboard() {
   const text = state.ui.resumeResult?.resume || document.getElementById('resume-text-output')?.innerText || '';
   navigator.clipboard.writeText(text).then(() => showToast('✓ Resume copied! Paste into Word or Google Docs')).catch(()=>{
-    // Fallback
     const ta = document.createElement('textarea');
     ta.value = text; document.body.appendChild(ta); ta.select();
     document.execCommand('copy'); document.body.removeChild(ta);
@@ -1175,21 +1183,6 @@ function copyBioToClipboard() {
   });
 }
 
-function printResume() {
-  const text = state.ui.resumeResult?.resume || document.getElementById('resume-text-output')?.innerText || '';
-  const fmt = state.ui.resumeFmt || 'professional';
-  const name = state.profile.fullName || 'Resume';
-  const w = window.open('','_blank');
-  w.document.write(`<!DOCTYPE html><html><head><title>${name} — Resume</title><style>
-    @page { margin: 0.65in; }
-    body { font-family:${fmt==='classic'?'Georgia, serif':'Arial, Helvetica, sans-serif'};font-size:10.5pt;color:#111;max-width:100%;line-height:1.55;margin:0 }
-    pre { font-family:inherit;white-space:pre-wrap;font-size:10.5pt;margin:0 }
-    @media print { body { margin:0 } }
-  </style></head><body><pre>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></body></html>`);
-  w.document.close();
-  setTimeout(()=>{ w.focus(); w.print(); }, 500);
-}
-
 async function downloadCover() {
   const text = state.ui.resumeResult?.coverLetter || document.getElementById('cover-text')?.innerText || '';
   if (!text) { showToast('No cover letter to download', false); return; }
@@ -1204,7 +1197,6 @@ async function downloadCover() {
     showToast('Export failed — try copying the text instead', false);
   }
 }
-
 
 // ── Resume versioning ──────────────────────────────────────────────────
 function loadResumeVersion(jobId, versionId) {
