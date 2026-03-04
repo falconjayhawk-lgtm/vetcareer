@@ -36,7 +36,7 @@ function renderLogin() {
         <div style="margin-bottom:20px">${logoSVG}</div>
 
         <div style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Veteran Career Platform</div>
-        <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:30px;font-weight:700;margin:0 0 6px;color:var(--accent)">Tactics 2 Talent</h1>
+        <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:30px;font-weight:700;margin:0 0 6px;color:var(--accent)">Tactical 2 Talent</h1>
         <p style="font-family:'Lora',serif;font-style:italic;color:var(--muted);font-size:14px;margin:0 0 28px">Your military-to-civilian transition platform</p>
 
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
@@ -94,7 +94,6 @@ function renderSidebar() {
 
   const displayName = getDisplayName();
 
-  // Chevron mark inline SVG for sidebar
   const chevronMark = `<svg width="22" height="22" viewBox="0 0 56 44" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
     <polyline points="4,24 28,4 52,24" fill="none" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
     <polyline points="4,40 28,20 52,40" fill="none" stroke="#b8860b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -108,7 +107,7 @@ function renderSidebar() {
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           ${chevronMark}
           <div>
-            <div style="font-family:'Familjen Grotesk',sans-serif;font-weight:700;color:white;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;line-height:1.1">Tactics 2 Talent</div>
+            <div style="font-family:'Familjen Grotesk',sans-serif;font-weight:700;color:white;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;line-height:1.1">Tactical 2 Talent</div>
             <div style="font-size:9px;color:rgba(255,255,255,0.35);font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.12em;text-transform:uppercase">Career Transition · v0.8</div>
           </div>
         </div>
