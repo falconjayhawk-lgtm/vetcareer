@@ -2,22 +2,32 @@
 // Codes are stored in Cloudflare KV (or localStorage in dev mode).
 // Each code: { code, type, durationDays, uses, maxUses, createdAt, note }
 // User access: state.access = { plan:'pro'|'free', proUntil: ISO date|'lifetime', promoCode }
+//
+// NOTE: isPro() and getAccess() live in subscription.js, which loads after
+// this file. subscription.js's isPro() checks BOTH Stripe subscriptions
+// AND promo code access, so everything works together.
 
-// ── Access helpers ────────────────────────────────────────────────────
+// ── Access helper ─────────────────────────────────────────────────────
 function getAccess() {
   return state.access || { plan: 'free', proUntil: null, promoCode: null };
 }
 
-function isPro() {
-  const a = getAccess();
-  if (a.plan !== 'pro') return false;
-  if (a.proUntil === 'lifetime') return true;
-  return new Date(a.proUntil) > new Date();
-}
-
 function proExpiresLabel() {
-  const a = getAccess();
   if (!isPro()) return null;
+  // Stripe subscription takes precedence for label
+  if (_subscription.tier === 'pro') {
+    if (_subscription.status === 'trialing' && _subscription.trialEnd) {
+      const d = new Date(_subscription.trialEnd * 1000);
+      return `Trial active until ${d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
+    }
+    if (_subscription.status === 'active' && _subscription.currentPeriodEnd) {
+      const d = new Date(_subscription.currentPeriodEnd * 1000);
+      return `Pro access renews ${d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
+    }
+    return 'Pro access active';
+  }
+  // Promo code label
+  const a = getAccess();
   if (a.proUntil === 'lifetime') return 'Lifetime access';
   const d = new Date(a.proUntil);
   return `Pro access until ${d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
@@ -28,13 +38,11 @@ async function redeemPromoCode(rawCode) {
   const code = rawCode.trim().toUpperCase();
   if (!code) { showToast('Enter a code first.', false); return; }
 
-  // Show spinner on button
-  const btn = document.getElementById('promo-redeem-btn');
+  const btn   = document.getElementById('promo-redeem-btn');
   const input = document.getElementById('promo-code-input');
   if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Checking...'; }
 
   try {
-    // Check against Cloudflare KV via worker
     const resp = await fetch(`/api/promo/redeem`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -42,12 +50,8 @@ async function redeemPromoCode(rawCode) {
     });
 
     if (!resp.ok) {
-      // If worker not set up yet, fall back to hardcoded dev codes
       const devResult = checkDevCode(code);
-      if (devResult) {
-        applyProAccess(devResult, code);
-        return;
-      }
+      if (devResult) { applyProAccess(devResult, code); return; }
       throw new Error('Invalid or expired code.');
     }
 
@@ -58,12 +62,8 @@ async function redeemPromoCode(rawCode) {
       throw new Error(result.message || 'Invalid or expired code.');
     }
   } catch (err) {
-    // Fallback to dev codes if worker isn't deployed yet
     const devResult = checkDevCode(code);
-    if (devResult) {
-      applyProAccess(devResult, code);
-      return;
-    }
+    if (devResult) { applyProAccess(devResult, code); return; }
     showToast('❌ ' + err.message, false);
     if (btn) { btn.disabled = false; btn.innerHTML = '🎟️ Redeem'; }
   }
@@ -72,11 +72,10 @@ async function redeemPromoCode(rawCode) {
 // Dev/beta codes baked in for launch — change or remove post-launch
 function checkDevCode(code) {
   const betaCodes = {
-    'BETA2026':    { durationDays: 90,  note: 'Beta tester — 3 months free' },
-    'FRIEND2026':  { durationDays: 90,  note: 'Friends & family — 3 months free' },
-    'LIFETIME':    { durationDays: -1,  note: 'Lifetime access' },   // -1 = lifetime
+    'BETA2026':   { durationDays: 90, note: 'Beta tester — 3 months free' },
+    'FRIEND2026': { durationDays: 90, note: 'Friends & family — 3 months free' },
+    'LIFETIME':   { durationDays: -1, note: 'Lifetime access' },
   };
-  // Also check any codes created this session via createPromoCode() or generatePromoCodes()
   return betaCodes[code] || _dynamicCodes[code] || null;
 }
 
@@ -94,16 +93,18 @@ function applyProAccess(result, code) {
     access: { plan: 'pro', proUntil, promoCode: code, redeemedAt: new Date().toISOString() }
   });
 
-  // Hide the input, show success
   const input = document.getElementById('promo-code-input');
-  const btn = document.getElementById('promo-redeem-btn');
+  const btn   = document.getElementById('promo-redeem-btn');
   if (input) input.value = '';
-  if (btn) { btn.disabled = false; btn.innerHTML = '🎟️ Redeem'; }
+  if (btn)   { btn.disabled = false; btn.innerHTML = '🎟️ Redeem'; }
 
   const label = proUntil === 'lifetime' ? 'lifetime access' :
     `access until ${new Date(proUntil).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
 
   showToast(`✅ Code accepted! You have Pro ${label}.`);
+
+  // Close upgrade modal if open, then re-render
+  closeUpgradeModal();
   setTimeout(() => render(), 300);
 }
 
@@ -112,11 +113,12 @@ function promoCodeWidget(context = 'settings') {
   const access = getAccess();
   if (isPro()) {
     return `
-      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px">
+      <div style="background:var(--green-light);border:1px solid #c8e6cd;border-radius:2px;
+                  padding:14px;display:flex;align-items:center;gap:12px">
         <span style="font-size:24px">✅</span>
         <div>
-          <div style="font-weight:700;color:#15803d">Pro Access Active</div>
-          <div style="font-size:13px;color:#166534">${proExpiresLabel()}${access.promoCode ? ` · Code: ${access.promoCode}` : ''}</div>
+          <div style="font-family:'Familjen Grotesk',sans-serif;font-weight:700;color:var(--green)">Pro Access Active</div>
+          <div style="font-size:13px;color:var(--green)">${proExpiresLabel()}${access.promoCode ? ` · Code: ${access.promoCode}` : ''}</div>
         </div>
       </div>`;
   }
@@ -131,14 +133,17 @@ function promoCodeWidget(context = 'settings') {
         style="flex:1;min-width:160px;text-transform:uppercase;font-weight:600;letter-spacing:0.05em;font-size:14px"
         onkeydown="if(event.key==='Enter') redeemPromoCode(this.value)"
         oninput="this.value=this.value.toUpperCase()">
-      <button id="promo-redeem-btn" class="btn btn-primary" onclick="redeemPromoCode(document.getElementById('promo-code-input').value)">
+      <button id="promo-redeem-btn" class="btn btn-primary"
+              onclick="redeemPromoCode(document.getElementById('promo-code-input').value)">
         🎟️ Redeem
       </button>
     </div>
-    <div style="font-size:11px;color:#9ca3af;margin-top:4px">Beta testers and invited users — enter your code here for free Pro access.</div>`;
+    <div style="font-size:11px;color:var(--dim);margin-top:4px">
+      Beta testers and invited users — enter your code here for free Pro access.
+    </div>`;
 }
 
-// ── Admin: generate codes (run from browser console) ─────────────────
+// ── Admin: generate codes (run from browser console) ──────────────────
 //
 // CUSTOM code (you name it):
 //   createPromoCode('PATRICK', 90)        → adds PATRICK for 90 days
@@ -148,10 +153,9 @@ function promoCodeWidget(context = 'settings') {
 //   generatePromoCodes('BETA', 5, 90)     → 5 codes like BETA-A3XK2P
 //   generatePromoCodes('T2T', 10, 90)     → 10 codes like T2T-B7YM4Q
 //
-// All generated codes are added to the live betaCodes list for the session.
-// To make them permanent, copy the output into the betaCodes object in promo.js.
+// To make codes permanent, copy the output into betaCodes in promo.js.
 
-const _dynamicCodes = {};  // runtime-added codes this session
+const _dynamicCodes = {};
 
 function createPromoCode(code, durationDays = 90, note = '') {
   const key = code.trim().toUpperCase();
