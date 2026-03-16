@@ -6,30 +6,16 @@
 const WORKER_URL = 'https://vetcareer-api.falconjayhawk.workers.dev';
 
 // ── Claude API via Worker ─────────────────────────────────────────────
-async function callClaude(system, user, feature) {
+async function callClaude(system, user) {
   const token = await getClerkToken();
-
-  // 60-second timeout — heavy features like LinkedIn and Interview need time
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60000);
-
-  let res;
-  try {
-    res = await fetch(`${WORKER_URL}/api/claude`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ system, user, feature: feature || 'general' }),
-      signal: controller.signal
-    });
-  } catch(e) {
-    clearTimeout(timeout);
-    if (e.name === 'AbortError') throw new Error('Request timed out. Try again.');
-    throw e;
-  }
-  clearTimeout(timeout);
+  const res = await fetch(`${WORKER_URL}/api/claude`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ system, user })
+  });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -52,7 +38,6 @@ async function callClaudeWithFile(system, user, base64Data, mimeType) {
     body: JSON.stringify({
       system,
       user,
-      feature: 'document',
       fileData: { base64: base64Data, mimeType }
     })
   });
@@ -81,6 +66,34 @@ function readFileAsBase64(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+// ── Subscription API calls ────────────────────────────────────────────
+
+async function getSubscription() {
+  const token = await getClerkToken();
+  const res = await fetch(`${WORKER_URL}/api/subscription`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) return { tier: 'free', status: 'error' };
+  return res.json();
+}
+
+async function createCheckout(priceId, email) {
+  const token = await getClerkToken();
+  const res = await fetch(`${WORKER_URL}/api/create-checkout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ priceId, email })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Checkout failed. Please try again.');
+  }
+  return res.json();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
@@ -143,32 +156,3 @@ const SKILL_RECS = {
   'Real Estate':['Real Estate License','CRE Analysis','Property Management','Lease Negotiation','Financial Modeling'],
   'Nonprofit / Social Services':['Grant Writing','Volunteer Management','Case Management','Community Outreach','Fundraising'],
 };
-
-// ── Subscription API calls ────────────────────────────────────────────
-// ADD THESE TWO FUNCTIONS TO THE BOTTOM OF api.js
-
-async function getSubscription() {
-  const token = await getClerkToken();
-  const res = await fetch(`${WORKER_URL}/api/subscription`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  if (!res.ok) return { tier: 'free', status: 'error' };
-  return res.json();
-}
-
-async function createCheckout(priceId, email) {
-  const token = await getClerkToken();
-  const res = await fetch(`${WORKER_URL}/api/create-checkout`, {
-    method: 'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify({ priceId, email })
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Checkout failed. Please try again.');
-  }
-  return res.json();
-}
