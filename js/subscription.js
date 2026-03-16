@@ -3,7 +3,6 @@
 // Refreshed from the server every time the user logs in.
 
 let _subscription = { tier: 'free', status: 'none', trialEnd: null };
-let _subscriptionChecked = false;
 
 // Monthly and Annual Stripe price IDs
 const PRICE_MONTHLY = 'price_1TBb3LQp1f5cSrlSuisk2O4V';
@@ -17,9 +16,20 @@ const PRO_VIEWS = new Set([
 
 // ── Public API ─────────────────────────────────────────────────────────
 
-/** Returns true if the current user has an active Pro or trialing subscription. */
+/**
+ * Returns true if the user has Pro access via either:
+ *   1. An active/trialing Stripe subscription (checked from Worker KV), OR
+ *   2. A valid promo code stored in state.access (localStorage)
+ */
 function isPro() {
-  return _subscription.tier === 'pro';
+  // 1. Check Stripe subscription
+  if (_subscription.tier === 'pro') return true;
+
+  // 2. Check promo code access
+  const a = state.access || {};
+  if (a.plan !== 'pro') return false;
+  if (a.proUntil === 'lifetime') return true;
+  return !!a.proUntil && new Date(a.proUntil) > new Date();
 }
 
 /** Returns true if the given view requires a Pro subscription. */
@@ -32,28 +42,24 @@ function isProView(viewId) {
  * Called automatically on login; triggers a re-render when done.
  */
 async function checkSubscription() {
-  _subscriptionChecked = true;
   try {
     const sub = await getSubscription();
     _subscription = sub;
-    render(); // Re-render now that we know the real tier
+    render();
   } catch (err) {
-    // Network error — fail open (stay on free, don't block the user)
+    // Fail open — don't block the user on a network error
     console.warn('Subscription check failed:', err.message);
   }
 }
 
 /** Reset subscription state on sign-out. */
 function resetSubscription() {
-  _subscription        = { tier: 'free', status: 'none', trialEnd: null };
-  _subscriptionChecked = false;
+  _subscription = { tier: 'free', status: 'none', trialEnd: null };
 }
 
 // ── Pro feature gate card ──────────────────────────────────────────────
 /**
- * Returns the HTML to display instead of a Pro feature when the user is on Free.
- * @param {string} featureName - Display name, e.g. "Resume Builder"
- * @param {string} description - One-line description of what they're missing
+ * Returns the HTML shown instead of a Pro feature for Free users.
  */
 function renderProGate(featureName, description) {
   return `
@@ -92,6 +98,18 @@ function renderProGate(featureName, description) {
           </div>
         </div>
 
+        <!-- Promo code entry on the gate page -->
+        <div style="margin-bottom:20px">
+          ${promoCodeWidget('gate')}
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+          <div style="flex:1;height:1px;background:var(--rule)"></div>
+          <div style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;font-weight:700;
+                      letter-spacing:0.15em;text-transform:uppercase;color:var(--dim)">or</div>
+          <div style="flex:1;height:1px;background:var(--rule)"></div>
+        </div>
+
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
           <button class="btn btn-primary" onclick="openUpgradeModal()"
                   style="font-size:14px;padding:12px 28px">
@@ -110,7 +128,6 @@ function renderProGate(featureName, description) {
 
 // ── Upgrade modal ──────────────────────────────────────────────────────
 function openUpgradeModal() {
-  // Remove any existing modal first
   const existing = document.getElementById('upgrade-modal');
   if (existing) existing.remove();
 
@@ -178,7 +195,7 @@ function openUpgradeModal() {
           </div>
         </div>
 
-        <!-- Annual (highlighted) -->
+        <!-- Annual -->
         <div id="plan-annual"
              onclick="selectPlan('annual')"
              style="border:2px solid var(--accent);border-radius:2px;padding:16px;margin-bottom:20px;
@@ -203,7 +220,17 @@ function openUpgradeModal() {
           </div>
         </div>
 
-        <!-- CTA button -->
+        <!-- Promo code inside modal -->
+        <div style="margin-bottom:16px;padding:14px;background:var(--paper-dark);border-radius:2px;
+                    border:1px solid var(--rule)">
+          <div style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;font-weight:700;
+                      letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">
+            Have a promo code?
+          </div>
+          ${promoCodeWidget('modal')}
+        </div>
+
+        <!-- CTA -->
         <button id="checkout-btn"
                 onclick="startCheckout()"
                 class="btn btn-primary"
@@ -225,28 +252,27 @@ function openUpgradeModal() {
   modal.addEventListener('click', e => { if (e.target === modal) closeUpgradeModal(); });
 }
 
-let _selectedPlan = 'annual'; // default
+let _selectedPlan = 'annual';
 
 function selectPlan(plan) {
   _selectedPlan = plan;
-
   const monthlyEl = document.getElementById('plan-monthly');
   const annualEl  = document.getElementById('plan-annual');
   const mCheck    = document.getElementById('plan-monthly-check');
   const aCheck    = document.getElementById('plan-annual-check');
 
   if (plan === 'monthly') {
-    monthlyEl.style.borderColor   = 'var(--accent)';
-    monthlyEl.style.background    = 'var(--accent-light)';
-    annualEl.style.borderColor    = 'var(--rule-dark)';
-    annualEl.style.background     = 'white';
+    monthlyEl.style.borderColor = 'var(--accent)';
+    monthlyEl.style.background  = 'var(--accent-light)';
+    annualEl.style.borderColor  = 'var(--rule-dark)';
+    annualEl.style.background   = 'white';
     mCheck.textContent = '●';
     aCheck.textContent = '○';
   } else {
-    annualEl.style.borderColor    = 'var(--accent)';
-    annualEl.style.background     = 'var(--accent-light)';
-    monthlyEl.style.borderColor   = 'var(--rule-dark)';
-    monthlyEl.style.background    = 'white';
+    annualEl.style.borderColor  = 'var(--accent)';
+    annualEl.style.background   = 'var(--accent-light)';
+    monthlyEl.style.borderColor = 'var(--rule-dark)';
+    monthlyEl.style.background  = 'white';
     aCheck.textContent = '●';
     mCheck.textContent = '○';
   }
@@ -255,11 +281,11 @@ function selectPlan(plan) {
 function closeUpgradeModal() {
   const modal = document.getElementById('upgrade-modal');
   if (modal) modal.remove();
-  _selectedPlan = 'annual'; // reset to default
+  _selectedPlan = 'annual';
 }
 
 async function startCheckout() {
-  const btn = document.getElementById('checkout-btn');
+  const btn   = document.getElementById('checkout-btn');
   const errEl = document.getElementById('checkout-error');
 
   btn.disabled    = true;
@@ -269,15 +295,13 @@ async function startCheckout() {
   try {
     const priceId = _selectedPlan === 'monthly' ? PRICE_MONTHLY : PRICE_ANNUAL;
     const email   = clerkInstance?.user?.primaryEmailAddress?.emailAddress || '';
-
-    const result = await createCheckout(priceId, email);
+    const result  = await createCheckout(priceId, email);
 
     if (result.url) {
-      window.location.href = result.url; // Redirect to Stripe Checkout
+      window.location.href = result.url;
     } else {
       throw new Error('No checkout URL returned');
     }
-
   } catch (err) {
     console.error('Checkout error:', err);
     errEl.textContent   = err.message || 'Something went wrong. Please try again.';
@@ -287,27 +311,23 @@ async function startCheckout() {
   }
 }
 
-// ── Checkout success / cancel handling ────────────────────────────────
-// Called from index.html on page load if ?checkout=success or ?checkout=cancel
+// ── Checkout return handling ───────────────────────────────────────────
 function handleCheckoutReturn() {
   const params = new URLSearchParams(window.location.search);
   const result = params.get('checkout');
   if (!result) return;
 
-  // Clean the URL immediately
   window.history.replaceState({}, '', window.location.pathname);
 
   if (result === 'success') {
-    // Re-check subscription (webhook may have already fired)
     setTimeout(async () => {
       await checkSubscription();
-      showCheckoutBanner('success');
-    }, 1500); // small delay to give webhook time to process
+      showCheckoutBanner();
+    }, 1500);
   }
-  // cancel: no action needed
 }
 
-function showCheckoutBanner(type) {
+function showCheckoutBanner() {
   const existing = document.getElementById('checkout-banner');
   if (existing) existing.remove();
 
@@ -325,7 +345,6 @@ function showCheckoutBanner(type) {
     <button onclick="document.getElementById('checkout-banner').remove()"
             style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:0">&times;</button>
   `;
-
   document.body.prepend(banner);
   setTimeout(() => { if (banner.parentNode) banner.remove(); }, 8000);
 }
