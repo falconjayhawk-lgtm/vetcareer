@@ -143,3 +143,32 @@ const SKILL_RECS = {
   'Real Estate':['Real Estate License','CRE Analysis','Property Management','Lease Negotiation','Financial Modeling'],
   'Nonprofit / Social Services':['Grant Writing','Volunteer Management','Case Management','Community Outreach','Fundraising'],
 };
+
+// ── Subscription API calls ────────────────────────────────────────────
+// ADD THESE TWO FUNCTIONS TO THE BOTTOM OF api.js
+
+async function getSubscription() {
+  const token = await getClerkToken();
+  const res = await fetch(`${WORKER_URL}/api/subscription`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) return { tier: 'free', status: 'error' };
+  return res.json();
+}
+
+async function createCheckout(priceId, email) {
+  const token = await getClerkToken();
+  const res = await fetch(`${WORKER_URL}/api/create-checkout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ priceId, email })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Checkout failed. Please try again.');
+  }
+  return res.json();
+}
