@@ -8,6 +8,12 @@ function render() {
     return;
   }
 
+  // Trigger subscription check once per login session (async — non-blocking)
+  if (typeof checkSubscription === 'function' && !window._subscriptionChecked) {
+    window._subscriptionChecked = true;
+    checkSubscription();
+  }
+
   app.innerHTML = `
     <div style="display:flex;min-height:100vh">
       ${renderSidebar()}
@@ -73,26 +79,45 @@ function renderLogin() {
 }
 
 function renderSidebar() {
+  // pro:true = requires Pro subscription
   const items = [
-    {id:'dashboard',label:'&#127968; Dashboard'},
-    {id:'documents',label:'&#128228; Upload Docs',highlight:true},
-    {id:'profile',label:'&#128100; Profile'},
-    {id:'experience',label:'&#128506; Experience'},
-    {id:'scout',label:'&#128301; Job Scout'},
-    {id:'jobs',label:'&#128188; Job Tracker'},
-    {id:'resume',label:'&#128196; Resume Builder'},
-    {id:'linkedin',label:'&#128188; LinkedIn Generator'},
-    {id:'interview',label:'&#127908; Interview Prep'},
-    {id:'salary',label:'&#128176; Salary Intel'},
-    {id:'network',label:'&#128140; Networking Emails'},
-    {id:'refletter',label:'&#128220; Reference Letter'},
-    {id:'sf86',label:'&#128272; SF-86 Prep'},
-    {id:'gap',label:'&#128202; Gap Analysis'},
-    {id:'settings',label:'&#9881; Settings'},
-    {id:'faq',label:'&#10067; Help & FAQ'},
+    { id:'dashboard',  label:'&#127968; Dashboard' },
+    { id:'documents',  label:'&#128228; Upload Docs', highlight:true },
+    { id:'profile',    label:'&#128100; Profile' },
+    { id:'experience', label:'&#128506; Experience' },
+    { id:'jobs',       label:'&#128188; Job Tracker' },
+    { id:'scout',      label:'&#128301; Job Scout',          pro:true },
+    { id:'resume',     label:'&#128196; Resume Builder',     pro:true },
+    { id:'linkedin',   label:'&#128188; LinkedIn Generator', pro:true },
+    { id:'interview',  label:'&#127908; Interview Prep',     pro:true },
+    { id:'salary',     label:'&#128176; Salary Intel',       pro:true },
+    { id:'network',    label:'&#128140; Networking Emails',  pro:true },
+    { id:'refletter',  label:'&#128220; Reference Letter',   pro:true },
+    { id:'sf86',       label:'&#128272; SF-86 Prep',         pro:true },
+    { id:'gap',        label:'&#128202; Gap Analysis',       pro:true },
+    { id:'settings',   label:'&#9881; Settings' },
+    { id:'faq',        label:'&#10067; Help & FAQ' },
   ];
 
-  const displayName = getDisplayName();
+  const userIsPro      = typeof isPro === 'function' && isPro();
+  const displayName    = getDisplayName();
+
+  // Subscription status pill shown in sidebar header
+  const subPill = userIsPro
+    ? `<div style="display:inline-flex;align-items:center;gap:4px;background:rgba(184,134,11,0.25);
+                   border:1px solid rgba(184,134,11,0.4);border-radius:2px;padding:2px 8px;margin-top:6px">
+         <div style="width:5px;height:5px;border-radius:50%;background:var(--gold)"></div>
+         <div style="font-size:9px;font-family:'Familjen Grotesk',sans-serif;font-weight:700;
+                     letter-spacing:0.12em;text-transform:uppercase;color:#fde68a">Pro</div>
+       </div>`
+    : `<div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.08);
+                   border:1px solid rgba(255,255,255,0.15);border-radius:2px;padding:2px 8px;margin-top:6px;
+                   cursor:pointer" onclick="openUpgradeModal()">
+         <div style="font-size:9px;font-family:'Familjen Grotesk',sans-serif;font-weight:700;
+                     letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.5)">Free</div>
+         <div style="font-size:9px;font-family:'Familjen Grotesk',sans-serif;font-weight:700;
+                     letter-spacing:0.08em;text-transform:uppercase;color:var(--gold)">→ Upgrade</div>
+       </div>`;
 
   const chevronMark = `<svg width="22" height="22" viewBox="0 0 56 44" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
     <polyline points="4,24 28,4 52,24" fill="none" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -116,18 +141,35 @@ function renderSidebar() {
           <div style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
           <div style="font-size:11px;color:rgba(255,255,255,0.7);font-family:'Familjen Grotesk',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(displayName)}">${esc(displayName)}</div>
         </div>` : ''}
+        ${subPill}
       </div>
 
       <!-- Nav items -->
       <nav style="flex:1;padding:8px;overflow-y:auto">
-        ${items.map(i => `
-          <button class="nav-btn${state.view===i.id?' active':''}${i.highlight&&state.documents.length===0?' start-here':''}"
-            onclick="setState({view:'${i.id}'}); closeNav()">
-            ${i.label}
-            ${i.highlight&&state.documents.length===0
-              ? `<span style="font-size:9px;background:var(--gold);color:white;padding:2px 6px;border-radius:2px;margin-left:4px;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.08em">START</span>`
-              : ''}
-          </button>`).join('')}
+        ${items.map(item => {
+          const isLocked  = item.pro && !userIsPro;
+          const lockBadge = isLocked
+            ? `<span style="font-size:9px;color:rgba(255,255,255,0.3);margin-left:auto">🔒</span>`
+            : (item.pro && userIsPro
+                ? `<span style="font-size:8px;background:rgba(184,134,11,0.3);color:#fde68a;padding:1px 5px;border-radius:2px;margin-left:auto;font-family:'Familjen Grotesk',sans-serif;font-weight:700;letter-spacing:0.06em">PRO</span>`
+                : '');
+          const startBadge = item.highlight && state.documents.length === 0
+            ? `<span style="font-size:9px;background:var(--gold);color:white;padding:2px 6px;border-radius:2px;margin-left:4px;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.08em">START</span>`
+            : '';
+          const extraStyle = isLocked ? 'opacity:0.6' : '';
+          const clickAction = isLocked
+            ? `openUpgradeModal(); closeNav()`
+            : `setState({view:'${item.id}'}); closeNav()`;
+
+          return `
+            <button class="nav-btn${state.view === item.id ? ' active' : ''}${item.highlight && state.documents.length === 0 ? ' start-here' : ''}"
+              onclick="${clickAction}"
+              style="display:flex;align-items:center;${extraStyle}">
+              <span>${item.label}</span>
+              ${startBadge}
+              ${lockBadge}
+            </button>`;
+        }).join('')}
       </nav>
 
       <!-- Bottom: sign out + legal -->
@@ -143,25 +185,44 @@ function renderSidebar() {
 }
 
 function renderView() {
+  // Pro gate check helper
+  const gate = (featureName, description) =>
+    (typeof isPro === 'function' && isPro())
+      ? null
+      : renderProGate(featureName, description);
+
   switch(state.view) {
-    case 'onboarding': return renderOnboarding();
-    case 'dashboard': return renderDashboard();
-    case 'profile': return renderProfile();
-    case 'experience': return renderExperience();
-    case 'documents': return renderDocuments();
-    case 'jobs': return renderJobs();
-    case 'scout': return renderScout();
-    case 'resume': return renderResume();
-    case 'linkedin': return renderLinkedIn();
-    case 'interview': return renderInterview();
-    case 'salary': return renderSalary();
-    case 'network': return renderNetwork();
-    case 'refletter': return renderRefLetter();
-    case 'sf86': return renderSF86();
-    case 'gap': return renderGap();
-    case 'settings': return renderSettings();
-    case 'faq': return renderFAQ();
-    case 'stats': return renderStats();
-    default: return renderDashboard();
+    case 'onboarding':  return renderOnboarding();
+    case 'dashboard':   return renderDashboard();
+    case 'profile':     return renderProfile();
+    case 'experience':  return renderExperience();
+    case 'documents':   return renderDocuments();
+    case 'jobs':        return renderJobs();
+
+    // ── Pro-gated views ───────────────────────────────────────────────
+    case 'scout':
+      return gate('Job Scout', 'Search and score real federal job listings matched to your military background.') || renderScout();
+    case 'resume':
+      return gate('Resume Builder', 'Generate tailored AI resumes and cover letters for any civilian job.') || renderResume();
+    case 'linkedin':
+      return gate('LinkedIn Generator', 'Build a complete LinkedIn profile that translates your military experience.') || renderLinkedIn();
+    case 'interview':
+      return gate('Interview Prep', 'Practice with AI-coached answers tailored to your MOS and target role.') || renderInterview();
+    case 'salary':
+      return gate('Salary Intelligence', 'Know your worth — market rates, negotiation scripts, and equity guidance.') || renderSalary();
+    case 'network':
+      return gate('Networking Emails', 'AI-drafted outreach emails for recruiters, veterans networks, and referrals.') || renderNetwork();
+    case 'refletter':
+      return gate('Reference Letter Generator', 'Create professional reference letters formatted for civilian employers.') || renderRefLetter();
+    case 'sf86':
+      return gate('SF-86 Prep', 'Organize your 10-year lookback data for security clearance applications.') || renderSF86();
+    case 'gap':
+      return gate('Gap Analysis', 'Identify skill gaps between your background and your target industries.') || renderGap();
+    // ─────────────────────────────────────────────────────────────────
+
+    case 'settings':    return renderSettings();
+    case 'faq':         return renderFAQ();
+    case 'stats':       return renderStats();
+    default:            return renderDashboard();
   }
 }
