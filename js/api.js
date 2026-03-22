@@ -96,6 +96,28 @@ async function createCheckout(priceId, email) {
   return res.json();
 }
 
+async function openCustomerPortal() {
+  const btn = document.getElementById('manage-billing-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Opening…'; }
+
+  try {
+    const token = await getClerkToken();
+    const res = await fetch(`${WORKER_URL}/api/customer-portal`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Could not open billing portal.');
+    }
+    const { url } = await res.json();
+    window.location.href = url;
+  } catch (err) {
+    alert(err.message);
+    if (btn) { btn.disabled = false; btn.textContent = '💳 Manage Subscription'; }
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────
 const INDUSTRIES = [
   // Defense & Government
