@@ -9,8 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Familjen+Grotesk:wght@600;700&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
   <!-- Clerk: handles authentication (sign up, sign in, sessions) -->
   <script async crossorigin="anonymous"
-    data-clerk-publishable-key="pk_test_dW5iaWFzZWQtYmx1ZWpheS0zMS5jbGVyay5hY2NvdW50cy5kZXYk"
-    src="https://unbiased-bluejay-31.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+    data-clerk-publishable-key="pk_live_Y2xlcmsudGFjdGljYWwydGFsZW50LmNvbSQ"
+    src="https://clerk.tactical2talent.com/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
     type="text/javascript">
   </script>
   <style>
@@ -196,9 +196,11 @@
 <script src="js/faq.js"></script>
 <script src="js/feedback.js"></script>
 
+<!-- Subscription (must load before render) -->
+<script src="js/subscription.js"></script>
+
 <!-- Render engine (last — depends on all views) -->
- <script src="js/subscription.js"></script>
- <script src="js/render.js"></script>
+<script src="js/render.js"></script>
 
 <!-- Utilities & Init -->
 <script src="js/utils.js"></script>
