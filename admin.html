@@ -32,283 +32,82 @@
     --purple-dim: #1e1535;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Inter', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    font-size: 14px;
-  }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
 
-  /* ── Auth screens ── */
-  #auth-screen {
-    position: fixed; inset: 0;
-    background: var(--bg);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 100;
-  }
-  .auth-card {
-    width: 400px;
-    background: var(--surface);
-    border: 1px solid var(--border-hi);
-    border-radius: 16px;
-    padding: 40px 32px;
-    text-align: center;
-  }
-  .auth-logo {
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  .auth-logo::before, .auth-logo::after {
-    content: '';
-    height: 1px;
-    flex: 1;
-    background: var(--border-hi);
-  }
+  #auth-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .auth-card { width: 400px; background: var(--surface); border: 1px solid var(--border-hi); border-radius: 16px; padding: 40px 32px; text-align: center; }
+  .auth-logo { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 28px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .auth-logo::before, .auth-logo::after { content: ''; height: 1px; flex: 1; background: var(--border-hi); }
   .auth-icon { font-size: 40px; margin-bottom: 16px; display: block; }
-  .auth-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 22px;
-    font-weight: 800;
-    margin-bottom: 6px;
-  }
+  .auth-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 6px; }
   .auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; line-height: 1.6; }
-  .auth-btn {
-    width: 100%;
-    background: var(--accent);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 13px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    margin-bottom: 10px;
-  }
+  .auth-btn { width: 100%; background: var(--accent); color: white; border: none; border-radius: 8px; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; margin-bottom: 10px; }
   .auth-btn:hover { opacity: 0.85; }
-  .auth-err { font-size: 12px; color: var(--red); margin-top: 8px; min-height: 18px; }
   #clerk-signin { min-height: 200px; }
 
-  /* ── Access denied ── */
-  #denied-screen {
-    position: fixed; inset: 0;
-    background: var(--bg);
-    display: none; align-items: center; justify-content: center;
-    z-index: 100;
-  }
+  #denied-screen { position: fixed; inset: 0; background: var(--bg); display: none; align-items: center; justify-content: center; z-index: 100; }
 
-  /* ── App shell ── */
   #app { display: none; }
-  header {
-    position: sticky; top: 0; z-index: 50;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 28px;
-    height: 56px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .header-brand {
-    font-family: 'Syne', sans-serif;
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .header-brand span {
-    background: var(--accent);
-    color: white;
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 4px;
-    letter-spacing: 0.1em;
-  }
-  .header-right {
-    display: flex; align-items: center; gap: 16px;
-    font-size: 12px; color: var(--muted);
-  }
-  .header-right .dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-    animation: pulse 2s infinite;
-  }
+  header { position: sticky; top: 0; z-index: 50; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+  .header-brand { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+  .header-brand span { background: var(--accent); color: white; font-size: 10px; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.1em; }
+  .header-right { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--muted); }
+  .header-right .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-  /* ── Nav tabs ── */
-  nav {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 28px;
-    display: flex; gap: 4px;
-  }
-  .nav-tab {
-    padding: 12px 16px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--muted);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; gap: 4px; }
+  .nav-tab { padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
   .nav-tab:hover { color: var(--text); }
   .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-  /* ── Main content ── */
   main { padding: 28px; max-width: 1100px; }
   .section { display: none; }
   .section.active { display: block; }
 
-  /* ── Stat cards ── */
-  .stat-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-  }
-  .stat-value {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 32px;
-    font-weight: 600;
-    line-height: 1;
-    margin-bottom: 6px;
-  }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .stat-value { font-family: 'IBM Plex Mono', monospace; font-size: 32px; font-weight: 600; line-height: 1; margin-bottom: 6px; }
   .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 
-  /* ── Cards ── */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px 24px;
-    margin-bottom: 16px;
-  }
-  .card-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--dim);
-    margin-bottom: 16px;
-    display: flex; align-items: center; gap: 8px;
-  }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; }
+  .card-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
 
-  /* ── Table ── */
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th {
-    text-align: left;
-    font-size: 11px; font-weight: 600;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--muted);
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text);
-    vertical-align: middle;
-  }
+  th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: rgba(255,255,255,0.02); }
 
-  /* ── Badges ── */
-  .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 11px; font-weight: 600;
-    font-family: 'IBM Plex Mono', monospace;
-  }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
   .badge-green  { background: var(--green-dim);  color: var(--green); }
   .badge-yellow { background: var(--yellow-dim); color: var(--yellow); }
   .badge-red    { background: var(--red-dim);    color: var(--red); }
   .badge-blue   { background: var(--accent-dim); color: var(--accent); }
   .badge-purple { background: var(--purple-dim); color: var(--purple); }
 
-  /* ── Form elements ── */
-  input, select, textarea {
-    background: var(--bg);
-    border: 1px solid var(--border-hi);
-    border-radius: 8px;
-    padding: 9px 12px;
-    color: var(--text);
-    font-size: 13px;
-    font-family: 'Inter', sans-serif;
-    outline: none;
-    transition: border-color 0.15s;
-    width: 100%;
-  }
+  input, select, textarea { background: var(--bg); border: 1px solid var(--border-hi); border-radius: 8px; padding: 9px 12px; color: var(--text); font-size: 13px; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s; width: 100%; }
   input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-  .btn {
-    padding: 9px 16px;
-    border-radius: 8px;
-    font-size: 13px; font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: opacity 0.15s;
-    white-space: nowrap;
-  }
+  .btn { padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: opacity 0.15s; white-space: nowrap; }
   .btn:hover { opacity: 0.8; }
   .btn-primary { background: var(--accent); color: white; }
   .btn-danger  { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-dim); }
   .btn-ghost   { background: var(--border); color: var(--dim); }
-  .field-label {
-    font-size: 11px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.06em;
-    color: var(--muted); margin-bottom: 6px; display: block;
-  }
+  .field-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; display: block; }
 
-  /* ── Bar charts ── */
-  .bar-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-  }
+  .bar-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
   .bar-row:last-child { border-bottom: none; }
   .bar-label { width: 180px; font-size: 12px; color: var(--dim); flex-shrink: 0; }
   .bar-track { flex: 1; background: var(--border); border-radius: 999px; height: 6px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 999px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
   .bar-count { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; width: 32px; text-align: right; }
 
-  /* ── Toast ── */
-  #toast {
-    position: fixed; bottom: 24px; right: 24px;
-    background: var(--surface);
-    border: 1px solid var(--border-hi);
-    border-radius: 10px;
-    padding: 12px 18px;
-    font-size: 13px; color: var(--text);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    transform: translateY(80px); opacity: 0;
-    transition: all 0.25s;
-    z-index: 200;
-  }
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border-hi); border-radius: 10px; padding: 12px 18px; font-size: 13px; color: var(--text); box-shadow: 0 8px 32px rgba(0,0,0,0.4); transform: translateY(80px); opacity: 0; transition: all 0.25s; z-index: 200; }
   #toast.show { transform: translateY(0); opacity: 1; }
 
   .mono { font-family: 'IBM Plex Mono', monospace; }
   .muted { color: var(--muted); }
   .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
 
-  /* ── Feedback ── */
   .feedback-item { padding: 14px 0; border-bottom: 1px solid var(--border); }
   .feedback-item:last-child { border-bottom: none; }
   .feedback-meta { font-size: 11px; color: var(--muted); margin-bottom: 6px; font-family: 'IBM Plex Mono', monospace; }
@@ -319,7 +118,6 @@
 </head>
 <body>
 
-<!-- ── Auth Screen (shown while Clerk loads / user not signed in) ── -->
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">Tactical 2 Talent</div>
@@ -331,7 +129,6 @@
   </div>
 </div>
 
-<!-- ── Access Denied Screen ── -->
 <div id="denied-screen">
   <div class="auth-card">
     <div class="auth-logo">Tactical 2 Talent</div>
@@ -342,7 +139,6 @@
   </div>
 </div>
 
-<!-- ── App ── -->
 <div id="app">
   <header>
     <div class="header-brand">T2T <span>COMMAND</span></div>
@@ -355,15 +151,15 @@
     </div>
   </header>
   <nav>
-    <div class="nav-tab active"  onclick="showTab('overview',  event)">📊 Overview</div>
-    <div class="nav-tab"         onclick="showTab('promo',     event)">🎟️ Promo Codes</div>
-    <div class="nav-tab"         onclick="showTab('analytics', event)">📈 Analytics</div>
-    <div class="nav-tab"         onclick="showTab('revenue',   event)">💰 Revenue</div>
-    <div class="nav-tab"         onclick="showTab('feedback',  event)">💬 Feedback</div>
+    <div class="nav-tab active" onclick="showTab('overview',  event)">📊 Overview</div>
+    <div class="nav-tab"        onclick="showTab('promo',     event)">🎟️ Promo Codes</div>
+    <div class="nav-tab"        onclick="showTab('analytics', event)">📈 Analytics</div>
+    <div class="nav-tab"        onclick="showTab('revenue',   event)">💰 Revenue</div>
+    <div class="nav-tab"        onclick="showTab('feedback',  event)">💬 Feedback</div>
   </nav>
   <main>
 
-    <!-- ── OVERVIEW ── -->
+    <!-- OVERVIEW -->
     <section id="tab-overview" class="section active">
       <div class="stat-grid">
         <div class="stat-card">
@@ -383,6 +179,22 @@
           <div class="stat-label">Active Promo Codes</div>
         </div>
       </div>
+
+      <!-- Reset Data -->
+      <div class="card" style="border:1px solid var(--red-dim)">
+        <div class="card-title" style="color:var(--red)">🗑️ Reset Analytics Data</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
+          Permanently deletes analytics counters and/or feedback entries from KV.
+          Use this to clear beta/test data before a real launch push.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-danger" onclick="resetData(['analytics','feedback'])">🗑️ Reset Analytics + Feedback</button>
+          <button class="btn btn-ghost"  onclick="resetData(['analytics'])">Reset Analytics Only</button>
+          <button class="btn btn-ghost"  onclick="resetData(['feedback'])">Reset Feedback Only</button>
+        </div>
+        <div id="reset-result" style="margin-top:12px;font-size:13px;display:none"></div>
+      </div>
+
       <div class="card">
         <div class="card-title">⚡ Top Features This Period</div>
         <div id="overview-features"><div class="empty">Loading...</div></div>
@@ -393,15 +205,14 @@
       </div>
     </section>
 
-    <!-- ── PROMO CODES ── -->
+    <!-- PROMO CODES -->
     <section id="tab-promo" class="section">
       <div class="card">
         <div class="card-title">✨ Create New Code</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
           <div>
             <label class="field-label">Code (blank = auto-generate)</label>
-            <input id="new-code" placeholder="e.g. SARAH or BETA"
-              style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+            <input id="new-code" placeholder="e.g. SARAH or BETA" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
           </div>
           <div>
             <label class="field-label">Duration</label>
@@ -421,8 +232,7 @@
         </div>
         <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <label class="field-label" style="margin:0">Or generate</label>
-          <input id="batch-prefix" value="T2T" style="width:80px;text-transform:uppercase"
-            oninput="this.value=this.value.toUpperCase()">
+          <input id="batch-prefix" value="T2T" style="width:80px;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
           <input id="batch-count" type="number" value="5" min="1" max="50" style="width:70px">
           <label class="field-label" style="margin:0">random codes (90 days)</label>
           <button class="btn btn-ghost" onclick="generateBatch()">Generate Batch</button>
@@ -437,7 +247,7 @@
       </div>
     </section>
 
-    <!-- ── ANALYTICS ── -->
+    <!-- ANALYTICS -->
     <section id="tab-analytics" class="section">
       <div class="card">
         <div class="card-title">🗺️ Page Navigation</div>
@@ -449,35 +259,19 @@
       </div>
     </section>
 
-    <!-- ── REVENUE ── -->
+    <!-- REVENUE -->
     <section id="tab-revenue" class="section">
       <div class="card">
         <div class="card-title">💳 Stripe Revenue</div>
-        <div class="empty" id="revenue-content">
-          Revenue data will appear here once Stripe integration is complete in the app.
-        </div>
+        <div class="empty">Manage subscriptions and revenue directly in your <a href="https://dashboard.stripe.com" target="_blank" style="color:var(--accent)">Stripe Dashboard ↗</a></div>
       </div>
       <div class="card" style="margin-top:16px">
         <div class="card-title">📋 Pricing Reference</div>
         <table>
-          <thead>
-            <tr><th>Plan</th><th>Monthly</th><th>Annual</th><th>Trial</th><th>Status</th></tr>
-          </thead>
+          <thead><tr><th>Plan</th><th>Monthly</th><th>Annual</th><th>Trial</th><th>Status</th></tr></thead>
           <tbody>
-            <tr>
-              <td><strong>Free</strong></td>
-              <td class="mono">$0</td>
-              <td class="mono muted">—</td>
-              <td class="mono muted">—</td>
-              <td><span class="badge badge-green">Active</span></td>
-            </tr>
-            <tr>
-              <td><strong>Pro</strong></td>
-              <td class="mono">$15 / mo</td>
-              <td class="mono">$120 / yr</td>
-              <td class="mono">7 days</td>
-              <td><span class="badge badge-green">Active</span></td>
-            </tr>
+            <tr><td><strong>Free</strong></td><td class="mono">$0</td><td class="mono muted">—</td><td class="mono muted">—</td><td><span class="badge badge-green">Active</span></td></tr>
+            <tr><td><strong>Pro</strong></td><td class="mono">$15 / mo</td><td class="mono">$120 / yr</td><td class="mono">7 days</td><td><span class="badge badge-green">Active</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -486,20 +280,14 @@
         <table>
           <thead><tr><th>Price</th><th>ID</th></tr></thead>
           <tbody>
-            <tr>
-              <td>Pro Monthly</td>
-              <td class="mono" style="font-size:12px;color:var(--dim)">price_1TBb3LQp1f5cSrlSuisk2O4V</td>
-            </tr>
-            <tr>
-              <td>Pro Annual</td>
-              <td class="mono" style="font-size:12px;color:var(--dim)">price_1TBb3LQp1f5cSrlSwIJtNkOM</td>
-            </tr>
+            <tr><td>Pro Monthly</td><td class="mono" style="font-size:12px;color:var(--dim)">price_1TBb3LQp1f5cSrlSuisk2O4V</td></tr>
+            <tr><td>Pro Annual</td><td class="mono" style="font-size:12px;color:var(--dim)">price_1TBb3LQp1f5cSrlSwIJtNkOM</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- ── FEEDBACK ── -->
+    <!-- FEEDBACK -->
     <section id="tab-feedback" class="section">
       <div class="card">
         <div class="card-title">💬 Tester Feedback</div>
@@ -513,100 +301,56 @@
 <div id="toast"></div>
 
 <script>
-// ── Config ────────────────────────────────────────────────────────────
-const WORKER       = 'https://vetcareer-api.falconjayhawk.workers.dev';
+const WORKER        = 'https://vetcareer-api.falconjayhawk.workers.dev';
 const ADMIN_USER_ID = 'user_3BOoQRhvJ7EGvSSGH9S2rVwkqbJ';
 
-// ── Clerk Auth ────────────────────────────────────────────────────────
 let clerkToken = null;
 
 async function authHeader() {
-  if (!clerkToken) return {};
-  return { 'Authorization': `Bearer ${clerkToken}` };
+  return clerkToken ? { 'Authorization': `Bearer ${clerkToken}` } : {};
 }
 
 async function initClerk() {
   await window.Clerk.load();
-
   const user = window.Clerk.user;
-
   if (!user) {
-    // Not signed in — show Clerk sign-in widget
     document.getElementById('auth-screen').style.display = 'flex';
     window.Clerk.mountSignIn(document.getElementById('clerk-signin'), {
-      appearance: {
-        variables: {
-          colorBackground: '#12151c',
-          colorText: '#e8eaf0',
-          colorPrimary: '#4f8fff',
-          colorInputBackground: '#0a0c10',
-          colorInputText: '#e8eaf0',
-        }
-      }
+      appearance: { variables: { colorBackground: '#12151c', colorText: '#e8eaf0', colorPrimary: '#4f8fff', colorInputBackground: '#0a0c10', colorInputText: '#e8eaf0' } }
     });
-    // Poll for sign-in completion
     const poll = setInterval(async () => {
       await window.Clerk.load();
-      if (window.Clerk.user) {
-        clearInterval(poll);
-        checkAccess();
-      }
+      if (window.Clerk.user) { clearInterval(poll); checkAccess(); }
     }, 1000);
     return;
   }
-
   checkAccess();
 }
 
 async function checkAccess() {
   const user = window.Clerk.user;
   if (!user) return;
-
-  // Check if this is the admin user
   if (user.id !== ADMIN_USER_ID) {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('denied-screen').style.display = 'flex';
     return;
   }
-
-  // Get token for Worker calls
-  const session = window.Clerk.session;
-  clerkToken = await session.getToken();
-
-  // Show the app
+  clerkToken = await window.Clerk.session.getToken();
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('denied-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-
-  // Show user email in header
-  const email = user.primaryEmailAddress?.emailAddress || user.id;
-  document.getElementById('admin-user').textContent = email;
-
-  // Refresh token every 50 seconds (tokens expire after ~60s)
-  setInterval(async () => {
-    if (window.Clerk.session) {
-      clerkToken = await window.Clerk.session.getToken();
-    }
-  }, 50000);
-
+  document.getElementById('admin-user').textContent = user.primaryEmailAddress?.emailAddress || user.id;
+  setInterval(async () => { if (window.Clerk.session) clerkToken = await window.Clerk.session.getToken(); }, 50000);
   refreshAll();
 }
 
-async function signOut() {
-  await window.Clerk.signOut();
-  location.reload();
-}
+async function signOut() { await window.Clerk.signOut(); location.reload(); }
 
-// Init Clerk when script loads
 window.addEventListener('load', () => {
-  if (window.Clerk) {
-    initClerk();
-  } else {
-    document.addEventListener('clerk:loaded', initClerk);
-  }
+  if (window.Clerk) initClerk();
+  else document.addEventListener('clerk:loaded', initClerk);
 });
 
-// ── Tabs ──────────────────────────────────────────────────────────────
 function showTab(id, event) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -617,7 +361,6 @@ function showTab(id, event) {
   if (id === 'promo')     loadPromos();
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────
 function toast(msg, ok = true) {
   const t = document.getElementById('toast');
   t.textContent = (ok ? '✅ ' : '❌ ') + msg;
@@ -625,16 +368,13 @@ function toast(msg, ok = true) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// ── Refresh all ───────────────────────────────────────────────────────
 async function refreshAll() {
   document.getElementById('last-refresh').textContent = 'Refreshing...';
   await Promise.all([loadOverview(), loadPromos()]);
-  document.getElementById('last-refresh').textContent =
-    'Updated ' + new Date().toLocaleTimeString();
+  document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
 }
 
-// ── Promo Codes (stored in Cloudflare KV via Worker) ──────────────────
-// Local cache of codes loaded from Worker
+// ── Promo Codes ───────────────────────────────────────────────────────
 let codesCache = [];
 
 async function fetchCodes() {
@@ -642,66 +382,40 @@ async function fetchCodes() {
     const headers = await authHeader();
     const res = await fetch(`${WORKER}/api/promo-codes`, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
-    const data = await res.json();
-    codesCache = data.codes || [];
+    codesCache = (await res.json()).codes || [];
   } catch (e) {
-    console.warn('Could not load promo codes from Worker:', e.message);
-    // Fall back to built-in defaults if Worker endpoint not yet deployed
     if (codesCache.length === 0) {
       codesCache = [
-        { code: 'BETA2026',   durationDays: 90,  note: 'Beta tester — 3 months free',    createdAt: new Date().toISOString(), redemptions: [], active: true },
-        { code: 'FRIEND2026', durationDays: 90,  note: 'Friends & family — 3 months free', createdAt: new Date().toISOString(), redemptions: [], active: true },
-        { code: 'LIFETIME',   durationDays: -1,  note: 'Lifetime access',                 createdAt: new Date().toISOString(), redemptions: [], active: true },
+        { code: 'BETA2026',   durationDays: 90, note: 'Beta tester — 3 months free',     createdAt: new Date().toISOString(), redemptions: [], active: true },
+        { code: 'FRIEND2026', durationDays: 90, note: 'Friends & family — 3 months free', createdAt: new Date().toISOString(), redemptions: [], active: true },
+        { code: 'LIFETIME',   durationDays: -1, note: 'Lifetime access',                  createdAt: new Date().toISOString(), redemptions: [], active: true },
       ];
     }
   }
   return codesCache;
 }
 
-async function saveCode(codeObj) {
+async function saveCode(obj) {
   try {
     const headers = { ...(await authHeader()), 'Content-Type': 'application/json' };
-    const res = await fetch(`${WORKER}/api/promo-codes`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(codeObj)
-    });
-    if (!res.ok) throw new Error(`${res.status}`);
-    return true;
-  } catch (e) {
-    console.warn('Could not save code to Worker:', e.message);
-    return false;
-  }
+    const res = await fetch(`${WORKER}/api/promo-codes`, { method: 'POST', headers, body: JSON.stringify(obj) });
+    return res.ok;
+  } catch { return false; }
 }
 
 async function updateCode(code, updates) {
   try {
     const headers = { ...(await authHeader()), 'Content-Type': 'application/json' };
-    const res = await fetch(`${WORKER}/api/promo-codes/${code}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(updates)
-    });
-    if (!res.ok) throw new Error(`${res.status}`);
-    return true;
-  } catch (e) {
-    console.warn('Could not update code:', e.message);
-    return false;
-  }
+    const res = await fetch(`${WORKER}/api/promo-codes/${code}`, { method: 'PATCH', headers, body: JSON.stringify(updates) });
+    return res.ok;
+  } catch { return false; }
 }
 
 async function removeCode(code) {
   try {
-    const headers = await authHeader();
-    const res = await fetch(`${WORKER}/api/promo-codes/${code}`, {
-      method: 'DELETE', headers
-    });
-    if (!res.ok) throw new Error(`${res.status}`);
-    return true;
-  } catch (e) {
-    console.warn('Could not delete code:', e.message);
-    return false;
-  }
+    const res = await fetch(`${WORKER}/api/promo-codes/${code}`, { method: 'DELETE', headers: await authHeader() });
+    return res.ok;
+  } catch { return false; }
 }
 
 function randCode(prefix) {
@@ -716,29 +430,12 @@ async function createCode() {
   const duration = parseInt(document.getElementById('new-duration').value);
   const note = document.getElementById('new-note').value.trim();
   if (!code) code = randCode('T2T');
-
-  const existing = codesCache.find(c => c.code === code);
-  if (existing) { toast('Code already exists.', false); return; }
-
-  const codeObj = {
-    code, durationDays: duration,
-    note: note || 'Manual code',
-    createdAt: new Date().toISOString(),
-    redemptions: [], active: true
-  };
-
-  const ok = await saveCode(codeObj);
-  if (ok) {
-    codesCache.push(codeObj);
-    toast(`Code ${code} created!`);
-    copyToClipboard(code);
-  } else {
-    // Optimistic local add even if Worker not ready
-    codesCache.push(codeObj);
-    toast(`Code ${code} created (local only — Worker endpoint pending).`);
-    copyToClipboard(code);
-  }
-
+  if (codesCache.find(c => c.code === code)) { toast('Code already exists.', false); return; }
+  const obj = { code, durationDays: duration, note: note || 'Manual code', createdAt: new Date().toISOString(), redemptions: [], active: true };
+  codesCache.push(obj);
+  const ok = await saveCode(obj);
+  toast(`Code ${code} created${ok ? '' : ' (local only)'}!`);
+  copyToClipboard(code);
   document.getElementById('new-code').value = '';
   document.getElementById('new-note').value = '';
   loadPromos();
@@ -748,21 +445,14 @@ async function generateBatch() {
   const prefix = document.getElementById('batch-prefix').value.trim().toUpperCase() || 'T2T';
   const count  = Math.min(50, Math.max(1, parseInt(document.getElementById('batch-count').value) || 5));
   const newCodes = [];
-
   for (let i = 0; i < count; i++) {
     let code;
     do { code = randCode(prefix); } while (codesCache.find(c => c.code === code));
-    const codeObj = {
-      code, durationDays: 90,
-      note: `Batch generated — ${prefix}`,
-      createdAt: new Date().toISOString(),
-      redemptions: [], active: true
-    };
-    codesCache.push(codeObj);
+    const obj = { code, durationDays: 90, note: `Batch — ${prefix}`, createdAt: new Date().toISOString(), redemptions: [], active: true };
+    codesCache.push(obj);
     newCodes.push(code);
-    saveCode(codeObj); // fire-and-forget each
+    saveCode(obj);
   }
-
   toast(`${newCodes.length} codes generated!`);
   loadPromos();
   navigator.clipboard?.writeText(newCodes.join('\n')).catch(() => {});
@@ -786,65 +476,32 @@ async function deleteCode(code) {
 }
 
 function copyToClipboard(text) {
-  navigator.clipboard?.writeText(text)
-    .then(() => toast(`${text} copied!`))
-    .catch(() => {});
+  navigator.clipboard?.writeText(text).then(() => toast(`${text} copied!`)).catch(() => {});
 }
 
 async function loadPromos() {
   await fetchCodes();
-  const codes = codesCache;
-  const el = document.getElementById('promo-table');
-  const countEl = document.getElementById('code-count');
-  const active = codes.filter(c => c.active).length;
-  countEl.textContent = `${codes.length} total · ${active} active`;
+  const active = codesCache.filter(c => c.active).length;
+  document.getElementById('code-count').textContent = `${codesCache.length} total · ${active} active`;
   document.getElementById('stat-codes-active').textContent = active;
-
-  if (codes.length === 0) {
-    el.innerHTML = '<div class="empty">No codes yet. Create one above.</div>';
-    return;
-  }
-
+  const el = document.getElementById('promo-table');
+  if (!codesCache.length) { el.innerHTML = '<div class="empty">No codes yet. Create one above.</div>'; return; }
   el.innerHTML = `
     <table>
-      <thead>
-        <tr>
-          <th>Code</th><th>Duration</th><th>Note</th>
-          <th>Redemptions</th><th>Created</th><th>Status</th><th></th>
-        </tr>
-      </thead>
+      <thead><tr><th>Code</th><th>Duration</th><th>Note</th><th>Redemptions</th><th>Created</th><th>Status</th><th></th></tr></thead>
       <tbody>
-        ${codes.map(c => `
+        ${codesCache.map(c => `
           <tr>
-            <td>
-              <span class="mono" style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent)"
-                onclick="copyToClipboard('${c.code}')" title="Click to copy">
-                ${c.code}
-              </span>
-            </td>
+            <td><span class="mono" style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent)" onclick="copyToClipboard('${c.code}')" title="Click to copy">${c.code}</span></td>
             <td class="mono">${c.durationDays === -1 ? 'Lifetime' : c.durationDays + 'd'}</td>
             <td style="color:var(--dim)">${c.note || '—'}</td>
-            <td>
-              <span class="badge ${c.redemptions?.length > 0 ? 'badge-green' : 'badge-blue'}">
-                ${c.redemptions?.length || 0}
-              </span>
-            </td>
+            <td><span class="badge ${c.redemptions?.length > 0 ? 'badge-green' : 'badge-blue'}">${c.redemptions?.length || 0}</span></td>
             <td class="mono muted">${new Date(c.createdAt).toLocaleDateString()}</td>
-            <td>
-              <span class="badge ${c.active ? 'badge-green' : 'badge-red'}">
-                ${c.active ? 'Active' : 'Off'}
-              </span>
-            </td>
+            <td><span class="badge ${c.active ? 'badge-green' : 'badge-red'}">${c.active ? 'Active' : 'Off'}</span></td>
             <td>
               <div style="display:flex;gap:6px">
-                <button class="btn btn-ghost" style="font-size:11px;padding:4px 8px"
-                  onclick="toggleCode('${c.code}')">
-                  ${c.active ? 'Disable' : 'Enable'}
-                </button>
-                <button class="btn btn-danger" style="font-size:11px;padding:4px 8px"
-                  onclick="deleteCode('${c.code}')">
-                  Delete
-                </button>
+                <button class="btn btn-ghost" style="font-size:11px;padding:4px 8px" onclick="toggleCode('${c.code}')">${c.active ? 'Disable' : 'Enable'}</button>
+                <button class="btn btn-danger" style="font-size:11px;padding:4px 8px" onclick="deleteCode('${c.code}')">Delete</button>
               </div>
             </td>
           </tr>`).join('')}
@@ -854,76 +511,44 @@ async function loadPromos() {
 
 // ── Analytics ─────────────────────────────────────────────────────────
 async function loadAnalytics() {
-  const viewsEl   = document.getElementById('analytics-views');
-  const actionsEl = document.getElementById('analytics-actions');
-  viewsEl.innerHTML   = '<div class="empty">Loading...</div>';
-  actionsEl.innerHTML = '<div class="empty">Loading...</div>';
-
+  const viewsEl = document.getElementById('analytics-views');
+  const actEl   = document.getElementById('analytics-actions');
+  viewsEl.innerHTML = actEl.innerHTML = '<div class="empty">Loading...</div>';
   try {
-    const headers = await authHeader();
-    const res = await fetch(`${WORKER}/api/analytics`, { headers });
+    const res = await fetch(`${WORKER}/api/analytics`, { headers: await authHeader() });
     if (!res.ok) throw new Error(`Worker returned ${res.status}`);
-    const data = await res.json();
-    renderAnalytics(data);
+    renderAnalytics(await res.json());
   } catch (e) {
-    viewsEl.innerHTML   = `<div class="empty">Could not load analytics: ${e.message}</div>`;
-    actionsEl.innerHTML = '';
+    viewsEl.innerHTML = `<div class="empty">Could not load analytics: ${e.message}</div>`;
+    actEl.innerHTML = '';
   }
 }
 
 function renderAnalytics(data) {
-  const VIEW_LABELS = {
-    dashboard:'Dashboard', documents:'Upload Docs', profile:'Profile',
-    experience:'Experience', jobs:'Job Tracker', scout:'Job Scout',
-    resume:'Resume Builder', linkedin:'LinkedIn Generator',
-    interview:'Interview Prep', salary:'Salary Intel',
-    network:'Networking Emails', refletter:'Reference Letter',
-    sf86:'SF-86 Prep', gap:'Gap Analysis', settings:'Settings', faq:'Help & FAQ'
-  };
-  const ACTION_LABELS = {
-    resume_generate:'Resumes Generated', linkedin_generate:'LinkedIn Generated',
-    interview_generate:'Interview Prep Run', salary_generate:'Salary Reports Run',
-    network_generate:'Networking Emails Written', refletter_generate:'Reference Letters Generated',
-    scout_search:'Job Scout Searches', doc_upload:'Documents Uploaded',
-    doc_paste:'Documents Pasted', job_added:'Jobs Added to Tracker',
-    gap_analyze:'Gap Analyses Run', feedback_sent:'Feedback Submitted'
-  };
+  const VIEW_LABELS   = { dashboard:'Dashboard', documents:'Upload Docs', profile:'Profile', experience:'Experience', jobs:'Job Tracker', scout:'Job Scout', resume:'Resume Builder', linkedin:'LinkedIn Generator', interview:'Interview Prep', salary:'Salary Intel', network:'Networking Emails', refletter:'Reference Letter', sf86:'SF-86 Prep', gap:'Gap Analysis', settings:'Settings', faq:'Help & FAQ' };
+  const ACTION_LABELS = { resume_generate:'Resumes Generated', linkedin_generate:'LinkedIn Generated', interview_generate:'Interview Prep Run', salary_generate:'Salary Reports Run', network_generate:'Networking Emails Written', refletter_generate:'Reference Letters Generated', scout_search:'Job Scout Searches', doc_upload:'Documents Uploaded', doc_paste:'Documents Pasted', job_added:'Jobs Added', gap_analyze:'Gap Analyses Run', feedback_sent:'Feedback Submitted' };
 
   const totalViews   = Object.values(data.views   || {}).reduce((a, b) => a + b, 0);
   const totalActions = Object.values(data.actions || {}).reduce((a, b) => a + b, 0);
-
   document.getElementById('stat-total-views').textContent   = totalViews;
   document.getElementById('stat-total-actions').textContent = totalActions;
   document.getElementById('stat-resumes').textContent       = data.actions?.resume_generate || 0;
 
   const maxView   = Math.max(...Object.values(data.views   || {}), 1);
   const maxAction = Math.max(...Object.values(data.actions || {}), 1);
-
-  const makeBar = (label, count, max, color) => `
+  const makeBar   = (label, count, max, color) => `
     <div class="bar-row">
       <div class="bar-label">${label}</div>
-      <div class="bar-track">
-        <div class="bar-fill" style="width:${Math.round(count/max*100)}%;background:${color}"></div>
-      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(count/max*100)}%;background:${color}"></div></div>
       <div class="bar-count" style="color:${color}">${count}</div>
     </div>`;
 
   const viewEntries   = Object.entries(data.views   || {}).sort((a, b) => b[1] - a[1]);
   const actionEntries = Object.entries(data.actions || {}).sort((a, b) => b[1] - a[1]);
 
-  document.getElementById('analytics-views').innerHTML = viewEntries.length
-    ? viewEntries.map(([k, v]) => makeBar(VIEW_LABELS[k] || k, v, maxView, 'var(--accent)')).join('')
-    : '<div class="empty">No view data yet.</div>';
-
-  document.getElementById('analytics-actions').innerHTML = actionEntries.length
-    ? actionEntries.map(([k, v]) => makeBar(ACTION_LABELS[k] || k, v, maxAction, 'var(--green)')).join('')
-    : '<div class="empty">No action data yet.</div>';
-
-  // Top 5 for overview
-  const top5 = actionEntries.slice(0, 5);
-  document.getElementById('overview-features').innerHTML = top5.length
-    ? top5.map(([k, v]) => makeBar(ACTION_LABELS[k] || k, v, maxAction, 'var(--green)')).join('')
-    : '<div class="empty">No feature usage data yet.</div>';
+  document.getElementById('analytics-views').innerHTML   = viewEntries.length   ? viewEntries.map(([k,v])   => makeBar(VIEW_LABELS[k]   || k, v, maxView,   'var(--accent)')).join('') : '<div class="empty">No view data yet.</div>';
+  document.getElementById('analytics-actions').innerHTML = actionEntries.length ? actionEntries.map(([k,v]) => makeBar(ACTION_LABELS[k] || k, v, maxAction, 'var(--green)')).join('') : '<div class="empty">No action data yet.</div>';
+  document.getElementById('overview-features').innerHTML = actionEntries.slice(0,5).length ? actionEntries.slice(0,5).map(([k,v]) => makeBar(ACTION_LABELS[k] || k, v, maxAction, 'var(--green)')).join('') : '<div class="empty">No feature usage data yet.</div>';
 }
 
 // ── Feedback ──────────────────────────────────────────────────────────
@@ -931,22 +556,12 @@ async function loadFeedback() {
   const el = document.getElementById('feedback-list');
   el.innerHTML = '<div class="empty">Loading...</div>';
   try {
-    const headers = await authHeader();
-    const res = await fetch(`${WORKER}/api/feedback`, { headers });
+    const res = await fetch(`${WORKER}/api/feedback`, { headers: await authHeader() });
     if (!res.ok) throw new Error(`Worker returned ${res.status}`);
-    const data  = await res.json();
-    const items = data.feedback || [];
-    if (!items.length) {
-      el.innerHTML = '<div class="empty">No feedback submitted yet.</div>';
-      return;
-    }
-    el.innerHTML = items.map(f => `
-      <div class="feedback-item">
-        <div class="feedback-meta">
-          ${new Date(f.createdAt || f.date).toLocaleString()} · ${f.type || 'General'}
-        </div>
-        <div class="feedback-text">${f.message || f.text || JSON.stringify(f)}</div>
-      </div>`).join('');
+    const items = (await res.json()).feedback || [];
+    el.innerHTML = items.length
+      ? items.map(f => `<div class="feedback-item"><div class="feedback-meta">${new Date(f.createdAt).toLocaleString()} · ${f.type || 'General'}</div><div class="feedback-text">${f.message}</div></div>`).join('')
+      : '<div class="empty">No feedback submitted yet.</div>';
   } catch (e) {
     el.innerHTML = `<div class="empty">Could not load feedback: ${e.message}</div>`;
   }
@@ -954,36 +569,38 @@ async function loadFeedback() {
 
 // ── Overview ──────────────────────────────────────────────────────────
 async function loadOverview() {
-  // Redemptions from codesCache
-  const codes = codesCache;
-  const redemptions = codes
-    .flatMap(c => (c.redemptions || []).map(r => ({ ...r, code: c.code, note: c.note })))
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 8);
-
+  const redemptions = codesCache.flatMap(c => (c.redemptions||[]).map(r => ({...r, code:c.code}))).sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,8);
   document.getElementById('overview-redemptions').innerHTML = redemptions.length
-    ? `<table>
-        <thead><tr><th>Code</th><th>User</th><th>Date</th></tr></thead>
-        <tbody>
-          ${redemptions.map(r => `
-            <tr>
-              <td><span class="mono badge badge-blue">${r.code}</span></td>
-              <td class="muted">${r.userId || 'anonymous'}</td>
-              <td class="mono muted">${new Date(r.date).toLocaleDateString()}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>`
+    ? `<table><thead><tr><th>Code</th><th>User</th><th>Date</th></tr></thead><tbody>${redemptions.map(r=>`<tr><td><span class="mono badge badge-blue">${r.code}</span></td><td class="muted">${r.userId||'anonymous'}</td><td class="mono muted">${new Date(r.date).toLocaleDateString()}</td></tr>`).join('')}</tbody></table>`
     : '<div class="empty">No redemptions yet.</div>';
-
-  // Analytics for overview
   try {
-    const headers = await authHeader();
-    const res = await fetch(`${WORKER}/api/analytics`, { headers });
-    if (res.ok) {
-      const data = await res.json();
-      renderAnalytics(data);
-    }
-  } catch { /* silent on overview */ }
+    const res = await fetch(`${WORKER}/api/analytics`, { headers: await authHeader() });
+    if (res.ok) renderAnalytics(await res.json());
+  } catch { /* silent */ }
+}
+
+// ── Admin Reset ───────────────────────────────────────────────────────
+async function resetData(targets) {
+  const label = targets.join(' + ');
+  if (!confirm(`Permanently delete all ${label} data from KV?\n\nThis cannot be undone.`)) return;
+
+  const resultEl = document.getElementById('reset-result');
+  resultEl.style.display = 'block';
+  resultEl.style.color   = 'var(--muted)';
+  resultEl.textContent   = `Deleting ${label} data...`;
+
+  try {
+    const headers = { ...(await authHeader()), 'Content-Type': 'application/json' };
+    const res = await fetch(`${WORKER}/api/admin/reset`, { method: 'POST', headers, body: JSON.stringify({ targets }) });
+    if (!res.ok) throw new Error(`Worker returned ${res.status}`);
+    const data = await res.json();
+    resultEl.style.color = 'var(--green)';
+    resultEl.textContent = `✅ Done — deleted ${data.deleted} keys. Refreshing...`;
+    setTimeout(() => { resultEl.style.display = 'none'; refreshAll(); }, 2000);
+  } catch (err) {
+    resultEl.style.color = 'var(--red)';
+    resultEl.textContent = `❌ Reset failed: ${err.message}`;
+  }
 }
 </script>
 </body>
