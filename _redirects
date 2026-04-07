@@ -1,0 +1,9 @@
+# Tactical 2 Talent — Netlify Redirects
+# The landing page is now index.html (root)
+# The app lives at /app.html
+
+# Optional: allow /app as a clean URL for the app
+/app    /app.html   200
+
+# Admin stays as-is
+/admin  /admin.html 200
