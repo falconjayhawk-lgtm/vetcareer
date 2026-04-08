@@ -1,5 +1,24 @@
 // ── Job Tracker ───────────────────────────────────────────────────────
 function renderJobs() {
+  const jobTab = state.ui.jobTab || 'standard';
+  const airlineOn = typeof isAirlinePath === 'function' && isAirlinePath();
+
+  // Tab bar — airline tab only visible when airline path is active
+  const tabBar = `
+    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:2px;overflow:hidden;border:1.5px solid var(--rule-dark);width:fit-content">
+      <button onclick="toggleUI('jobTab','standard')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${jobTab==='standard'?'var(--accent)':'white'};color:${jobTab==='standard'?'white':'var(--muted)'};transition:all 0.15s">💼 STANDARD JOBS</button>
+      ${airlineOn ? `<button onclick="toggleUI('jobTab','airline')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${jobTab==='airline'?'var(--accent)':'white'};color:${jobTab==='airline'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">✈️ AIRLINE APPS</button>` : ''}
+    </div>`;
+
+  // Route to airline tracker when that tab is active
+  if (jobTab === 'airline' && airlineOn) {
+    return `
+      <h1 style="font-size:24px;font-weight:800;margin:0 0 16px">Job Tracker</h1>
+      ${tabBar}
+      ${typeof renderAirlineJobs === 'function' ? renderAirlineJobs() : '<p style="color:var(--muted)">Loading airline tracker...</p>'}`;
+  }
+
+  // ── Standard job tracker below ────────────────────────────────────
   const filter = state.ui.jobFilter || 'all';
   const editId = state.ui.editJobId || null;
   const addMode = state.ui.addJob || false;
@@ -12,7 +31,7 @@ function renderJobs() {
     return `
       <div class="card">
         <h2>${job?'Edit Job':'Add New Job'}</h2>
-        
+
         ${!job ? `
         <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;margin-bottom:16px">
           <div style="font-weight:700;color:#1e40af;margin-bottom:6px">🤖 AI Job Analysis — Auto-Fill from Posting</div>
@@ -25,7 +44,7 @@ function renderJobs() {
           </button>
           ${state.ui.jobAnalysisError?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:8px;margin-top:10px;font-size:12px;color:#dc2626">${esc(state.ui.jobAnalysisError)}</div>`:''}
         </div>` : ''}
-        
+
         ${state.ui.jobAnalysisResult ? `
         <div style="background:#f0fdf4;border:2px solid #22c55e;border-radius:12px;padding:16px;margin-bottom:16px">
           <div style="font-weight:700;color:#15803d;font-size:15px;margin-bottom:10px">✅ Job Analysis Complete — Form Auto-Filled Below</div>
@@ -41,7 +60,7 @@ function renderJobs() {
           ${(state.ui.jobAnalysisResult.transferableStrengths||[]).length?`<div style="font-size:12px;color:#374151;margin-top:6px"><strong>Transferable strengths:</strong> ${state.ui.jobAnalysisResult.transferableStrengths.map(s=>esc(s)).join(' · ')}</div>`:''}
           <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="toggleUI('jobAnalysisResult',null)">Clear Analysis</button>
         </div>` : ''}
-        
+
         <div class="grid2">
           <div class="field"><label class="field-label">Job Title *</label><input id="${pre}-title" value="${esc(j.title)}"></div>
           <div class="field"><label class="field-label">Company *</label><input id="${pre}-company" value="${esc(j.company)}"></div>
@@ -85,6 +104,7 @@ function renderJobs() {
           </div>
         </div>
         ` : ''}
+
         <div style="display:flex;gap:8px">
           <button class="btn btn-primary btn-sm" onclick="${job?`updateJob('${job.id}')`:'saveJob()'}">${job?'Update':'Save'}</button>
           <button class="btn btn-secondary btn-sm" onclick="toggleUI('addJob',false);toggleUI('editJobId',null);toggleUI('jobAnalysisResult',null)">Cancel</button>
@@ -97,7 +117,7 @@ function renderJobs() {
 
   const jobCards = filtered.map(j=>{
     if (editId===j.id) return form(j);
-    const log = (j.activityLog||[]).slice().reverse(); // newest first
+    const log = (j.activityLog||[]).slice().reverse();
     const showLog = state.ui[`showLog_${j.id}`] || false;
     return `
       <div class="card" style="margin-bottom:12px;border-left:4px solid ${STATUS_COLORS[j.status]||'#e5e7eb'}">
@@ -121,7 +141,6 @@ function renderJobs() {
           </div>
         </div>
 
-        <!-- Quick metadata row -->
         <div style="display:flex;gap:12px;font-size:12px;color:#9ca3af;margin-top:8px;flex-wrap:wrap">
           ${j.dateAdded?`<span>Added ${new Date(j.dateAdded).toLocaleDateString()}</span>`:''}
           ${j.dateApplied?`<span>Applied ${new Date(j.dateApplied).toLocaleDateString()}</span>`:''}
@@ -140,7 +159,6 @@ function renderJobs() {
           `}
         </div>
 
-        <!-- Pipeline intel chips -->
         ${(j.hiringManager||j.teamSize||j.budgetCycle||j.warmIntro||j.salaryOffered) ? `
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
           ${j.salaryOffered?`<span style="background:#f0fdf4;color:#15803d;border:1px solid #86efac;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600">💰 ${esc(j.salaryOffered)}</span>`:''}
@@ -152,7 +170,6 @@ function renderJobs() {
 
         ${j.notes?`<div style="background:#f9fafb;border-radius:6px;padding:8px;font-size:12px;margin-top:8px;color:#374151">${esc(j.notes)}</div>`:''}
 
-        <!-- Loss library -->
         ${(j.status==='rejected'||j.status==='withdrawn') ? `
         <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;margin-top:8px">
           <div style="font-size:11px;font-weight:700;color:#991b1b;margin-bottom:4px">📋 LOSS LIBRARY</div>
@@ -160,22 +177,19 @@ function renderJobs() {
           ${j.lessonsLearned?`<div style="font-size:12px;color:#7f1d1d;margin-top:4px"><strong>Lessons:</strong> ${esc(j.lessonsLearned)}</div>`:''}
         </div>` : ''}
 
-        <!-- Quick status advance -->
         ${NEXT_STATUS[j.status]?`
         <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span style="font-size:12px;color:#6b7280">Move to:</span>
           ${Object.entries(STATUS_COLORS).filter(([s])=>s!==j.status&&s!=='withdrawn').map(([s,c])=>`
-            <button onclick="quickStatusChange('${j.id}','${s}')" style="background:${c}18;color:${c};border:1px solid ${c}40;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">${s}</button>
+            <button onclick="quickStatusChange('${j.id}','${s}')" style="background:${c}18;color:${c};border:1px solid ${c}40;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s">${s}</button>
           `).join('')}
         </div>`:''}
 
-        <!-- Add note -->
         <div style="margin-top:10px;display:flex;gap:6px">
           <input id="note-input-${j.id}" placeholder="Add a note — interview feedback, next steps, contact info..." style="font-size:12px;padding:6px 10px;flex:1">
           <button class="btn btn-secondary btn-sm" onclick="addActivityNote('${j.id}')">+ Note</button>
         </div>
 
-        <!-- Activity log toggle -->
         ${log.length>0?`
         <div style="margin-top:10px">
           <button onclick="toggleUI('showLog_${j.id}',${!showLog})" style="background:none;border:none;color:#6b7280;font-size:12px;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px">
@@ -199,10 +213,11 @@ function renderJobs() {
   }).join('');
 
   return `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h1 style="font-size:24px;font-weight:800;margin:0">Job Tracker</h1>
       <button class="btn btn-primary" onclick="toggleUI('addJob',true);toggleUI('jobAnalysisResult',null)">+ Add Job</button>
     </div>
+    ${tabBar}
     <div class="grid3" style="margin-bottom:16px">
       ${STATUSES.map(s=>`<div style="background:white;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:10px;text-align:center;cursor:pointer;${filter===s?'border:2px solid #3b82f6':'border:2px solid transparent'}" onclick="toggleUI('jobFilter','${s}')">
         <div style="font-size:22px;font-weight:800">${state.jobs.filter(j=>j.status===s).length}</div>
@@ -246,10 +261,8 @@ function saveJob() {
     warmIntro:document.getElementById(pre+'-warmIntro')?.value || '',
     rejectionReason: '',
     lessonsLearned: '',
-    // Carry over match score from job analysis if available
     fitScore: state.ui.jobAnalysisResult?.fitScore || null,
     fitLabel: state.ui.jobAnalysisResult?.fitLabel || null,
-    // Activity log — auto-started with creation event
     activityLog: [{ date: now, type: 'status', from: null, to: status, note: 'Job added to tracker' }]
   };
   setState({ jobs:[...state.jobs,j], ui:{...state.ui,addJob:false,jobAnalysisResult:null} });
@@ -264,7 +277,6 @@ function updateJob(jid) {
   const newStatus = document.getElementById(pre+'-status')?.value;
   const now = new Date().toISOString();
   const log = [...(existing?.activityLog||[])];
-  // Auto-log status change if it changed
   if (existing && newStatus !== existing.status) {
     log.push({ date: now, type: 'status', from: existing.status, to: newStatus, note: '' });
   }
@@ -291,7 +303,7 @@ function updateJob(jid) {
   };
   setState({ jobs:state.jobs.map(j=>j.id===jid?updated:j), ui:{...state.ui,editJobId:null} });
   if (typeof trackAction==='function') trackAction('job_added');
-    showToast('Job updated! ✓');
+  showToast('Job updated! ✓');
 }
 
 function quickStatusChange(jid, newStatus) {
@@ -321,14 +333,10 @@ function removeJob(jid) { if(confirm('Delete this job?')) setState({ jobs: state
 async function analyzeJobPosting() {
   const input = document.getElementById('job-analysis-input')?.value?.trim();
   if (!input) { showToast('Please paste a job URL or description', false); return; }
-    
   setState({ ui: { ...state.ui, jobAnalyzing: true, jobAnalysisError: '', jobAnalysisResult: null } });
-  
   try {
     const p = state.profile;
     const sf = state.scoutFilters;
-
-    // Build rich veteran context including standing filters if set
     const veteranContext = `VETERAN PROFILE:
 Name: ${p.fullName || 'Not provided'}
 Branch: ${p.branch || 'N/A'} | Rank: ${p.rank || 'N/A'} | Years: ${p.yearsOfService || 'N/A'}
@@ -341,68 +349,30 @@ Target Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?(i.subT
 RECENT EXPERIENCE:
 ${[...state.assignments.slice(0,3).map(a=>`${a.dutyTitle} at ${a.base}: ${(a.accomplishments||'').slice(0,200)}`), ...state.civilianJobs.slice(0,2).map(j=>`${j.title} at ${j.company}: ${(j.accomplishments||'').slice(0,200)}`)].join('\n') || 'None'}
 
-${sf.roleTypes ? `STANDING JOB PREFERENCES (use these to calibrate fit):
-Target Roles: ${sf.roleTypes}
-Target Domains: ${sf.domains || 'N/A'}
-Geography: ${sf.geography || 'N/A'}
-Seniority Target: ${sf.seniority || 'N/A'}
-Hard Exclusions: ${sf.exclusions || 'None'}` : ''}`;
+${sf?.roleTypes ? `STANDING JOB PREFERENCES:\nTarget Roles: ${sf.roleTypes}\nTarget Domains: ${sf.domains || 'N/A'}\nGeography: ${sf.geography || 'N/A'}\nSeniority Target: ${sf.seniority || 'N/A'}\nHard Exclusions: ${sf.exclusions || 'None'}` : ''}`;
 
     const result = await callClaude(
-      'You are a military-to-civilian career transition expert and hiring advisor. You give direct, opinionated assessments — not generic ones. You understand that military experience translates powerfully even when the exact civilian keywords are absent. Return valid JSON only.',
-      `Analyze this job posting for a veteran. Be opinionated and specific about fit.
-
-${veteranContext}
-
-JOB POSTING:
-${input}
-
-Scoring philosophy:
-- Score based on demonstrated CAPABILITY, not keyword matching alone
-- Military leadership, operations, and program management translate broadly — credit it
-- Never score below 50 purely for missing civilian buzzwords
-- If standing filters are provided, weigh them heavily — a role that violates a hard exclusion should score very low regardless of other factors
-- Security clearances are a SIGNIFICANT positive for cleared roles — call this out explicitly
-
-Return ONLY this JSON (no markdown):
-{
-  "title": "extracted job title",
-  "company": "company name",
-  "location": "location or Remote",
-  "clearance": "clearance requirement or empty string",
-  "salaryRange": "salary if mentioned or empty string",
-  "reqId": "req ID if found or empty string",
-  "fitScore": <1-10>,
-  "fitLabel": "Strong Fit / Good Fit / Moderate Fit / Weak Fit / Poor Fit",
-  "seniority": "On-Target / Stretch / Too Senior / Too Junior",
-  "worthYourTime": true or false,
-  "assessment": "2-3 sentence plain-English fit explanation — be specific and direct, not generic",
-  "whyItMatters": "One sentence on why this specific veteran should or shouldn't care about this role",
-  "watchOut": "One red flag or concern to be aware of, or empty string if none",
-  "transferableStrengths": ["2-3 specific military experiences that directly map to this role's needs"]
-}`
+      'You are a military-to-civilian career transition expert and hiring advisor. You give direct, opinionated assessments. Return valid JSON only.',
+      `Analyze this job posting for a veteran.\n\n${veteranContext}\n\nJOB POSTING:\n${input}\n\nReturn ONLY this JSON:\n{"title":"","company":"","location":"","clearance":"","salaryRange":"","reqId":"","fitScore":<1-10>,"fitLabel":"Strong Fit/Good Fit/Moderate Fit/Weak Fit/Poor Fit","seniority":"On-Target/Stretch/Too Senior/Too Junior","worthYourTime":true,"assessment":"2-3 sentence fit explanation","whyItMatters":"one sentence","watchOut":"one red flag or empty string","transferableStrengths":["2-3 specific military-to-civilian mappings"]}`
     );
-    
     let analysis;
     try { analysis = JSON.parse(result.replace(/```json|```/g, '').trim()); }
     catch(e) { throw new Error('Could not parse analysis. Try pasting the job description text instead of a URL.'); }
-    
-    // Auto-populate the add job form
-    if (analysis.title) { const el = document.getElementById('nj-title'); if(el) el.value = analysis.title; }
-    if (analysis.company) { const el = document.getElementById('nj-company'); if(el) el.value = analysis.company; }
-    if (analysis.location) { const el = document.getElementById('nj-location'); if(el) el.value = analysis.location; }
-    if (analysis.salaryRange) { const el = document.getElementById('nj-salaryRange'); if(el) el.value = analysis.salaryRange; }
+
+    if (analysis.title)      { const el = document.getElementById('nj-title');      if(el) el.value = analysis.title; }
+    if (analysis.company)    { const el = document.getElementById('nj-company');    if(el) el.value = analysis.company; }
+    if (analysis.location)   { const el = document.getElementById('nj-location');   if(el) el.value = analysis.location; }
+    if (analysis.salaryRange){ const el = document.getElementById('nj-salaryRange');if(el) el.value = analysis.salaryRange; }
     if (input.startsWith('http')) { const el = document.getElementById('nj-jobUrl'); if(el) el.value = input.split('\n')[0]; }
     let notesContent = '';
-    if (analysis.clearance) notesContent += `Clearance Required: ${analysis.clearance}\n`;
-    if (analysis.reqId) notesContent += `Req ID: ${analysis.reqId}\n`;
-    if (analysis.watchOut) notesContent += `⚠️ ${analysis.watchOut}\n`;
+    if (analysis.clearance)  notesContent += `Clearance Required: ${analysis.clearance}\n`;
+    if (analysis.reqId)      notesContent += `Req ID: ${analysis.reqId}\n`;
+    if (analysis.watchOut)   notesContent += `⚠️ ${analysis.watchOut}\n`;
     if (notesContent) { const el = document.getElementById('nj-notes'); if(el) el.value = notesContent.trim(); }
-    
+
     setState({ ui: { ...state.ui, jobAnalyzing: false, jobAnalysisResult: analysis } });
     showToast('✓ Job analyzed and form auto-filled!');
   } catch(err) {
     setState({ ui: { ...state.ui, jobAnalyzing: false, jobAnalysisError: err.message } });
   }
 }
-
