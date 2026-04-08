@@ -13,22 +13,13 @@ function renderResume() {
   const jobOptions = jobs.map(j=>`<option value="${j.id}" ${selJob===j.id?'selected':''}>${esc(j.title)} — ${esc(j.company)}</option>`).join('');
   const canGenTargeted = !busy && !!selJob;
   const canGenGeneric  = !busy && !!!!state.profile?.fullName;
-  const canGenNetworking = !busy && !!(state.ui.networkingCompany||'').trim();
   const showModal = state.ui.resumeModal && result;
 
-  // Director-level stretch warning
-  const isDirectorRole = selJob && job && /\bdirector\b/i.test(job.title||'');
-  const isStartupTone  = (state.ui.resumeTone||'startup') === 'startup';
-  const stretchWarning = isDirectorRole && !isStartupTone
-    ? `<div style="background:var(--gold-light);border:1px solid var(--gold);border-radius:2px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#92400e">
-        ⚠️ <strong>Stretch Role:</strong> Director-level titles are a reach unless targeting a startup or small company. Lead with your cover letter. Emphasize range over depth and show you can self-direct.
-       </div>`
-    : '';
-
+  // Format definitions — ATS flag drives warning display
   const formats = [
-    { id:'professional', l:'Professional', d:'Arial · Clean headers · Corporate', ats:true,  badge:'✓ ATS Safe' },
-    { id:'federal',      l:'Federal / Gov', d:'Georgia serif · Zero color · GS/Defense', ats:true,  badge:'✓ ATS Safe' },
-    { id:'executive',    l:'Executive',     d:'Two-column · Navy accent · Visual',  ats:false, badge:'⚠️ Not ATS Safe' }
+    { id: 'professional', l: 'Professional', d: 'Arial · Clean headers · Corporate', ats: true,  badge: '✓ ATS Safe' },
+    { id: 'federal',      l: 'Federal / Gov', d: 'Georgia serif · Zero color · GS/Defense', ats: true,  badge: '✓ ATS Safe' },
+    { id: 'executive',    l: 'Executive',     d: 'Two-column · Navy accent · Visual',  ats: false, badge: '⚠️ Not ATS Safe' }
   ];
 
   const fmtCards = (formats) => formats.map(f=>`
@@ -48,10 +39,18 @@ function renderResume() {
           <div style="font-size:13px;color:var(--muted)">Scroll down to view, download, or print. What's next?</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <button onclick="exportResumeToWord();toggleUI('resumeModal',false)" style="padding:12px;border:none;background:var(--accent);color:white;border-radius:2px;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;cursor:pointer;text-align:left">📝 DOWNLOAD AS WORD DOCUMENT</button>
-          <button onclick="printResume();toggleUI('resumeModal',false)" style="padding:12px;border:1.5px solid var(--rule-dark);background:white;color:var(--text);border-radius:2px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">🖨 Print / Save as PDF</button>
-          ${!result.isGeneric && !result.isNetworking ? `<button onclick="setState({view:'interview'});toggleUI('resumeModal',false)" style="padding:12px;border:1.5px solid var(--rule-dark);background:white;color:var(--text);border-radius:2px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">🎤 Prep for the Interview</button>` : ''}
-          <button onclick="toggleUI('resumeModal',false)" style="padding:8px;border:none;background:none;color:var(--muted);font-size:12px;cursor:pointer">Keep reviewing my resume</button>
+          <button onclick="exportResumeToWord();toggleUI('resumeModal',false)" style="padding:12px;border:none;background:var(--accent);color:white;border-radius:2px;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;cursor:pointer;text-align:left">
+            📝 DOWNLOAD AS WORD DOCUMENT
+          </button>
+          <button onclick="printResume();toggleUI('resumeModal',false)" style="padding:12px;border:1.5px solid var(--rule-dark);background:white;color:var(--text);border-radius:2px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
+            🖨 Print / Save as PDF
+          </button>
+          ${!result.isGeneric && !result.isAirline ? `<button onclick="setState({view:'interview'});toggleUI('resumeModal',false)" style="padding:12px;border:1.5px solid var(--rule-dark);background:white;color:var(--text);border-radius:2px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
+            🎤 Prep for the Interview
+          </button>` : ''}
+          <button onclick="toggleUI('resumeModal',false)" style="padding:8px;border:none;background:none;color:var(--muted);font-size:12px;cursor:pointer">
+            Keep reviewing my resume
+          </button>
         </div>
       </div>
     </div>` : ''}
@@ -59,11 +58,7 @@ function renderResume() {
     <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0 0 4px;color:var(--accent);letter-spacing:0.02em">Resume Builder</h1>
     <p style="color:var(--muted);font-size:13px;margin:0 0 20px">AI-powered resume writing — Claude reads your actual experience and writes a real resume</p>
 
-    <!-- Mode tabs -->
-    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:2px;overflow:hidden;border:1.5px solid var(--rule-dark);width:fit-content">
-      <button onclick="toggleUI('resumeMode','targeted')"    style="padding:10px 18px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='targeted'?'var(--accent)':'white'};color:${mode==='targeted'?'white':'var(--muted)'};transition:all 0.15s">🎯 TAILORED TO A JOB</button>
-      <button onclick="toggleUI('resumeMode','generic')"     style="padding:10px 18px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='generic'?'var(--accent)':'white'};color:${mode==='generic'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">📋 GENERAL RESUME</button>
-      <button onclick="toggleUI('resumeMode','networking')"  style="padding:10px 18px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='networking'?'var(--accent)':'white'};color:${mode==='networking'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">🤝 NETWORKING</button>
+    <!-- Mode tabs — airline tab appears only when airline path is active -->
     <div style="display:flex;gap:0;margin-bottom:20px;border-radius:2px;overflow:hidden;border:1.5px solid var(--rule-dark);width:fit-content">
       <button onclick="toggleUI('resumeMode','targeted')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='targeted'?'var(--accent)':'white'};color:${mode==='targeted'?'white':'var(--muted)'};transition:all 0.15s">🎯 TAILORED TO A JOB</button>
       <button onclick="toggleUI('resumeMode','generic')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='generic'?'var(--accent)':'white'};color:${mode==='generic'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">📋 GENERAL RESUME</button>
@@ -71,14 +66,10 @@ function renderResume() {
     </div>
 
     <div class="card">
-      <h2>${mode==='targeted'?'Configure & Generate Tailored Resume':mode==='airline'?'✈️ Airline Resume Configuration':'Generate General-Purpose Resume'}</h2>
+      <h2>${mode==='airline'?'✈️ Airline Resume Configuration':mode==='targeted'?'Configure & Generate Tailored Resume':'Generate General-Purpose Resume'}</h2>
 
-      ${mode==='airline' ? renderAirlineMode() : ''}
-      ${mode==='targeted' ? `
+      ${mode==='airline' ? `${typeof renderAirlineMode === 'function' ? renderAirlineMode() : '<p style="color:var(--muted)">Loading airline module...</p>'}` : mode==='targeted'?`
       <p style="font-size:13px;color:var(--muted);margin:-8px 0 16px">Select a job from your tracker — Claude will tailor your resume and cover letter specifically for it.</p>
-
-      ${stretchWarning}
-
       <div class="grid2">
         <div class="field"><label class="field-label">Target Job</label>
           <select id="resume-job" onchange="toggleUI('resumeJob',this.value)"><option value="">Select a job...</option>${jobOptions}</select>
@@ -87,7 +78,6 @@ function renderResume() {
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">${fmtCards(formats)}</div>
         </div>
       </div>
-
       ${job?`<div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:10px;font-size:13px;margin-bottom:14px"><strong>${esc(job.title)}</strong> at <span style="color:var(--accent)">${esc(job.company)}</span>${job.location?' — '+esc(job.location):''}${job.salaryRange?` <span style="color:var(--green);font-weight:600">· ${esc(job.salaryRange)}</span>`:''}</div>`:''}
 
       ${job && (job.resumeVersions||[]).length > 0 ? `
@@ -108,103 +98,31 @@ function renderResume() {
         </div>
       </div>` : ''}
 
-      <!-- Company Tone — now three options -->
       <div class="field" style="margin-bottom:16px">
         <label class="field-label">Company Tone</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div onclick="toggleUI('resumeTone','startup')" style="padding:10px;border:2px solid ${(state.ui.resumeTone||'startup')==='startup'?'var(--accent)':'var(--rule)'};background:${(state.ui.resumeTone||'startup')==='startup'?'var(--gold-light)':'white'};border-radius:2px;cursor:pointer">
             <div style="font-weight:700;font-size:13px;font-family:'Familjen Grotesk',sans-serif">🚀 Startup / Growth</div>
-            <div style="font-size:11px;color:var(--muted)">Scrappy, versatile, built-from-scratch. Tech, startups, and innovation-focused orgs.</div>
+            <div style="font-size:11px;color:var(--muted)">Scrappy, builder, wore-many-hats. For tech companies, startups, and innovation-focused orgs.</div>
           </div>
           <div onclick="toggleUI('resumeTone','prime')" style="padding:10px;border:2px solid ${(state.ui.resumeTone||'startup')==='prime'?'var(--accent)':'var(--rule)'};background:${(state.ui.resumeTone||'startup')==='prime'?'var(--gold-light)':'white'};border-radius:2px;cursor:pointer">
-            <div style="font-weight:700;font-size:13px;font-family:'Familjen Grotesk',sans-serif">🏛️ Prime / Gov</div>
-            <div style="font-size:11px;color:var(--muted)">Structured, process-driven, compliant. Defense primes, federal agencies, large enterprises.</div>
-          </div>
-          <div onclick="toggleUI('resumeTone','commercial')" style="padding:10px;border:2px solid ${(state.ui.resumeTone||'startup')==='commercial'?'var(--accent)':'var(--rule)'};background:${(state.ui.resumeTone||'startup')==='commercial'?'var(--gold-light)':'white'};border-radius:2px;cursor:pointer">
-            <div style="font-weight:700;font-size:13px;font-family:'Familjen Grotesk',sans-serif">🌐 Commercial</div>
-            <div style="font-size:11px;color:var(--muted)">Civilian-first. Strip all military context, rename everything, address the transition directly.</div>
+            <div style="font-weight:700;font-size:13px;font-family:'Familjen Grotesk',sans-serif">🏛️ Prime Contractor / Gov</div>
+            <div style="font-size:11px;color:var(--muted)">Structured, process-driven, compliant. For defense primes, federal agencies, and large enterprises.</div>
           </div>
         </div>
       </div>
 
-      <!-- Application email (may differ from profile email) -->
-      <div class="field" style="margin-bottom:16px">
-        <label class="field-label">Application Email</label>
-        <input id="resume-email" value="${esc(state.ui.resumeEmail||state.profile?.email||'')}" placeholder="${esc(state.profile?.email||'your@email.com')}" oninput="toggleUI('resumeEmail',this.value)" style="font-size:13px">
-        <div style="font-size:11px;color:var(--dim);margin-top:3px">Use a different email for this application? Leave blank to use your profile email.</div>
-      </div>
-
       <div class="field" style="margin-bottom:16px">
         <label class="field-label">Optional: Special instructions for this resume</label>
-        <textarea id="resume-instructions" rows="3" placeholder="e.g., Consolidate all active duty into one section&#10;Emphasize leadership over technical&#10;Keep to one page&#10;Lead with my security clearance" style="font-size:13px" onchange="toggleUI('resumeInstructions',this.value)">${esc(state.ui.resumeInstructions||'')}</textarea>
-        <div style="font-size:11px;color:var(--dim);margin-top:3px">Tell Claude how you want this specific resume structured or weighted.</div>
+        <textarea id="resume-instructions" rows="3" placeholder="e.g., Consolidate all active duty into one section called 'Military Experience'&#10;Emphasize leadership over technical skills&#10;Keep it to one page&#10;Lead with my security clearance" style="font-size:13px" onchange="toggleUI('resumeInstructions',this.value)">${esc(state.ui.resumeInstructions||'')}</textarea>
+        <div style="font-size:11px;color:var(--dim);margin-top:3px">Tell Claude how you want this specific resume structured or weighted — it will follow your lead.</div>
       </div>
       <button class="btn btn-primary" onclick="generateResume()" ${canGenTargeted?'':'disabled'} style="padding:12px 24px">
         ${busy?'<div class="spinner"></div> Building...':'🚀 Generate Resume & Cover Letter'}
       </button>
       ${!state.jobs.length&&!busy?`<p style="font-size:13px;color:var(--gold);margin-top:10px">💡 No jobs in your tracker yet — <button onclick="setState({view:'jobs'})" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;font-weight:600;padding:0">add one</button>, or use the General Resume tab instead.</p>`:''}
-
-      ` : mode==='networking' ? `
-
-      <p style="font-size:13px;color:var(--muted);margin:-8px 0 16px">For networking introductions — no cover letter, no job posting required. Frames your background as "here's what I bring" rather than a formal application. Tailored to the company or contact, not a specific JD.</p>
-      <div style="background:var(--gold-light);border:1px solid var(--gold);border-radius:2px;padding:12px;font-size:13px;color:var(--accent);margin-bottom:16px">
-        💡 Use this when being introduced to someone at a company, attending career events, or reaching out cold. No cover letter will be generated.
-      </div>
-
-      <div class="grid2">
-        <div class="field"><label class="field-label">Company or Organization</label>
-          <input id="networking-company" placeholder="e.g., Anduril, Booz Allen, L3Harris..." value="${esc(state.ui.networkingCompany||'')}" oninput="toggleUI('networkingCompany',this.value)">
-        </div>
-        <div class="field"><label class="field-label">Target Role / Function (optional)</label>
-          <input id="networking-role" placeholder="e.g., Program Management, Cybersecurity, BD..." value="${esc(state.ui.networkingRole||'')}" oninput="toggleUI('networkingRole',this.value)">
-        </div>
-        <div class="field"><label class="field-label">Who Are You Meeting? (optional)</label>
-          <input id="networking-contact" placeholder="e.g., VP of Programs, recruiter, fellow vet..." value="${esc(state.ui.networkingContact||'')}" oninput="toggleUI('networkingContact',this.value)">
-          <div style="font-size:11px;color:var(--dim);margin-top:3px">Claude will align the framing to this person's context.</div>
-        </div>
-        <div class="field"><label class="field-label">Resume Format</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">${fmtCards(formats)}</div>
-        </div>
-      </div>
-
-      <!-- Company Tone for networking -->
-      <div class="field" style="margin-bottom:16px">
-        <label class="field-label">Audience Type</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          <div onclick="toggleUI('resumeTone','prime')" style="padding:10px;border:2px solid ${(state.ui.resumeTone||'prime')==='prime'?'var(--accent)':'var(--rule)'};background:${(state.ui.resumeTone||'prime')==='prime'?'var(--gold-light)':'white'};border-radius:2px;cursor:pointer">
-            <div style="font-weight:700;font-size:13px;font-family:'Familjen Grotesk',sans-serif">🏛️ Defense / Gov</div>
-            <div style="font-size:11px;color:var(--muted)">Keep clearance prominent. Military terminology OK.</div>
-          </div>
-          <div onclick="toggleUI('resumeTone','startup')" style="padding:10px;border:2px solid ${(state.ui.resumeTone||'prime')==='startup'?'var(--accent)':'var(--rule)'};background:${(state.ui.resumeTone||'prime')==='startup'?'var(--gold-light)':'white'};border-radius:2px;cursor:pointer">
-            <div style="font-weight:700;font-size:13px;font-family:'Familjen Grotesk',sans-serif">🚀 Tech / Startup</div>
-            <div style="font-size:11px;color:var(--muted)">Emphasize versatility and bias for action.</div>
-          </div>
-          <div onclick="toggleUI('resumeTone','commercial')" style="padding:10px;border:2px solid ${(state.ui.resumeTone||'prime')==='commercial'?'var(--accent)':'var(--rule)'};background:${(state.ui.resumeTone||'prime')==='commercial'?'var(--gold-light)':'white'};border-radius:2px;cursor:pointer">
-            <div style="font-weight:700;font-size:13px;font-family:'Familjen Grotesk',sans-serif">🌐 Commercial</div>
-            <div style="font-size:11px;color:var(--muted)">Fully translated. No military context assumed.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Application email -->
-      <div class="field" style="margin-bottom:16px">
-        <label class="field-label">Email for This Introduction</label>
-        <input id="resume-email" value="${esc(state.ui.resumeEmail||state.profile?.email||'')}" placeholder="${esc(state.profile?.email||'your@email.com')}" oninput="toggleUI('resumeEmail',this.value)" style="font-size:13px">
-      </div>
-
-      <div class="field" style="margin-bottom:16px">
-        <label class="field-label">Optional: Anything specific to emphasize?</label>
-        <textarea id="resume-instructions" rows="2" placeholder="e.g., Emphasize leadership over technical, consolidate earlier roles" style="font-size:13px" onchange="toggleUI('resumeInstructions',this.value)">${esc(state.ui.resumeInstructions||'')}</textarea>
-      </div>
-
-      <button class="btn btn-primary" onclick="generateNetworkingResume()" ${canGenNetworking?'':'disabled'} style="padding:12px 24px">
-        ${busy?'<div class="spinner"></div> Building...':'🤝 Generate Networking Resume'}
-      </button>
-      ${!(state.ui.networkingCompany||'').trim()&&!busy?`<p style="font-size:13px;color:var(--gold);margin-top:10px">💡 Enter a company name to get started.</p>`:''}
-
-      ` : `
-
-      <p style="font-size:13px;color:var(--muted);margin:-8px 0 16px">Generates a strong all-purpose resume you can hand out at career fairs, networking events, or any job posting. Also creates a short professional bio.</p>
+      `:`
+      <p style="font-size:13px;color:var(--muted);margin:-8px 0 16px">Generates a strong all-purpose resume you can hand out at career fairs, networking events, or any job posting. Also creates a short professional bio you can use on LinkedIn or email.</p>
       <div style="background:var(--gold-light);border:1px solid var(--gold);border-radius:2px;padding:12px;font-size:13px;color:var(--accent);margin-bottom:16px">
         💡 This resume highlights your strongest experience across all industries. Use it when you don't have a specific job posting yet.
       </div>
@@ -226,23 +144,34 @@ function renderResume() {
       ${busy?`<div style="background:var(--gold-light);border:1px solid var(--gold);border-radius:2px;padding:16px;margin-top:12px">
         <div style="font-weight:700;color:var(--accent);font-size:13px;margin-bottom:12px;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em">🤖 CLAUDE IS BUILDING YOUR RESUME...</div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'var(--green)':'var(--accent)'};color:white">${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'✓':'1'}</div>
-          <div style="font-size:13px;color:${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'var(--green)':status.startsWith('✍️')?'var(--accent)':'var(--dim)'};font-weight:${status.startsWith('✍️')?'600':'400'}">Analyzing experience &amp; job requirements${status.startsWith('✍️')?' ...':''}</div>
+          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'var(--green)':'var(--accent)'};color:white">
+            ${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'✓':'1'}
+          </div>
+          <div style="font-size:13px;color:${['✉️','🔍','✂️'].some(s=>status.startsWith(s))?'var(--green)':status.startsWith('✍️')?'var(--accent)':'var(--dim)'};font-weight:${status.startsWith('✍️')?'600':'400'}">
+            Analyzing experience &amp; job requirements${status.startsWith('✍️')?' ...':''}
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${['🔍','✉️'].some(s=>status.startsWith(s))?'var(--green)':status.startsWith('✍️')||status.startsWith('✂️')?'var(--accent)':'var(--rule-dark)'};color:${status.startsWith('✍️')||['🔍','✉️','✂️'].some(s=>status.startsWith(s))?'white':'var(--muted)'}">${['🔍','✉️'].some(s=>status.startsWith(s))?'✓':'2'}</div>
-          <div style="font-size:13px;color:${['🔍','✉️'].some(s=>status.startsWith(s))?'var(--green)':status.startsWith('✍️')||status.startsWith('✂️')?'var(--accent)':'var(--dim)'};font-weight:${status.startsWith('✍️')||status.startsWith('✂️')?'600':'400'}">Writing your tailored resume${status.startsWith('✍️')||status.startsWith('✂️')?' ...':''}</div>
+          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${['🔍','✉️'].some(s=>status.startsWith(s))?'var(--green)':status.startsWith('✍️')||status.startsWith('✂️')?'var(--accent)':'var(--rule-dark)'};color:${status.startsWith('✍️')||['🔍','✉️','✂️'].some(s=>status.startsWith(s))?'white':'var(--muted)'}">
+            ${['🔍','✉️'].some(s=>status.startsWith(s))?'✓':'2'}
+          </div>
+          <div style="font-size:13px;color:${['🔍','✉️'].some(s=>status.startsWith(s))?'var(--green)':status.startsWith('✍️')||status.startsWith('✂️')?'var(--accent)':'var(--dim)'};font-weight:${status.startsWith('✍️')||status.startsWith('✂️')?'600':'400'}">
+            Writing your tailored resume${status.startsWith('✍️')||status.startsWith('✂️')?' ...':''}
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${['🔍','✉️'].some(s=>status.startsWith(s))?'var(--accent)':'var(--rule-dark)'};color:${['🔍','✉️'].some(s=>status.startsWith(s))?'white':'var(--muted)'}">3</div>
-          <div style="font-size:13px;color:${['🔍','✉️'].some(s=>status.startsWith(s))?'var(--accent)':'var(--dim)'};font-weight:${['🔍','✉️'].some(s=>status.startsWith(s))?'600':'400'}">Scoring fit &amp; writing cover letter${['🔍','✉️'].some(s=>status.startsWith(s))?' ...':''}</div>
+          <div style="font-size:13px;color:${['🔍','✉️'].some(s=>status.startsWith(s))?'var(--accent)':'var(--dim)'};font-weight:${['🔍','✉️'].some(s=>status.startsWith(s))?'600':'400'}">
+            Scoring fit &amp; writing cover letter${['🔍','✉️'].some(s=>status.startsWith(s))?' ...':''}
+          </div>
         </div>
         <div style="font-size:11px;color:var(--gold)">Takes 20–40 seconds — Claude reads your actual experience</div>
       </div>`:''}
       ${error?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:12px;margin-top:12px;font-size:13px;color:#dc2626">${esc(error)}</div>`:''}
     </div>
-`    ${result && !result.isAirline ? renderResumeResult(result,fmt) : ''}
-    ${result && result.isAirline  ? renderAirlineResumeResult(result) : ''}`;}
+    ${result && result.isAirline  ? (typeof renderAirlineResumeResult === 'function' ? renderAirlineResumeResult(result) : '') : ''}
+    ${result && !result.isAirline ? renderResumeResult(result,fmt) : ''}`;
+}
 
 function renderResumeResult(result, fmt) {
   const sc = result.ats?.score;
@@ -251,12 +180,11 @@ function renderResumeResult(result, fmt) {
   const scoreBorder = sc>=85?'#c8e6cd':sc>=70?'var(--gold)':sc>=55?'#fde68a':'#fecaca';
   const scoreLabel = sc>=85?'Strong Match — Apply with confidence':sc>=70?'Good Match — Address gaps in cover letter':sc>=55?'Moderate Fit — Emphasize transferable skills':'Stretch Role — Lead with cover letter';
   const isGeneric = result.isGeneric || false;
-  const isNetworking = result.isNetworking || false;
   const isExecutive = fmt === 'executive';
   const fmtLabel = {professional:'Professional',federal:'Federal / Gov',executive:'Executive'}[fmt] || 'Professional';
 
   return `
-    ${!isGeneric && !isNetworking && result.ats ? `
+    ${!isGeneric && result.ats ? `
     <div class="card" style="background:${scoreBg};border:2px solid ${scoreBorder}">
       <h2 style="margin-bottom:12px">🎯 Resume Fit Analysis</h2>
       <div style="display:flex;gap:20px;align-items:center;margin-bottom:16px">
@@ -275,7 +203,7 @@ function renderResumeResult(result, fmt) {
     ${(result.ats.transferable_strengths||[]).length ? `
     <div class="card" style="border-left:4px solid var(--accent)">
       <h2 style="margin-bottom:4px">🪖 → 💼 Your Military Experience Translates</h2>
-      <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Here's how your military background maps to what this employer needs.</p>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Here's how your military background maps to what this employer needs — even if the words look different on paper.</p>
       ${(result.ats.transferable_strengths||[]).map(s=>`
         <div style="display:flex;gap:10px;align-items:start;padding:10px;background:var(--gold-light);border-left:3px solid var(--gold);margin-bottom:8px">
           <span style="font-size:16px;flex-shrink:0">✓</span>
@@ -315,8 +243,8 @@ function renderResumeResult(result, fmt) {
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
         <div>
-          <h2 style="margin:0">📄 ${isNetworking?'Networking Resume':isGeneric?'General Resume':'Resume'} — ${fmtLabel} Format</h2>
-          ${isExecutive ? `<div style="margin-top:4px;font-size:11px;font-weight:700;color:#e65100;background:#fff3e0;padding:3px 8px;border-radius:2px;display:inline-block">⚠️ VISUAL FORMAT — May not pass ATS screening.</div>` : `<div style="margin-top:4px;font-size:11px;font-weight:700;color:#2e7d32;background:var(--green-light);padding:3px 8px;border-radius:2px;display:inline-block">✓ ATS SAFE</div>`}
+          <h2 style="margin:0">📄 ${isGeneric?'General Resume':'Resume'} — ${fmtLabel} Format</h2>
+          ${isExecutive ? `<div style="margin-top:4px;font-size:11px;font-weight:700;color:#e65100;background:#fff3e0;padding:3px 8px;border-radius:2px;display:inline-block">⚠️ VISUAL FORMAT — May not pass ATS screening. Use for networking, referrals, and direct applications.</div>` : `<div style="margin-top:4px;font-size:11px;font-weight:700;color:#2e7d32;background:var(--green-light);padding:3px 8px;border-radius:2px;display:inline-block">✓ ATS SAFE — Passes automated screening systems</div>`}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           ${state.ui.resumeEditing ? `
@@ -346,10 +274,9 @@ function renderResumeResult(result, fmt) {
                 <option value="">Select a section...</option>
                 <option value="PROFESSIONAL SUMMARY">Professional Summary</option>
                 <option value="CORE COMPETENCIES">Core Competencies</option>
-                <option value="WHAT SETS ME APART">What Sets Me Apart</option>
                 ${(result.resume.match(/=== ([^=]+) ===/g)||[])
                   .map(s=>s.replace(/===/g,'').trim())
-                  .filter(s=>!['PROFESSIONAL SUMMARY','CORE COMPETENCIES','WHAT SETS ME APART','EDUCATION','CERTIFICATIONS'].includes(s))
+                  .filter(s=>s!=='PROFESSIONAL SUMMARY'&&s!=='CORE COMPETENCIES'&&s!=='EDUCATION'&&s!=='CERTIFICATIONS')
                   .map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')}
                 <option value="EDUCATION">Education</option>
                 <option value="CERTIFICATIONS">Certifications</option>
@@ -368,7 +295,9 @@ function renderResumeResult(result, fmt) {
             ${state.ui.rewriteError?`<span style="font-size:12px;color:#dc2626">${esc(state.ui.rewriteError)}</span>`:''}
           </div>
         </div>
-      ` : `<p style="font-size:12px;color:var(--muted);margin:0 0 12px">Print / Save PDF → choose <strong>Save as PDF</strong> in the print dialog · Or click <strong>Edit</strong> to make changes first</p>`}
+      ` : `
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px">Print / Save PDF → choose <strong>Save as PDF</strong> in the print dialog · Or click <strong>Edit</strong> to make changes first</p>
+      `}
       <div class="resume-preview" id="resume-text-output"
         contenteditable="${state.ui.resumeEditing ? 'true' : 'false'}"
         style="font-family:${fmt==='federal'?'Georgia,serif':'Arial,sans-serif'};${fmt==='executive'?'border-left:4px solid #1a3a6b;padding-left:16px':''};${state.ui.resumeEditing?'outline:2px solid var(--accent);border-radius:2px;padding:12px;min-height:200px;':''}"
@@ -389,6 +318,9 @@ function renderResumeResult(result, fmt) {
           <button class="btn btn-primary btn-sm" onclick="downloadBio()">📥 Download .docx</button>
         </div>
       </div>
+      <div style="background:var(--gold-light);border:1px solid var(--gold);border-radius:2px;padding:8px 12px;font-size:12px;color:var(--accent);margin-bottom:10px">
+        💡 <strong>LinkedIn tip:</strong> Paste this into your LinkedIn "About" section. Then add 3–5 bullet points listing your key skills and clearance level.
+      </div>
       <div class="resume-preview" id="bio-text">${esc(result.bio)}</div>
     </div>` : ''}
 
@@ -402,160 +334,7 @@ function renderResumeResult(result, fmt) {
     </div>` : ''}`;
 }
 
-// ── Shared doctrine system prompt ────────────────────────────────────────
-// All tone variations inherit from this base, then add tone-specific rules
-function buildResumeSystemPrompt(toneLabel, resumeTone, userInstructions) {
-  const toneBlock = resumeTone === 'commercial' ? `COMMERCIAL / CONSUMER TONE:
-- Strip clearance from header and summary ENTIRELY — do not mention it
-- Rename ALL military positions to civilian equivalents, no exceptions
-- Eliminate ALL acronyms that aren't universally known (no MOS codes, no COCOM, no MAJCOM)
-- Lead with technology partnerships, team leadership, and P&L/budget management
-- Address the career transition DIRECTLY in the cover letter — don't hide it, own it
-- Frame military service as a strength, not something to explain away
-- The reader is a commercial HR manager or team lead with ZERO defense context
-- Do NOT mention combat, weapons, or kinetic operations in any form` :
-  resumeTone === 'prime' ? `PRIME CONTRACTOR / GOVERNMENT TONE:
-- Emphasize process rigor, compliance, structured execution, and program management
-- Use words like: directed, managed, executed, coordinated, ensured, delivered, maintained
-- Show discipline in scope, schedule, and cost management
-- Highlight certifications, clearances, and regulatory experience prominently
-- Frame leadership as authority, accountability, and organizational structure
-- The reader is a program manager, contracts officer, or senior director who values dependability
-- Use "common" not "standard" when describing federal source selection methodology
-- Timeline estimates (IOC, FOC) should be framed as "proposed, subject to engineering validation"` :
-  `STARTUP / GROWTH TONE:
-- Emphasize building from scratch, wearing many hats, doing more with less
-- Use words like: built, launched, pioneered, scaled, drove, created, shipped
-- Show bias for action, speed, and impact over process and compliance
-- Highlight versatility — times you operated outside your lane
-- Frame leadership as influence and outcomes, not authority and rank
-- The reader is a founder, VP, or team lead who values resourcefulness`;
-
-  return `You are an expert military-to-civilian resume translator. A civilian hiring manager reads this resume — they have zero military context. Your job is translating every military title, unit, and term into the corporate equivalent a recruiter would immediately recognize.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TONE SETTING — APPLY THIS TO EVERY WORD CHOICE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Target Company Type: ${toneLabel}
-
-${toneBlock}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-HARD RULES — APPLY WITHOUT EXCEPTION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- NO em dashes anywhere in the resume — use commas, semicolons, or rewrite the sentence
-- NO peer rankings — strip "#1/9 Lt Cols", "top 5 of 47", "ranked #1", etc. — translate the underlying achievement into impact instead
-- NO "top 1%" or "top X%" language for elite programs (Weapons School, Ranger School, SF selection, etc.) — describe what the program demonstrates, not the rarity of selection
-- Never fabricate capabilities or experience — distinguish direct from adjacent honestly
-- No awards or medals section — translate decorations into the impact they represent if relevant
-- Use "common" not "standard" when referencing federal source selection methodology
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TRANSLATION RULE #1 — RANK-TO-TITLE MAPPING
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Use the ROLE the person held (not just their rank) to determine the civilian title.
-
-COMMAND ROLES:
-  Flight/Company Commander     → Program Manager
-  Squadron/Battalion Commander → Division Manager
-  Group/Brigade Commander      → COO
-  Deputy Group/Brigade Cmdr    → VP (Vice President)
-  Wing/Division Commander      → CEO
-  Above Wing                   → President / Senior Executive
-
-DEPUTY / SECOND-IN-COMMAND:
-  Director of Operations (DO) at Squadron/Battalion level → Deputy Division Manager
-  Executive Officer (XO) at Squadron/Battalion level      → Chief of Staff
-  Executive Officer (XO) at Group/Brigade level           → Senior Operations Manager
-
-STAFF / FUNCTIONAL ROLES:
-  Chief of Stan/Eval              → Senior Quality Assurance Manager
-  Operations Officer (Navy)       → Senior Operations Manager
-  Chief Enlisted Manager          → Senior Operations Manager & Administrator
-  Flight Commander                → Program Manager
-  Intelligence Officer (S2/J2)   → Intelligence Director / Senior Intelligence Analyst
-  Logistics Officer (S4/J4)      → Director of Logistics / Supply Chain Manager
-  Personnel Officer (S1/J1)      → HR Director
-  Plans Officer / Planner        → Strategic Planning Manager
-  Communications Officer (S6)    → IT Director / Technology Manager
-  Finance Officer (S8)           → CFO / Finance Director
-  JAG Officer                    → General Counsel
-  PAO / Public Affairs Officer   → Communications Director / PR Manager
-
-INSTRUCTOR / ADVISOR ROLES:
-  Weapons Instructor              → Senior Tactics Instructor & Advisor
-  Instructor Pilot / IP           → Senior Flight Instructor
-  Technical Advisor               → Senior Technical Advisor / Subject Matter Expert
-
-CELL / SHOP / BRANCH CHIEFS:
-  "Chief, [Any] Plans Cell"       → "Director, [Function] Planning"
-  "Chief, Current Operations"     → "Director of Operations"
-  "NCOIC / OIC of [shop]"         → "Manager, [function]"
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TRANSLATION RULE #2 — UNIT SIZE = ORG SIZE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Flight / Company (~20-100 people)       = Team
-  Squadron / Battalion (~200-600 people)  = Division
-  Group / Brigade (~1,000-4,000 people)   = Vertical
-  Wing / Division (~5,000-15,000 people)  = Company
-  Corps / MAJCOM and above                = Enterprise
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TRANSLATION RULE #3 — EXPERIENCE TRANSLATION DICTIONARY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- "sorties" → "missions" or "flight operations"
-- "air tasking order / ATO" → "operational planning cycle"
-- "joint fires" → "coordinated joint operations"
-- "combat crews" → "flight crews"
-- "graduated [N] students" → "certified [N] professionals"
-- "OPORD / CONOP / TASKORD" → "operational plan"
-- "FOB / AOR / FARP" → omit or use "operational theater"
-- "OIC / NCOIC" → "program director" or "department manager"
-- "NCO / SNCO / E-7 through E-9" → "senior manager" or "team lead"
-- "Task Force" → "cross-functional team"
-- "expeditionary" → "deployed" or "forward-deployed"
-- "MAJCOM" → "major command" or omit
-- "C2 / command and control" → keep C2 for defense, spell out for commercial
-- "clearance / TS/SCI" → keep for defense/gov; omit for commercial tone
-- "Air Operations Center / AOC" → keep for defense; "enterprise operations center" for commercial
-- Nuclear experience → "highest-security environments in the DoD" or "nuclear operations requiring zero-defect execution"
-- Electronic warfare → "signals processing, data automation, and cybersecurity-adjacent operations"
-- Coalition operations → "international partnerships and interoperability"
-- Combat deployments → "high-pressure, time-critical decision-making in austere environments"
-- Weapons School graduate → "graduate-level advanced technology and tactics program" (never "top 1%")
-
-Strip ALL unit numbers. Keep branch + functional description only.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-MANDATORY: "WHAT SETS ME APART" SECTION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Every tailored resume MUST include a "What Sets Me Apart" section.
-- 3-4 sentences maximum. Narrative prose, NOT bullets.
-- Must reference something specific to THIS company or THIS role.
-- Must name at least one concrete differentiator (clearance, rare experience, specific skill combination).
-- NEVER use: "passionate", "results-driven", "team player", "hard worker".
-- Appears AFTER Core Competencies, BEFORE Professional Experience.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TWO-PAGE RULES (absolute)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Max 20 bullets total. Count them.
-- Max 15 words per bullet.
-- Summary: 2-3 sentences.
-- Core Competencies: one comma-separated line.
-- No awards or medals section.
-- Combine or omit roles pre-2010.
-- Return ONLY the resume. No preamble or commentary.
-
-FORBIDDEN WORDS (never use): "results-driven", "proven track record", "dynamic", "synergistic", "leveraged", "passionate about", "detail-oriented", "spearheaded", "orchestrated", "facilitated", "championed", "stakeholders", "deliverables", "utilize", "impactful", "value-add", "bandwidth", "robust", "scalable", "mission-critical", "best practices", "thought leader"
-
-USER INSTRUCTIONS (follow exactly): ${userInstructions || 'None'}
-
-FINAL CHECK: Every bullet has a strong opening verb and one metric. Zero unexplained military acronyms. Zero em dashes. Zero peer rankings. Zero "top X%" language.`;
-}
-
-// ── Print / PDF layouts ───────────────────────────────────────────────
+// ── Print / PDF — three distinct visual layouts ───────────────────────
 function printResume() {
   const text = state.ui.resumeResult?.resume || document.getElementById('resume-text-output')?.innerText || '';
   const fmt = state.ui.resumeFmt || 'professional';
@@ -619,7 +398,8 @@ function printResume() {
     .role-meta::before { content: "· "; color: #b8860b; }
     .bullet { padding-left: 12pt; text-indent: -12pt; margin: 2pt 0; font-size: 10pt; }
     .bullet::before { content: "▪ "; color: #1a3a6b; }
-    .prose { margin: 3pt 0; font-size: 10pt; }`;
+    .prose { margin: 3pt 0; font-size: 10pt; }
+    @media print { body { margin: 0; } }`;
 
   const federalStyles = `
     @page { margin: 1in; size: letter; }
@@ -634,7 +414,8 @@ function printResume() {
     .role-meta::before { content: " | "; }
     .bullet { padding-left: 14pt; text-indent: -14pt; margin: 3pt 0; font-size: 10.5pt; }
     .bullet::before { content: "• "; }
-    .prose { margin: 3pt 0; font-size: 10.5pt; }`;
+    .prose { margin: 3pt 0; font-size: 10.5pt; }
+    @media print { body { margin: 0; } }`;
 
   const executiveStyles = `
     @page { margin: 0; size: letter; }
@@ -652,7 +433,8 @@ function printResume() {
     .role-meta::before { content: "· "; color: #b8860b; font-weight: 700; }
     .bullet { padding-left: 12pt; text-indent: -12pt; margin: 2pt 0; font-size: 9.5pt; color: #222; }
     .bullet::before { content: "▸ "; color: #b8860b; font-weight: 700; }
-    .prose { margin: 3pt 0; font-size: 10pt; }`;
+    .prose { margin: 3pt 0; font-size: 10pt; }
+    @media print { body { margin: 0; } }`;
 
   const styles = fmt === 'federal' ? federalStyles : fmt === 'executive' ? executiveStyles : professionalStyles;
 
@@ -669,8 +451,9 @@ function printResume() {
     <div class="contact-rest">${contactRest.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>`;
 
   const bodyClose = fmt === 'executive' ? '</div>' : '';
+  const atsWarning = fmt === 'executive' ? `<div style="background:#fff3e0;border:1pt solid #ff9800;padding:6pt 10pt;margin-bottom:14pt;font-size:8.5pt;color:#e65100;font-weight:bold">⚠ VISUAL FORMAT: This resume is optimized for human readers, not automated ATS screening systems.</div>` : '';
 
-  w.document.write(`<!DOCTYPE html><html><head><title>${contactName} — Resume</title><style>${styles}</style></head><body>${headerHtml}${sectionsHtml}${bodyClose}</body></html>`);
+  w.document.write(`<!DOCTYPE html><html><head><title>${contactName} — Resume</title><style>${styles}</style></head><body>${headerHtml}${atsWarning}${sectionsHtml}${bodyClose}</body></html>`);
   w.document.close();
   setTimeout(() => { w.focus(); w.print(); }, 600);
 }
@@ -680,57 +463,23 @@ async function rewriteSection() {
   const sectionName = document.getElementById('rewrite-section')?.value;
   const instruction = document.getElementById('rewrite-instruction')?.value?.trim() || '';
   if (!sectionName) { showToast('Please select a section', false); return; }
-
   const resume = state.ui.resumeResult?.resume || '';
   if (!resume) { showToast('No resume found', false); return; }
-
   const sectionRegex = new RegExp(`(=== ${sectionName} ===)([\\s\\S]*?)(?====|$)`, 'i');
   const match = resume.match(sectionRegex);
-  const sectionContent = match ? match[0] : '';
-
-  if (!sectionContent) {
-    setState({ ui: { ...state.ui, rewriteError: `Could not find "${sectionName}" section` } });
-    return;
-  }
-
+  const plainRegex = new RegExp(`(^${sectionName}$)([\\s\\S]*?)(?=^[A-Z ]{4,}$|$)`, 'im');
+  const plainMatch = !match ? resume.match(plainRegex) : null;
+  const sectionContent = match ? match[0] : plainMatch ? plainMatch[0] : '';
+  if (!sectionContent) { setState({ ui: { ...state.ui, rewriteError: `Could not find "${sectionName}" section in your resume` } }); return; }
   setState({ ui: { ...state.ui, rewriteBusy: true, rewriteError: '' } });
-
   try {
     const job = state.jobs?.find(j => j.id === state.ui.resumeJob);
     const jobContext = job ? `Target job: ${job.title} at ${job.company}. Job description: ${job.description || 'not provided'}.` : '';
-
-    const prompt = `You are rewriting ONE section of a veteran's resume.
-
-FULL RESUME FOR CONTEXT:
-${resume}
-
-SECTION TO REWRITE: === ${sectionName} ===
-${sectionContent}
-
-${jobContext}
-${instruction ? `SPECIFIC INSTRUCTION: ${instruction}` : ''}
-
-RULES:
-- Rewrite ONLY the "${sectionName}" section
-- Keep the exact same === ${sectionName} === header format
-- Match the style and tone of the rest of the resume
-- Keep bullets under 15 words with at least one metric each
-- No em dashes. No peer rankings. No "top X%" language.
-- Return ONLY the rewritten section, nothing else, no commentary`;
-
-    const rewritten = await callClaude(
-      'You are an expert resume writer specializing in military-to-civilian transitions. Return only the rewritten section, no preamble.',
-      prompt, 'resume'
-    );
-
-    const newResume = match ? resume.replace(sectionRegex, rewritten.trim()) : resume + '\n\n' + rewritten.trim();
-
-    setState({ ui: {
-      ...state.ui, rewriteBusy: false, resumeRewriteOpen: false, rewriteError: '',
-      resumeResult: { ...state.ui.resumeResult, resume: newResume }
-    }});
+    const prompt = `You are rewriting ONE section of a veteran's resume.\n\nFULL RESUME FOR CONTEXT:\n${resume}\n\nSECTION TO REWRITE: === ${sectionName} ===\n${sectionContent}\n\n${jobContext}\n${instruction ? `SPECIFIC INSTRUCTION: ${instruction}` : ''}\n\nRULES:\n- Rewrite ONLY the "${sectionName}" section\n- Keep the exact same === ${sectionName} === header format\n- Match the style and tone of the rest of the resume\n- Keep bullets under 15 words with at least one metric each\n- Return ONLY the rewritten section, nothing else, no commentary`;
+    const rewritten = await callClaude('You are an expert resume writer specializing in military-to-civilian transitions. Return only the rewritten section, no preamble.', prompt, 'resume');
+    const newResume = match ? resume.replace(sectionRegex, rewritten.trim()) : plainMatch ? resume.replace(plainRegex, rewritten.trim()) : resume + '\n\n' + rewritten.trim();
+    setState({ ui: { ...state.ui, rewriteBusy: false, resumeRewriteOpen: false, rewriteError: '', resumeResult: { ...state.ui.resumeResult, resume: newResume } }});
     showToast(`✅ ${sectionName} rewritten successfully`);
-
   } catch(err) {
     setState({ ui: { ...state.ui, rewriteBusy: false, rewriteError: 'Error: ' + err.message } });
   }
@@ -760,273 +509,78 @@ function cancelResumeEdit() {
   setState({ ui: { ...state.ui, resumeEditing: false, resumeEditOriginal: null, resumeResult: original ? { ...state.ui.resumeResult, resume: original } : state.ui.resumeResult }});
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────
-function buildResumeContext(job) {
-  const p = state.profile;
-  const cap = (t, max) => !t ? '' : t.length > max ? t.slice(0, max) + '...' : t;
-
-  const assignmentText = state.assignments.map(a => {
-    let text = `MILITARY: ${a.dutyTitle}${a.rank?' ('+a.rank+')':''} | ${a.unit||''} | ${a.startDate||'?'}-${a.endDate||'Present'}`;
-    if (a.accomplishments) text += `\n${cap(a.accomplishments, 500)}`;
-    if ((a.roles||[]).length > 0) {
-      a.roles.slice(0,2).forEach(r => {
-        text += `\n  Role: ${r.title}`;
-        if (r.accomplishments) text += ` — ${cap(r.accomplishments, 150)}`;
-      });
-    }
-    return text;
-  }).join('\n---\n');
-
-  const civText = state.civilianJobs.map(j =>
-    `CIVILIAN: ${j.title} at ${j.company} | ${j.startDate||'?'}-${j.endDate||'Present'}\n${cap(j.accomplishments, 500)}`
-  ).join('\n---\n');
-
-  const awards = state.awards.map(a => a.name).join(', ');
-  const docs = state.documents.map(d=>`[${d.type}] ${d.name}:\n${(d.content||'').slice(0,300)}`).join('\n---\n');
-
-  return `VETERAN CONTACT INFO:
-Full Name: ${p.fullName||'[Name not set]'}
-Phone: ${p.phone||'[Phone not set]'}
-Email: ${p.email||'[Email not set]'}
-LinkedIn: ${p.linkedin||''}
-City/State: ${p.location||'[Location not set]'}
-
-VETERAN BACKGROUND:
-Branch: ${p.branch||'N/A'} | Rank: ${p.rank||'N/A'} | Years of Service: ${p.yearsOfService||'N/A'}
-MOS/Rate: ${p.mosRate||'N/A'} | Clearance: ${p.clearance||'None'} (${p.clearanceStatus||'N/A'})
-Work Preference: ${p.workPreference||'N/A'} | Willing to Relocate: ${p.willingToRelocate||'N/A'}
-Technical Skills: ${(p.technicalSkills||[]).join(', ')||'None'}
-Leadership/Soft Skills: ${(p.softSkills||[]).join(', ')||'None'}
-Education: ${p.education||'N/A'}
-Certifications: ${p.certifications||'N/A'}
-Training & Methodologies: ${p.training||'N/A'}
-Professional Summary: ${p.elevatorPitch||'Not written'}
-Target Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?(i.subType?i.name+' ('+i.subType+')':i.name):i).join(', ')||'Not specified'}
-
-EXPERIENCE:
-${assignmentText||'None'}
-${civText?'\n---\n'+civText:''}
-
-AWARDS:
-${awards||'None'}
-
-PERFORMANCE DOCUMENTS:
-${docs||'None'}
-
-TARGET JOB:
-Title: ${job.title}
-Company: ${job.company}
-Location: ${job.location||'N/A'}
-Salary: ${job.salaryRange||'N/A'}
-Job Notes / Requirements: ${job.notes||'None'}`;
-}
-
-// ── Generate Tailored Resume ──────────────────────────────────────────
 async function generateResume() {
   const selJob = state.ui.resumeJob;
   if (!selJob) { alert('Select a job first'); return; }
-  if (!state.profile?.fullName) { alert('Complete your profile first'); return; }
+  if (!state.profile?.fullName) { alert('Complete your profile first (add your name in Profile)'); return; }
   const job = state.jobs.find(j=>j.id===selJob);
-
   const instrEl = document.getElementById('resume-instructions');
   if (instrEl) toggleUI('resumeInstructions', instrEl.value);
-
   const setStatus = (s) => setState({ ui:{...state.ui, resumeBusy:true, resumeStatus:s, resumeError:'', resumeResult:null} });
   const context = buildResumeContext(job);
-
   try {
     setStatus('✍️ Writing tailored resume...');
     const p = { ...state.profile };
-    ['fullName','email','phone','location','linkedin'].forEach(f => {
-      const el = document.getElementById('p-'+f); if(el && el.value) p[f] = el.value;
-    });
-
-    // Use preferred application email if set
-    const applicationEmail = (state.ui.resumeEmail||'').trim() || p.email || '';
-
+    ['fullName','email','phone','location','linkedin'].forEach(f => { const el = document.getElementById('p-'+f); if(el && el.value) p[f] = el.value; });
     const normalizeVetName = (raw) => {
       if (!raw) return '[Name]';
       const commaMatch = raw.match(/^([^,]+),\s*(.+)$/);
-      if (commaMatch) {
-        const last = commaMatch[1].trim();
-        const rest = commaMatch[2].trim().split(/\s+/);
-        const first = rest[0];
-        return `${first} ${last}`.replace(/\b\w/g, c => c.toUpperCase()).replace(/\b\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-      }
+      if (commaMatch) { const last = commaMatch[1].trim(); const first = commaMatch[2].trim().split(/\s+/)[0]; return `${first} ${last}`.replace(/\b\w/g, c => c.toUpperCase()).replace(/\b\w+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()); }
       if (raw === raw.toUpperCase()) return raw.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
       return raw;
     };
     const displayName = normalizeVetName(p.fullName);
-
-    const contactBlock = [
-      displayName,
-      [p.phone, applicationEmail].filter(Boolean).join(' | '),
-      p.linkedin ? p.linkedin.replace(/^https?:\/\//,'') : '',
-      p.location || ''
-    ].filter(Boolean).join('\n');
-
+    const contactBlock = [displayName, [p.phone, p.email].filter(Boolean).join(' | '), p.linkedin ? p.linkedin.replace(/^https?:\/\//,'') : '', p.location || ''].filter(Boolean).join('\n');
     const userInstructions = state.ui.resumeInstructions?.trim() || '';
     const resumeTone = state.ui.resumeTone || 'startup';
-    const toneLabelMap = { startup: 'Startup / Growth Company', prime: 'Prime Contractor / Government', commercial: 'Commercial / Consumer' };
-    const toneLabel = toneLabelMap[resumeTone] || 'Startup / Growth Company';
+    const toneLabel = resumeTone === 'prime' ? 'Prime Contractor / Government' : 'Startup / Growth Company';
 
-    const resumeSystemPrompt = buildResumeSystemPrompt(toneLabel, resumeTone, userInstructions);
-    const identityFrame = state.profile.identityFrame?.trim() || '';
-
-    const resumeUserPrompt = `Write a tailored 2-page resume for this veteran.
-
-${context}
-${identityFrame ? `VETERAN IDENTITY FRAME — anchor the summary and differentiator to this: ${identityFrame}` : ''}
+    const resumeSystemPrompt = `You are an expert military-to-civilian resume translator. A civilian hiring manager reads this resume — they have zero military context. Your job is translating every military title, unit, and term into the corporate equivalent a Fortune 500 recruiter would immediately recognize. Secondary job: keep it to 2 pages.
 
 TONE: ${toneLabel}
+${resumeTone === 'startup' ? `Emphasize building from scratch, wearing many hats, bias for action. Use: built, launched, pioneered, scaled, drove. The reader is a founder or VP who values resourcefulness.` : `Emphasize process rigor, compliance, structured execution. Use: directed, managed, executed, coordinated, ensured. The reader is a program manager or senior director who values dependability.`}
 
-START with this contact block verbatim (use this email, not the master profile email):
-${contactBlock}
+RANK-TO-TITLE: Flight/Company Cmdr→Program Manager · Squadron Cmdr→Division Manager · Group Cmdr→COO · Wing Cmdr→CEO · DO→Deputy Division Manager · XO→Chief of Staff · Stan/Eval→Sr QA Manager · Weapons Instructor→Sr Tactics Instructor · Strip ALL unit numbers.
 
-SECTIONS — use EXACTLY === SECTION NAME === format:
+JARGON: sorties→missions · ATO→operational planning cycle · joint fires→coordinated operations · ISR→intelligence surveillance reconnaissance · OIC/NCOIC→program director/department manager · expeditionary→deployed · Keep TS/SCI and C2 as-is.
 
-=== PROFESSIONAL SUMMARY ===
-2-3 sentences. Lead with civilian value proposition. NOT rank or branch opener.
+MANDATORY "WHAT SETS ME APART" SECTION: 3-4 sentences prose, after Core Competencies, before Experience. Company-specific. No buzzwords.
 
-=== CORE COMPETENCIES ===
-Single comma-separated line. Business language only.
+TWO-PAGE RULES: Max 20 bullets · 15 words per bullet · 2-3 sentence summary · No awards section · Return ONLY the resume.
 
-=== WHAT SETS ME APART ===
-3-4 sentences narrative prose. No bullets. Make a hiring manager stop scrolling.
-MANDATORY — do not skip this section.
+USER INSTRUCTIONS: ${userInstructions || 'None'}`;
 
-=== PROFESSIONAL EXPERIENCE ===
-Per role: **Title** | Org | Location | Years
-Then max 3 bullets, each under 15 words with one metric.
-
-=== EDUCATION ===
-=== CERTIFICATIONS ===
-
-FINAL CHECK: Count your bullets. If more than 20, delete the weakest ones. Zero em dashes. Zero peer rankings.`;
+    const identityFrame = state.profile.identityFrame?.trim() || '';
+    const resumeUserPrompt = `Write a tailored 2-page resume.\n\n${context}\n${identityFrame ? `IDENTITY FRAME: ${identityFrame}` : ''}\n\nTONE: ${toneLabel}\n\nSTART with this contact block verbatim:\n${contactBlock}\n\nSECTIONS (use === SECTION NAME === format):\n=== PROFESSIONAL SUMMARY ===\n=== CORE COMPETENCIES ===\n=== WHAT SETS ME APART ===\n=== PROFESSIONAL EXPERIENCE ===\n=== EDUCATION ===\n=== CERTIFICATIONS ===`;
 
     const resume = await callClaude(resumeSystemPrompt, resumeUserPrompt);
-
     const bulletCount = (resume.match(/^[•\-·]/gm) || []).length;
     let finalResume = resume;
     if (bulletCount > 25) {
       setStatus('✂️ Trimming to 2 pages...');
-      finalResume = await callClaude(
-        'You are a resume editor. Trim this resume to 2 pages. Keep the === section structure. Cut bullets — 3 per role max, 15 words per bullet max. No em dashes. Return ONLY the trimmed resume.',
-        `Trim to 2 pages (max 22 bullets total):\n\n${resume}`
-      );
+      finalResume = await callClaude('Trim this resume to 2 pages. Max 22 bullets. Keep === section structure. Return ONLY the trimmed resume.', `Trim:\n\n${resume}`);
     }
 
     setStatus('✉️ Writing cover letter...');
-
-    // Determine signature block credentials based on tone
-    const credentialsLine = resumeTone === 'commercial'
-      ? [p.certifications ? p.certifications.split(',')[0].trim() : '', p.education ? p.education.split(',')[0].trim() : ''].filter(Boolean).join(' | ')
-      : [p.clearance && p.clearance !== 'None' ? p.clearance : '', p.certifications ? p.certifications.split(',')[0].trim() : ''].filter(Boolean).join(' | ');
-
     const coverLetter = await callClaude(
-      `You are a career coach who writes cover letters that actually get read. Three-section structure, confident, specific, human.
-
-COVER LETTER DOCTRINE:
-
-SECTION 1 — WHY THIS ROLE:
-Show you understand what this company is actually trying to accomplish. Lead with your biggest relevant strength in sentence 1. Never open with "I am applying for..."
-
-SECTION 2 — WHY ME:
-Three concrete differentiators — specific, numbered, verifiable. Be honest about direct vs. adjacent experience — if a skill is adjacent, frame it from the integration/requirements/business side, not as hands-on experience.
-
-SECTION 3 — WHY THIS COMPANY:
-Reference something specific about the company. Close with confidence.
-
-SIGNATURE BLOCK FORMAT (always end with this exact structure):
-[Full name, bold if format supports it]
-[Key credentials relevant to THIS role — for commercial: title/certs/education; for defense: clearance/program credentials. Drop anything not relevant to this specific role.]
-[Phone]
-[Email — use the application email, not master profile email]
-
-TONE: ${toneLabel}
-${resumeTone === 'commercial' ? 'Address the military-to-civilian transition directly in Section 1. Own it as a strength.' : ''}
-
-HARD RULES:
-- Under 400 words total
-- Never: "passionate", "great fit", "Please find attached", "Thank you for your consideration", "results-driven", "team player"
-- Plain text paragraphs only`,
-
-      `Write a tailored cover letter using WHY THIS ROLE / WHY ME / WHY THIS COMPANY.
-
-[TODAY'S DATE]
-
-Hiring Manager
-${job?.company || 'Hiring Team'}
-${job?.location || ''}
-
-Re: ${job?.title || 'Open Position'}
-
-[SECTION 1 — WHY THIS ROLE]
-
-[SECTION 2 — WHY ME]
-
-[SECTION 3 — WHY THIS COMPANY]
-
-Sincerely,
-
-${displayName}
-${credentialsLine}
-${p.phone || ''}
-${applicationEmail}
-
----
-VETERAN BACKGROUND:
-${context}
-${identityFrame ? 'IDENTITY FRAME: ' + identityFrame : ''}
-
-Use today's date. No commentary.`
+      `Career coach writing cover letters that get read. Three-section structure. Confident, specific, human. TONE: ${toneLabel}. Under 400 words. Never: "passionate", "great fit", "Please find attached", "results-driven". Plain text only.`,
+      `Write cover letter using WHY THIS ROLE / WHY ME / WHY THIS COMPANY.\n\n[TODAY'S DATE]\n\nHiring Manager\n${job?.company||'Hiring Team'}\n${job?.location||''}\n\nRe: ${job?.title||'Open Position'}\n\n[WHY THIS ROLE]\n[WHY ME]\n[WHY THIS COMPANY]\n\nSincerely,\n${displayName}\n${p.phone||''}\n${p.email||''}\n\n---\nVETERAN BACKGROUND:\n${context}\n${identityFrame?'IDENTITY FRAME: '+identityFrame:''}`
     );
 
     setStatus('🔍 Analyzing fit...');
     const atsRaw = await callClaude(
-      `You are a senior hiring manager and veteran career specialist who deeply understands military-to-civilian transitions. Score based on DEMONSTRATED CAPABILITY, not keyword matching alone. Security clearances are a SIGNIFICANT positive differentiator. NEVER score a veteran below 55 purely because of keyword gaps.`,
-      `Evaluate this MILITARY VETERAN's resume for a civilian job.
-
-RESUME:
-${resume}
-
-TARGET JOB: ${job.title} at ${job.company}
-Job Notes/Requirements: ${job.notes || 'Not provided'}
-
-VETERAN BACKGROUND:
-Branch: ${state.profile.branch||'N/A'} | Rank: ${state.profile.rank||'N/A'} | Years: ${state.profile.yearsOfService||'N/A'}
-Clearance: ${state.profile.clearance||'None'} (${state.profile.clearanceStatus||'N/A'})
-
-Return ONLY this JSON (no markdown):
-{
-  "score": <0-100>,
-  "grade": "A/B/C/D/F",
-  "summary": "One plain-English sentence on overall fit",
-  "transferable_strengths": ["3-5 specific military-to-civilian translations"],
-  "strengths": ["3-4 resume strengths"],
-  "gaps": ["2-4 genuine gaps"],
-  "keywords_missing": ["5-8 keywords from job not in resume"],
-  "keywords_found": ["5-8 important keywords present"],
-  "clearance_value": "Brief note on clearance value for this role, or empty string",
-  "coaching_tip": "One specific actionable tip"
-}`
+      'Senior hiring manager evaluating military veteran resumes. Score based on DEMONSTRATED CAPABILITY not keyword matching. Clearances are a SIGNIFICANT differentiator. Never score below 55 for keyword gaps alone.',
+      `Evaluate this veteran resume for the target job.\n\nRESUME:\n${resume}\n\nTARGET JOB: ${job.title} at ${job.company}\nNotes: ${job.notes||'Not provided'}\n\nVETERAN: Branch: ${state.profile.branch||'N/A'} | Rank: ${state.profile.rank||'N/A'} | Years: ${state.profile.yearsOfService||'N/A'} | Clearance: ${state.profile.clearance||'None'}\n\nReturn ONLY JSON:\n{"score":<0-100>,"grade":"A/B/C/D/F","summary":"one sentence","transferable_strengths":["3-5 items"],"strengths":["3-4"],"gaps":["2-4"],"keywords_missing":["5-8"],"keywords_found":["5-8"],"clearance_value":"brief note or empty","coaching_tip":"one actionable tip"}`
     );
-
     let ats = { score:75, grade:'B', summary:'Good transferable match.', transferable_strengths:[], strengths:[], gaps:[], keywords_missing:[], keywords_found:[], clearance_value:'', coaching_tip:'' };
     try { ats = JSON.parse(atsRaw.replace(/```json|```/g,'').trim()); } catch(e) {}
-
     if (typeof trackAction==='function') trackAction('resume_generate');
 
     const jobId = state.ui.resumeJob;
     if (jobId) {
-      const version = {
-        id: Date.now().toString(),
-        date: new Date().toISOString(),
-        label: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}),
-        resume: finalResume, coverLetter, ats, fmt: state.ui.resumeFmt || 'professional'
-      };
-      const updatedJobs = state.jobs.map(j => j.id === jobId ? { ...j, resumeVersions: [...(j.resumeVersions||[]), version] } : j);
-      setState({ jobs: updatedJobs, ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume:finalResume,coverLetter,ats}, resumeModal:true} });
+      const version = { id:Date.now().toString(), date:new Date().toISOString(), label:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}), resume:finalResume, coverLetter, ats, fmt:state.ui.resumeFmt||'professional' };
+      const updatedJobs = state.jobs.map(j => j.id===jobId ? {...j, resumeVersions:[...(j.resumeVersions||[]),version]} : j);
+      setState({ jobs:updatedJobs, ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume:finalResume,coverLetter,ats}, resumeModal:true} });
     } else {
       setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume:finalResume,coverLetter,ats}, resumeModal:true} });
     }
@@ -1035,282 +589,66 @@ Return ONLY this JSON (no markdown):
   }
 }
 
-// ── Generate Networking Resume ────────────────────────────────────────
-async function generateNetworkingResume() {
-  if (!state.profile?.fullName) { alert('Complete your profile first'); return; }
-
-  const company  = (state.ui.networkingCompany||'').trim();
-  const role     = (state.ui.networkingRole||'').trim();
-  const contact  = (state.ui.networkingContact||'').trim();
-  const instrEl  = document.getElementById('resume-instructions');
-  if (instrEl) toggleUI('resumeInstructions', instrEl.value);
-  const userInstructions = state.ui.resumeInstructions?.trim() || '';
-
-  if (!company) { showToast('Enter a company name first', false); return; }
-
-  const setStatus = (s) => setState({ ui:{...state.ui, resumeBusy:true, resumeStatus:s, resumeError:'', resumeResult:null} });
-  setStatus('✍️ Writing networking resume...');
-
-  try {
-    const p = { ...state.profile };
-    const applicationEmail = (state.ui.resumeEmail||'').trim() || p.email || '';
-
-    const normalizeVetName = (raw) => {
-      if (!raw) return '[Name]';
-      const commaMatch = raw.match(/^([^,]+),\s*(.+)$/);
-      if (commaMatch) {
-        const last = commaMatch[1].trim();
-        const first = commaMatch[2].trim().split(/\s+/)[0];
-        return `${first} ${last}`.replace(/\b\w/g, c => c.toUpperCase());
-      }
-      if (raw === raw.toUpperCase()) return raw.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-      return raw;
-    };
-    const displayName = normalizeVetName(p.fullName);
-
-    const contactBlock = [
-      displayName,
-      [p.phone, applicationEmail].filter(Boolean).join(' | '),
-      p.linkedin ? p.linkedin.replace(/^https?:\/\//,'') : '',
-      p.location || ''
-    ].filter(Boolean).join('\n');
-
-    const resumeTone = state.ui.resumeTone || 'prime';
-    const toneLabelMap = { startup: 'Startup / Growth Company', prime: 'Defense / Prime Contractor', commercial: 'Commercial / Consumer' };
-    const toneLabel = toneLabelMap[resumeTone] || 'Defense / Prime Contractor';
-
-    const exp = [...state.assignments.map(a => {
-      return `MILITARY: ${a.dutyTitle}${a.rank?' ('+a.rank+')':''} | ${a.unit||''} | ${a.startDate||'?'}-${a.endDate||'Present'}\n${(a.accomplishments||'').slice(0,400)}`;
-    }), ...state.civilianJobs.map(j => `CIVILIAN: ${j.title} at ${j.company} | ${j.startDate||'?'}-${j.endDate||'Present'}\n${(j.accomplishments||'').slice(0,300)}`)].join('\n---\n');
-
-    const systemPrompt = buildResumeSystemPrompt(toneLabel, resumeTone, userInstructions);
-
-    const userPrompt = `Write a networking resume for this veteran. This is NOT a formal application — frame it as "here's what I bring," not "I'm applying for posting #12345."
-
-VETERAN BACKGROUND:
-Name: ${p.fullName} | Branch: ${p.branch} | Rank: ${p.rank} | Years: ${p.yearsOfService}
-MOS/Rate: ${p.mosRate||'N/A'} | Clearance: ${p.clearance||'None'} (${p.clearanceStatus||'N/A'})
-Technical Skills: ${(p.technicalSkills||[]).join(', ')||'None'}
-Education: ${p.education||'N/A'} | Certs: ${p.certifications||'N/A'}
-Target Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?i.name:i).join(', ')||'N/A'}
-
-EXPERIENCE:
-${exp||'None'}
-
-TARGET COMPANY: ${company}
-${role ? `FUNCTION OF INTEREST: ${role}` : ''}
-${contact ? `MEETING WITH: ${contact} — align framing to this person's context` : ''}
-
-TONE: ${toneLabel}
-
-NETWORKING RESUME RULES (different from job applications):
-- No cover letter will be generated — this is resume only
-- Frame the summary as "here's what I bring to ${company}" not "I'm seeking a position as..."
-- Tailor to the company's known mission and products, not a specific job description
-- Emphasize BREADTH of experience — show range and versatility over depth in one area
-- Show comfort with ambiguity, small-team success, and wearing multiple hats
-- The "What Sets Me Apart" section should reference ${company} specifically
-- If meeting with ${contact||'a specific person'}, align the framing to what THEY care about
-
-START with this contact block verbatim:
-${contactBlock}
-
-SECTIONS — use EXACTLY === SECTION NAME === format:
-
-=== PROFESSIONAL SUMMARY ===
-2-3 sentences. "Here's what I bring to ${company}." Not a job-seeking statement.
-
-=== CORE COMPETENCIES ===
-Single comma-separated line.
-
-=== WHAT SETS ME APART ===
-3-4 sentences prose. Reference ${company} specifically.
-
-=== PROFESSIONAL EXPERIENCE ===
-Per role: **Title** | Org | Location | Years
-Max 3 bullets per role, 15 words each, one metric each.
-
-=== EDUCATION ===
-=== CERTIFICATIONS ===
-
-FINAL CHECK: No em dashes. No peer rankings. No "top X%" language. Under 2 pages.`;
-
-    const resume = await callClaude(systemPrompt, userPrompt);
-
-    if (typeof trackAction==='function') trackAction('resume_generate');
-    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume, isNetworking:true}, resumeModal:true} });
-
-  } catch(err) {
-    setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'.'} });
-  }
-}
-
-// ── Generate General Resume ───────────────────────────────────────────
 async function generateGenericResume() {
-  if (!state.profile?.fullName) { alert('Complete your profile first'); return; }
+  if (!state.profile?.fullName) { alert('Complete your profile first (at least your name and branch)'); return; }
   const focus = document.getElementById('generic-focus')?.value?.trim() || '';
   toggleUI('genericFocus', focus);
-
   const setStatus = (s) => setState({ ui:{...state.ui, resumeBusy:true, resumeStatus:s, resumeError:'', resumeResult:null} });
-
   const p = state.profile;
-  const applicationEmail = (state.ui.resumeEmail||'').trim() || p.email || '';
-  const exp = [...state.assignments.map(a => {
-    let t = `MILITARY: ${a.dutyTitle}${a.rank?' ('+a.rank+')':''} | ${a.unit||''} | ${a.startDate||'?'}-${a.endDate||'Present'}\nAccomplishments:\n${a.accomplishments||'None'}`;
-    if ((a.roles||[]).length>0) { t += '\nAdditional roles: ' + a.roles.map(r=>`${r.title}${r.rank?' ('+r.rank+')':''}${r.accomplishments?': '+r.accomplishments.slice(0,100):''}`).join(' | '); }
-    return t;
-  }), ...state.civilianJobs.map(j=>`CIVILIAN: ${j.title} at ${j.company} | ${j.startDate||'?'}-${j.endDate||'Present'}\nAccomplishments:\n${j.accomplishments||'None'}`)].join('\n---\n');
+  const exp = [...state.assignments.map(a => { let t = `MILITARY: ${a.dutyTitle}${a.rank?' ('+a.rank+')':''} | ${a.unit||''} | ${a.base||''} | ${a.startDate||'?'}-${a.endDate||'Present'}\nAccomplishments:\n${a.accomplishments||'None'}`; if ((a.roles||[]).length>0) { t += '\nAdditional roles: ' + a.roles.map(r=>`${r.title}${r.rank?' ('+r.rank+')':''}${r.accomplishments?': '+r.accomplishments.slice(0,100):''}`).join(' | '); } return t; }), ...state.civilianJobs.map(j=>`CIVILIAN: ${j.title} at ${j.company} | ${j.startDate||'?'}-${j.endDate||'Present'}\nAccomplishments:\n${j.accomplishments||'None'}`)].join('\n---\n');
   const awards = state.awards.map(a=>`${a.name}${a.civilianTranslation?' — '+a.civilianTranslation:''}`).join('\n');
-
-  const context = `VETERAN PROFILE:
-Name: ${p.fullName} | Phone: ${p.phone||'N/A'} | Email: ${applicationEmail} | LinkedIn: ${p.linkedin||'N/A'} | Location: ${p.location||'N/A'}
-Branch: ${p.branch} | Rank: ${p.rank} | Years of Service: ${p.yearsOfService}
-MOS/Rate: ${p.mosRate||'N/A'} | Security Clearance: ${p.clearance||'None'} (${p.clearanceStatus||'N/A'})
-Technical Skills: ${(p.technicalSkills||[]).join(', ')||'None'}
-Education: ${p.education||'N/A'} | Certifications: ${p.certifications||'N/A'}
-Target Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?(i.subType?i.name+' ('+i.subType+')':i.name):i).join(', ')||'Not specified'}
-
-EXPERIENCE:
-${exp||'None'}
-
-AWARDS:
-${awards||'None'}
-
-${focus?`FOCUS AREAS: ${focus}`:'NO SPECIFIC FOCUS — write a broad, versatile general resume'}`;
-
-  const systemPrompt = `You are a former military officer turned senior resume writer. Your resumes sound like a real person wrote them — not a bot.
-
-HARD RULES:
-- NO em dashes anywhere
-- NO peer rankings ("#1/9 Lt Cols", "top 5 of 47", etc.) — translate to impact
-- NO "top 1%" language for any elite program
-- Translate ALL military jargon to civilian equivalents
-- Nuclear experience → "highest-security environments in the DoD"
-- Electronic warfare → "signals processing, data automation, and cybersecurity-adjacent operations"
-- Coalition operations → "international partnerships and interoperability"
-- Every bullet needs a number. Vary length and structure.
-- Professional summary: first person, start with accomplishment or context, 2-3 sentences max.
-
-FORBIDDEN WORDS: "results-driven", "proven track record", "dynamic", "synergistic", "leveraged", "passionate about", "detail-oriented", "spearheaded", "orchestrated", "facilitated", "championed", "stakeholders", "deliverables", "utilize", "impactful", "value-add", "robust", "scalable", "mission-critical", "best practices"`;
-
+  const context = `VETERAN PROFILE:\nName: ${p.fullName} | Phone: ${p.phone||'N/A'} | Email: ${p.email||'N/A'} | LinkedIn: ${p.linkedin||'N/A'} | Location: ${p.location||'N/A'}\nBranch: ${p.branch} | Rank: ${p.rank} | Years: ${p.yearsOfService}\nMOS/Rate: ${p.mosRate||'N/A'} | Clearance: ${p.clearance||'None'} (${p.clearanceStatus||'N/A'})\nTechnical Skills: ${(p.technicalSkills||[]).join(', ')||'None'}\nSoft Skills: ${(p.softSkills||[]).join(', ')||'None'}\nEducation: ${p.education||'N/A'} | Certifications: ${p.certifications||'N/A'}\nTarget Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?(i.subType?i.name+' ('+i.subType+')':i.name):i).join(', ')||'Not specified'}\n\nEXPERIENCE:\n${exp||'None'}\n\nAWARDS:\n${awards||'None'}\n\n${focus?`FOCUS: ${focus}`:'NO SPECIFIC FOCUS — broad general resume'}`;
+  const systemPrompt = `Former military officer turned senior resume writer. Resumes sound like a real person. FORBIDDEN: results-driven, proven track record, dynamic, synergistic, leveraged, passionate about, spearheaded, orchestrated, facilitated, championed, stakeholders, deliverables, utilize, impactful, value-add, bandwidth, robust, scalable, mission-critical, best practices. Every bullet needs a number. Translate ALL military jargon. Plain text output only.`;
   try {
     setStatus('✍️ Writing your general resume...');
-    const normalizeVetName = (raw) => {
-      if (!raw) return '[Name]';
-      const commaMatch = raw.match(/^([^,]+),\s*(.+)$/);
-      if (commaMatch) {
-        const last = commaMatch[1].trim();
-        const first = commaMatch[2].trim().split(/\s+/)[0];
-        return `${first} ${last}`.replace(/\b\w/g, c => c.toUpperCase());
-      }
-      if (raw === raw.toUpperCase()) return raw.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-      return raw;
-    };
-    const displayName = normalizeVetName(p.fullName);
-
-    const contactBlock = [
-      displayName,
-      [p.phone, applicationEmail].filter(Boolean).join(' | '),
-      p.linkedin ? p.linkedin.replace(/^https?:\/\//,'') : '',
-      p.location || ''
-    ].filter(Boolean).join('\n');
-
-    const resume = await callClaude(systemPrompt, `Write a strong general-purpose resume for this veteran.
-
-${context}
-
-Use this EXACT contact block at the very top:
-${contactBlock}
-
-SECTIONS — use EXACTLY this format: === SECTION NAME ===
-
-1. === PROFESSIONAL SUMMARY === (2 sentences MAX)
-2. === CORE COMPETENCIES === (single comma-separated line, 14-18 skills)
-3. === PROFESSIONAL EXPERIENCE === (reverse chronological)
-4. === EDUCATION ===
-5. === CERTIFICATIONS ===
-
-EXPERIENCE FORMAT per role:
-**Job Title** | Organization | Location | Start–End Year
-• Bullet (max 15 words, one metric)
-• Bullet (max 15 words, one metric)
-• Bullet (max 15 words — 3 bullets max per role)
-
-TWO-PAGE HARD LIMIT: 18-22 bullets total. Prioritize last 10-12 years.`
-    );
-
-    setStatus('🙋 Writing your professional bio...');
-    const bio = await callClaude(
-      'You write crisp, confident professional bios for veterans transitioning to civilian careers. Bios should sound human, specific, and compelling. No em dashes. No peer rankings. No "top X%" language.',
-      `Write a 3-paragraph professional bio for this veteran.
-
-${context}
-
-Paragraph 1 (3-4 sentences): Who they are, years of service, branch, and their career-defining achievement.
-Paragraph 2 (3-4 sentences): Skills and experiences that make them uniquely valuable to civilian employers.
-Paragraph 3 (2-3 sentences): What they're looking for next and what they bring to the table.
-
-Rules: First person ("I" voice). No military jargon. No clichés. Plain text paragraphs only.`
-    );
-
+    const p2 = { ...state.profile };
+    ['fullName','email','phone','location','linkedin'].forEach(f => { const el = document.getElementById('p-'+f); if(el && el.value) p2[f] = el.value; });
+    const normalizeVetName = (raw) => { if (!raw) return '[Name]'; const commaMatch = raw.match(/^([^,]+),\s*(.+)$/); if (commaMatch) { const last=commaMatch[1].trim(); const first=commaMatch[2].trim().split(/\s+/)[0]; return `${first} ${last}`.replace(/\b\w/g,c=>c.toUpperCase()).replace(/\b\w+/g,w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()); } if (raw===raw.toUpperCase()) return raw.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); return raw; };
+    const displayName = normalizeVetName(p2.fullName);
+    const contactBlock = [displayName, [p2.phone, p2.email].filter(Boolean).join(' | '), p2.linkedin ? p2.linkedin.replace(/^https?:\/\//,'') : '', p2.location || ''].filter(Boolean).join('\n');
+    const resume = await callClaude(systemPrompt, `Write a strong general-purpose resume.\n\n${context}\n\nContact block verbatim:\n${contactBlock}\n\nSECTIONS (=== NAME === format):\n1. === PROFESSIONAL SUMMARY === (2 sentences MAX)\n2. === CORE COMPETENCIES === (single comma-separated line)\n3. === PROFESSIONAL EXPERIENCE === (reverse chronological)\n4. === EDUCATION ===\n5. === CERTIFICATIONS ===\n\nPer role: **Title** | Org | Location | Years\n• Bullet (max 15 words)\nTWO-PAGE LIMIT: 18-22 bullets. Prioritize last 10-12 years.`);
+    setStatus('🙋 Writing professional bio...');
+    const bio = await callClaude('Crisp, confident professional bios for veterans. Sound human, specific, compelling. No jargon, no clichés. Plain text paragraphs. First person.', `Write 3-paragraph bio.\n\n${context}\n\nPara 1: Who they are, service, career-defining achievement.\nPara 2: Skills that make them uniquely valuable.\nPara 3: What they seek and what they bring.`);
     setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeResult:{resume, bio, isGeneric:true}, resumeModal:true} });
   } catch(err) {
     setState({ ui:{...state.ui, resumeBusy:false, resumeStatus:'', resumeError:'Error: '+err.message+'.'} });
   }
 }
 
-// ── Export helpers ────────────────────────────────────────────────────
 async function downloadBio() {
   const text = state.ui.resumeResult?.bio || document.getElementById('bio-text')?.innerText || '';
   if (!text) { showToast('No bio to download', false); return; }
   showToast('Building document...', true);
-  try {
-    await loadJSZip();
-    const name = (state.profile?.fullName || 'Bio').replace(/\s+/g, '_');
-    const blob = await buildLetterDocx(text, 'Professional Bio');
-    saveAs(blob, `Professional_Bio_${name}.docx`);
-    showToast('✓ Bio downloaded as Word document');
-  } catch(err) {
-    showToast('Export failed — try copying the text instead', false);
-  }
+  try { await loadJSZip(); const name = (state.profile?.fullName || 'Bio').replace(/\s+/g,'_'); const blob = await buildLetterDocx(text, 'Professional Bio'); saveAs(blob, `Professional_Bio_${name}.docx`); showToast('✓ Bio downloaded'); } catch(err) { showToast('Export failed — try copying text instead', false); }
+}
+
+function buildResumeContext(job) {
+  const p = state.profile;
+  const cap = (t, max) => !t ? '' : t.length > max ? t.slice(0, max) + '...' : t;
+  const assignmentText = state.assignments.map(a => { let text = `MILITARY: ${a.dutyTitle}${a.rank?' ('+a.rank+')':''} | ${a.unit||''} | ${a.startDate||'?'}-${a.endDate||'Present'}`; if (a.accomplishments) text += `\n${cap(a.accomplishments, 500)}`; if ((a.roles||[]).length > 0) { a.roles.slice(0,2).forEach(r => { text += `\n  Role: ${r.title}`; if (r.accomplishments) text += ` — ${cap(r.accomplishments, 150)}`; }); } return text; }).join('\n---\n');
+  const civText = state.civilianJobs.map(j => `CIVILIAN: ${j.title} at ${j.company} | ${j.startDate||'?'}-${j.endDate||'Present'}\n${cap(j.accomplishments, 500)}`).join('\n---\n');
+  const awards = state.awards.map(a => a.name).join(', ');
+  const docs = state.documents.map(d=>`[${d.type}] ${d.name}:\n${(d.content||'').slice(0,300)}`).join('\n---\n');
+  return `VETERAN CONTACT INFO:\nFull Name: ${p.fullName||'[Name not set]'}\nPhone: ${p.phone||'[Phone not set]'}\nEmail: ${p.email||'[Email not set]'}\nLinkedIn: ${p.linkedin||''}\nCity/State: ${p.location||'[Location not set]'}\n\nVETERAN BACKGROUND:\nBranch: ${p.branch||'N/A'} | Rank: ${p.rank||'N/A'} | Years: ${p.yearsOfService||'N/A'}\nMOS/Rate: ${p.mosRate||'N/A'} | Clearance: ${p.clearance||'None'} (${p.clearanceStatus||'N/A'})\nWork Preference: ${p.workPreference||'N/A'} | Willing to Relocate: ${p.willingToRelocate||'N/A'}\nTechnical Skills: ${(p.technicalSkills||[]).join(', ')||'None'}\nSoft Skills: ${(p.softSkills||[]).join(', ')||'None'}\nEducation: ${p.education||'N/A'}\nCertifications: ${p.certifications||'N/A'}\nTraining: ${p.training||'N/A'}\nSummary: ${p.elevatorPitch||'Not written'}\nTarget Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?(i.subType?i.name+' ('+i.subType+')':i.name):i).join(', ')||'Not specified'}\n\nEXPERIENCE:\n${assignmentText||'None'}\n${civText?'\n---\n'+civText:''}\n\nAWARDS:\n${awards||'None'}\n\nPERFORMANCE DOCUMENTS:\n${docs||'None'}\n\nTARGET JOB:\nTitle: ${job.title}\nCompany: ${job.company}\nLocation: ${job.location||'N/A'}\nSalary: ${job.salaryRange||'N/A'}\nJob Notes: ${job.notes||'None'}`;
 }
 
 function copyResumeToClipboard() {
   const text = state.ui.resumeResult?.resume || document.getElementById('resume-text-output')?.innerText || '';
-  navigator.clipboard.writeText(text).then(() => showToast('✓ Resume copied! Paste into Word or Google Docs')).catch(()=>{
-    const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    showToast('✓ Resume copied!');
-  });
+  navigator.clipboard.writeText(text).then(() => showToast('✓ Resume copied!')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('✓ Resume copied!'); });
 }
 
 function copyBioToClipboard() {
   const text = document.getElementById('bio-text')?.innerText || '';
-  navigator.clipboard.writeText(text).then(() => showToast('✓ Bio copied — paste into LinkedIn "About" section!')).catch(()=>{
-    const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    showToast('✓ Bio copied!');
-  });
+  navigator.clipboard.writeText(text).then(() => showToast('✓ Bio copied!')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('✓ Bio copied!'); });
 }
 
 async function downloadCover() {
   const text = state.ui.resumeResult?.coverLetter || document.getElementById('cover-text')?.innerText || '';
   if (!text) { showToast('No cover letter to download', false); return; }
   showToast('Building document...', true);
-  try {
-    await loadJSZip();
-    const name = (state.profile?.fullName || 'Cover_Letter').replace(/\s+/g, '_');
-    const blob = await buildLetterDocx(text, 'Cover Letter', state.profile?.fullName || '');
-    saveAs(blob, `Cover_Letter_${name}.docx`);
-    showToast('✓ Cover letter downloaded as Word document');
-  } catch(err) {
-    showToast('Export failed — try copying the text instead', false);
-  }
+  try { await loadJSZip(); const name=(state.profile?.fullName||'Cover_Letter').replace(/\s+/g,'_'); const blob=await buildLetterDocx(text,'Cover Letter',state.profile?.fullName||''); saveAs(blob,`Cover_Letter_${name}.docx`); showToast('✓ Cover letter downloaded'); } catch(err) { showToast('Export failed — try copying text instead', false); }
 }
 
-// ── Resume versioning ──────────────────────────────────────────────────
 function loadResumeVersion(jobId, versionId) {
   const job = state.jobs.find(j => j.id === jobId);
   if (!job) return;
@@ -1331,12 +669,7 @@ function saveCurrentResumeVersion() {
   const jobId = state.ui.resumeJob;
   const result = state.ui.resumeResult;
   if (!jobId || !result?.resume) { showToast('No resume to save', false); return; }
-  const version = {
-    id: Date.now().toString(),
-    date: new Date().toISOString(),
-    label: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}),
-    resume: result.resume, coverLetter: result.coverLetter || '', ats: result.ats || null, fmt: state.ui.resumeFmt || 'professional'
-  };
+  const version = { id: Date.now().toString(), date: new Date().toISOString(), label: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}), resume: result.resume, coverLetter: result.coverLetter || '', ats: result.ats || null, fmt: state.ui.resumeFmt || 'professional' };
   const updatedJobs = state.jobs.map(j => j.id === jobId ? { ...j, resumeVersions: [...(j.resumeVersions||[]), version] } : j);
   setState({ jobs: updatedJobs });
   showToast(`✅ Version saved`);
