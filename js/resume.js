@@ -64,11 +64,16 @@ function renderResume() {
       <button onclick="toggleUI('resumeMode','targeted')"    style="padding:10px 18px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='targeted'?'var(--accent)':'white'};color:${mode==='targeted'?'white':'var(--muted)'};transition:all 0.15s">🎯 TAILORED TO A JOB</button>
       <button onclick="toggleUI('resumeMode','generic')"     style="padding:10px 18px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='generic'?'var(--accent)':'white'};color:${mode==='generic'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">📋 GENERAL RESUME</button>
       <button onclick="toggleUI('resumeMode','networking')"  style="padding:10px 18px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='networking'?'var(--accent)':'white'};color:${mode==='networking'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">🤝 NETWORKING</button>
+    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:2px;overflow:hidden;border:1.5px solid var(--rule-dark);width:fit-content">
+      <button onclick="toggleUI('resumeMode','targeted')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='targeted'?'var(--accent)':'white'};color:${mode==='targeted'?'white':'var(--muted)'};transition:all 0.15s">🎯 TAILORED TO A JOB</button>
+      <button onclick="toggleUI('resumeMode','generic')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='generic'?'var(--accent)':'white'};color:${mode==='generic'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">📋 GENERAL RESUME</button>
+      ${(typeof isAirlinePath === 'function' && isAirlinePath()) ? `<button onclick="toggleUI('resumeMode','airline')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='airline'?'var(--accent)':'white'};color:${mode==='airline'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">✈️ AIRLINE RESUME</button>` : ''}
     </div>
 
     <div class="card">
-      <h2>${mode==='targeted'?'Configure & Generate Tailored Resume':mode==='networking'?'Networking Resume (No Cover Letter)':'Generate General-Purpose Resume'}</h2>
+      <h2>${mode==='targeted'?'Configure & Generate Tailored Resume':mode==='airline'?'✈️ Airline Resume Configuration':'Generate General-Purpose Resume'}</h2>
 
+      ${mode==='airline' ? renderAirlineMode() : ''}
       ${mode==='targeted' ? `
       <p style="font-size:13px;color:var(--muted);margin:-8px 0 16px">Select a job from your tracker — Claude will tailor your resume and cover letter specifically for it.</p>
 
