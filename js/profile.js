@@ -8,9 +8,9 @@ function renderProfile() {
   }
   const p = state.profile;
   const selectedIndustries = p.targetIndustries || [];
-  
+
   const indChecks = buildIndustryHTML(selectedIndustries);
-  
+
   const techTags = (p.technicalSkills||[]).map((s,i)=>`<span class="tag tag-blue">${esc(s)} <button onclick="removeSkill('tech',${i})" style="background:none;border:none;cursor:pointer;color:inherit;padding:0;font-size:14px;line-height:1">×</button></span>`).join('');
   const softTags = (p.softSkills||[]).map((s,i)=>`<span class="tag tag-purple">${esc(s)} <button onclick="removeSkill('soft',${i})" style="background:none;border:none;cursor:pointer;color:inherit;padding:0;font-size:14px;line-height:1">×</button></span>`).join('');
   const awardList = state.awards.map(a=>`
@@ -23,7 +23,6 @@ function renderProfile() {
       <button class="btn btn-danger btn-sm" onclick="removeAward('${a.id}')">✕</button>
     </div>`).join('');
 
-  // Check for common data quality issues to warn about
   const p2 = state.profile;
   const issues = [];
   if (p2.fullName && p2.fullName === p2.fullName.toUpperCase()) issues.push('Name appears to be ALL CAPS');
@@ -37,7 +36,6 @@ function renderProfile() {
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 16px">Your Profile</h1>
 
-    <!-- Data quality banner -->
     <div style="background:#fffbeb;border:2px solid #f59e0b;border-radius:12px;padding:16px 18px;margin-bottom:20px">
       <div style="display:flex;align-items:start;gap:12px">
         <span style="font-size:22px;flex-shrink:0">⚠️</span>
@@ -70,6 +68,7 @@ function renderProfile() {
         <div class="field"><label class="field-label">LinkedIn URL</label><input id="p-linkedin" value="${esc(p.linkedin||'')}" placeholder="linkedin.com/in/yourname"></div>
       </div>
     </div>
+
     <div class="card">
       <h2>Military Background</h2>
       <div class="grid2">
@@ -80,6 +79,7 @@ function renderProfile() {
         <div class="field"><label class="field-label">MOS / Rate / AFSC</label><input id="p-mosRate" value="${esc(p.mosRate)}" placeholder="11B, IS, 3D1X2..."></div>
       </div>
     </div>
+
     <div class="card">
       <h2>Security Clearance</h2>
       <div class="grid2">
@@ -89,6 +89,7 @@ function renderProfile() {
           <select id="p-clearanceStatus"><option value="">Select...</option>${['Active','Eligible - Needs Update','Expired','Never Had'].map(c=>`<option ${p.clearanceStatus===c?'selected':''}>${c}</option>`).join('')}</select></div>
       </div>
     </div>
+
     <div class="card">
       <h2>Work Preferences</h2>
       <div class="grid2">
@@ -99,10 +100,12 @@ function renderProfile() {
       </div>
       <div class="field"><label class="field-label">Target Locations (if relocating)</label><input id="p-targetLocations" value="${esc(p.targetLocations)}" placeholder="Washington DC, Tampa FL..."></div>
     </div>
+
     <div class="card">
       <h2>Target Industries</h2>
       <div class="grid2" id="industry-checks">${indChecks}</div>
     </div>
+
     <div class="card">
       <h2>Education & Certifications</h2>
       <div class="field"><label class="field-label">Education</label><textarea id="p-education" rows="3" placeholder="B.S. Criminal Justice, University of Maryland, 2018">${esc(p.education)}</textarea></div>
@@ -112,6 +115,7 @@ function renderProfile() {
         <p style="font-size:11px;color:#9ca3af;margin:4px 0 0">Add formal training, sales methodologies, leadership programs — anything not captured in certifications. This feeds directly into resume and gap analysis.</p>
       </div>
     </div>
+
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h2 style="margin:0">Skills Inventory</h2>
@@ -131,6 +135,7 @@ function renderProfile() {
         </div>
       </div>
     </div>
+
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h2 style="margin:0">Professional Summary (Elevator Pitch)</h2>
@@ -155,9 +160,14 @@ function renderProfile() {
         <div style="font-size:11px;color:#9ca3af;margin-top:4px">This phrase appears verbatim in your "What Sets Me Apart" resume section and anchors your cover letter narrative.</div>
       </div>
     </div>
+
+    ${renderCareerPathCard()}
+    ${renderAviationSection()}
+
     <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
       <button class="btn btn-primary" style="padding:12px 24px" onclick="saveProfile()">💾 Save Profile</button>
     </div>
+
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h2 style="margin:0">Awards & Decorations</h2>
@@ -181,7 +191,6 @@ function renderProfile() {
 }
 
 function normalizeProfileName() {
-  // Fix military-format names (LAST, FIRST MIDDLE) stored in profile
   const raw = state.profile.fullName || '';
   const commaMatch = raw.match(/^([^,]+),\s*(.+)$/);
   if (commaMatch) {
@@ -202,8 +211,11 @@ function saveProfile() {
     const el = document.getElementById('p-' + f);
     if (el) updated[f] = el.value;
   });
-  // Save directly to state + localStorage WITHOUT triggering full re-render
-  // (re-render would collapse the industry multi-select dropdowns)
+
+  // Preserve career paths and pilot certs (managed by pilot.js, not DOM fields)
+  updated.careerPaths = state.profile.careerPaths || ['civilian'];
+  updated.pilotCerts  = state.profile.pilotCerts  || {};
+
   state.profile = updated;
   try { localStorage.setItem('vc_profile', JSON.stringify(state.profile)); } catch(e) {}
   scheduleSync();
@@ -211,10 +223,8 @@ function saveProfile() {
 }
 
 async function generateElevatorPitch() {
-    if (state.assignments.length === 0) { showToast('Add some assignments first', false); return; }
-  
+  if (state.assignments.length === 0) { showToast('Add some assignments first', false); return; }
   showToast('🤖 Generating your professional summary...', true);
-  
   try {
     const p = state.profile;
     const topAssignments = [...state.assignments]
@@ -222,11 +232,9 @@ async function generateElevatorPitch() {
       .slice(0, 4)
       .map(a => `${a.dutyTitle} at ${a.base}: ${(a.accomplishments||'').slice(0, 150)}`)
       .join(' | ');
-    
     const targetIndustries = (p.targetIndustries||[])
       .map(i => typeof i === 'object' ? (i.subTypes && i.subTypes.length ? `${i.name} (${i.subTypes.join(', ')})` : i.subType ? `${i.name} (${i.subType})` : i.name) : i)
       .join(', ') || 'Not specified';
-    
     const prompt = `Write a compelling 3-sentence professional summary for this veteran. This will appear at the top of a resume.
 
 VETERAN DATA:
@@ -253,13 +261,10 @@ WRITING RULES — follow every one:
 - Be specific and concrete — vague summaries get skipped
 - Plain text only, no bullet points or headers`;
 
-
-
     const result = await callClaude(
       'You are a senior career coach who specializes in military-to-civilian transitions. You write professional summaries that sound like a real, confident human wrote them — not a resume template. You never use buzzwords or filler phrases. Every sentence earns its place with specificity and clarity.',
       prompt
     );
-    
     const el = document.getElementById('p-elevatorPitch');
     if (el) {
       el.value = result.trim();
@@ -272,9 +277,7 @@ WRITING RULES — follow every one:
 
 async function generateIdentityFrame() {
   if (state.assignments.length === 0) { showToast('Add some assignments first', false); return; }
-
   showToast('🤖 Crafting your identity frame...', true);
-
   try {
     const p = state.profile;
     const topAssignments = [...state.assignments]
@@ -282,11 +285,9 @@ async function generateIdentityFrame() {
       .slice(0, 5)
       .map(a => `${a.dutyTitle||''} at ${a.base||''}: ${(a.accomplishments||'').slice(0,200)}`)
       .join('\n');
-
     const targetIndustries = (p.targetIndustries||[])
       .map(i => typeof i === 'object' ? i.name : i)
       .join(', ') || 'Not specified';
-
     const prompt = `Write a single identity frame sentence for this veteran. This sentence anchors every resume, cover letter, and interview answer they will ever use.
 
 VETERAN DATA:
@@ -316,7 +317,6 @@ Return ONLY the sentence. Nothing else.`;
       'You are a senior executive career strategist who specializes in positioning high-performing military veterans for civilian leadership roles. You write identity frames that make hiring managers stop and say "I need to meet this person." You never write generic positioning statements.',
       prompt
     );
-
     const frame = result.trim().replace(/^["']|["']$/g, '');
     const el = document.getElementById('p-identityFrame');
     if (el) {
@@ -330,22 +330,18 @@ Return ONLY the sentence. Nothing else.`;
 }
 
 async function extractSkillsFromExperience() {
-    if (state.assignments.length === 0 && state.civilianJobs.length === 0) { 
-    showToast('Add some assignments or jobs first', false); 
-    return; 
+  if (state.assignments.length === 0 && state.civilianJobs.length === 0) {
+    showToast('Add some assignments or jobs first', false);
+    return;
   }
-  
   showToast('🤖 Extracting skills from your experience...', true);
-  
   try {
     const experienceText = [
       ...state.assignments.map(a => `${a.dutyTitle || 'Assignment'}: ${a.description || ''} ${a.accomplishments || ''}`),
       ...state.civilianJobs.map(j => `${j.title || 'Job'} at ${j.company || ''}: ${j.description || ''} ${j.accomplishments || ''}`)
     ].join('\n---\n');
-
     const currentTech = state.profile.technicalSkills || [];
     const currentSoft = state.profile.softSkills || [];
-
     const prompt = `Analyze this veteran's work experience and extract skills they've demonstrated.
 
 EXPERIENCE:
@@ -372,33 +368,23 @@ Rules:
       'You are a career coach analyzing work experience to identify demonstrated skills. Be specific and accurate. Only extract skills that are clearly shown in the experience. Return valid JSON only.',
       prompt
     );
-
     let extracted;
     try {
       extracted = JSON.parse(result.replace(/```json|```/g, '').trim());
     } catch(e) {
       throw new Error('Could not parse skill extraction results');
     }
-
     const newTech = extracted.technicalSkills || [];
     const newSoft = extracted.softSkills || [];
-    
     if (newTech.length === 0 && newSoft.length === 0) {
       showToast('No new skills found — your profile already covers what Claude could extract.');
       return;
     }
-
     const mergedTech = [...currentTech, ...newTech];
     const mergedSoft = [...currentSoft, ...newSoft];
-
-    setState({ 
-      profile: { 
-        ...state.profile, 
-        technicalSkills: mergedTech,
-        softSkills: mergedSoft
-      } 
+    setState({
+      profile: { ...state.profile, technicalSkills: mergedTech, softSkills: mergedSoft }
     });
-    
     const total = newTech.length + newSoft.length;
     showToast(`✓ Added ${total} skill${total===1?'':'s'}: ${newTech.length} technical, ${newSoft.length} leadership`);
   } catch(err) {
@@ -408,36 +394,28 @@ Rules:
 
 function toggleIndustry(industryName) {
   const inds = state.profile.targetIndustries || [];
-  
-  // Check if this industry is already selected (could be string or object)
-  const existingIdx = inds.findIndex(i => 
-    (typeof i === 'string' && i === industryName) || 
+  const existingIdx = inds.findIndex(i =>
+    (typeof i === 'string' && i === industryName) ||
     (typeof i === 'object' && i.name === industryName)
   );
-  
   let updated;
   if (existingIdx !== -1) {
-    // Remove it
     updated = inds.filter((_, idx) => idx !== existingIdx);
   } else {
-    // Add it as an object with no subType yet
     updated = [...inds, { name: industryName, subType: '' }];
   }
-  
   state.profile = { ...state.profile, targetIndustries: updated };
   try { localStorage.setItem('vc_profile', JSON.stringify(state.profile)); } catch(e) {}
-  
   refreshIndustryUI();
 }
 
-// Called when user changes the multi-select dropdown for sub-types
 function setIndustrySubTypes(industryName, selectEl) {
   const selected = Array.from(selectEl.selectedOptions).map(o => o.value);
   const inds = state.profile.targetIndustries || [];
   const updated = inds.map(i => {
     const entry = typeof i === 'string' ? { name: i, subTypes: [] } : { ...i };
     if (entry.name !== industryName) return entry;
-    delete entry.subType; // migrate old format
+    delete entry.subType;
     entry.subTypes = selected;
     return entry;
   });
@@ -445,8 +423,6 @@ function setIndustrySubTypes(industryName, selectEl) {
   try { localStorage.setItem('vc_profile', JSON.stringify(state.profile)); } catch(e) {}
 }
 
-// Called when user selects a sub-type from dropdown before selecting parent
-// Auto-selects the parent industry
 function selectIndustryFromChild(industryName, subType) {
   const inds = state.profile.targetIndustries || [];
   const alreadySelected = inds.some(i =>
@@ -470,7 +446,6 @@ function selectIndustryFromChild(industryName, subType) {
   refreshIndustryUI();
 }
 
-// Single source of truth for industry HTML — used by renderProfile and refreshIndustryUI
 function buildIndustryHTML(selectedIndustries) {
   return INDUSTRIES.map(industry => {
     const selected = selectedIndustries.find(s =>
@@ -526,4 +501,3 @@ function saveAward() {
 }
 
 function removeAward(aid) { setState({ awards: state.awards.filter(a=>a.id!==aid) }); }
-
