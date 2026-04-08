@@ -241,8 +241,8 @@ function renderResume() {
       </div>`:''}
       ${error?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:12px;margin-top:12px;font-size:13px;color:#dc2626">${esc(error)}</div>`:''}
     </div>
-    ${result?renderResumeResult(result,fmt):''}`;
-}
+`    ${result && !result.isAirline ? renderResumeResult(result,fmt) : ''}
+    ${result && result.isAirline  ? renderAirlineResumeResult(result) : ''}`;}
 
 function renderResumeResult(result, fmt) {
   const sc = result.ats?.score;
