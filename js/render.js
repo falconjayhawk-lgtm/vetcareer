@@ -80,6 +80,10 @@ function renderSidebar() {
     {id:'experience',  label:'&#128506; Experience'},
     {id:'achievements',label:'&#127942; Achievements'},
     {id:'timeline',    label:'&#128197; Sep Timeline'},
+    {id:'atp',         label:'&#9992;&#65039; ATP Calculator'},
+    {id:'airline-pay',  label:'&#9992;&#65039; Airline Pay'},
+    {id:'plan90',       label:'&#128197; 90-Day Plan'},
+    {id:'milcomp',      label:'&#129683; Comp Translator'},
     {id:'scout',       label:'&#128301; Job Scout'},
     {id:'jobs',        label:'&#128188; Job Tracker'},
     {id:'resume',      label:'&#128196; Resume Builder'},
@@ -166,6 +170,10 @@ function renderView() {
     case 'achievements': return renderAchievements();
     case 'timeline':     return renderTimeline();
     case 'debrief':      return renderDebrief();
+    case 'atp':          return renderATP();
+    case 'airline-pay':  return renderAirlinePay();
+    case 'plan90':       return renderPlan90();
+    case 'milcomp':      return renderMilComp();
     case 'documents':    return renderDocuments();
     case 'jobs':         return renderJobs();
     case 'scout':        return renderScout();

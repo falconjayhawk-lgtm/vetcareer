@@ -165,6 +165,29 @@ function renderJobs() {
           ` : ''}
         </div>
 
+        <!-- Company research button -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          ${j.companyResearch ? `
+            <button onclick="toggleUI('showResearch_${j.id}',!state.ui['showResearch_${j.id}'])"
+              style="background:#f0fdf4;color:#15803d;border:1px solid #86efac;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:600;cursor:pointer">
+              🔍 Research ${state.ui['showResearch_${j.id}'] ? '▼' : '▶'}
+            </button>` : `
+            <button onclick="researchCompany('${j.id}')" ${state.ui["researching_${j.id}"]?'disabled':''}
+              style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:600;cursor:pointer">
+              ${state.ui["researching_${j.id}"]?'🔍 Researching...':'🔍 Research Company'}
+            </button>`}
+        </div>
+
+        <!-- Research results (collapsible) -->
+        ${j.companyResearch && state.ui['showResearch_${j.id}'] ? `
+        <div style="background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:12px;margin-top:8px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;font-family:'Familjen Grotesk',sans-serif;margin-bottom:8px">
+            Company Intelligence · ${new Date(j.companyResearch.fetchedAt).toLocaleDateString()}
+          </div>
+          <div style="font-size:13px;color:var(--text);line-height:1.75;white-space:pre-line">${esc(j.companyResearch.data)}</div>
+          <button onclick="researchCompany('${j.id}')" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;margin-top:8px">🔄 Refresh</button>
+        </div>` : ''}
+
         ${(j.hiringManager||j.teamSize||j.budgetCycle||j.warmIntro||j.salaryOffered) ? `
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
           ${j.salaryOffered?`<span style="background:#f0fdf4;color:#15803d;border:1px solid #86efac;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600">💰 ${esc(j.salaryOffered)}</span>`:''}
@@ -332,6 +355,62 @@ function addActivityNote(jid) {
   setState({ jobs: state.jobs.map(j => j.id===jid ? {...j, activityLog:log} : j) });
   if (input) input.value = '';
   showToast('Note added ✓');
+}
+
+async function researchCompany(jid) {
+  const job = state.jobs.find(j => j.id === jid);
+  if (!job) return;
+  setState({ ui: { ...state.ui, [`researching_${jid}`]: true } }, false);
+
+  // Optimistically update the card button
+  const btn = document.querySelector(`[onclick="researchCompany('${jid}')"]`);
+  if (btn) btn.textContent = '🔍 Researching...';
+
+  const p = state.profile;
+  try {
+    const raw = await callClaude(
+      `You are a career intelligence researcher who helps veterans evaluate companies before applying or interviewing. You give direct, useful information — not generic overviews. You flag things that matter specifically to a transitioning military veteran.`,
+      `Research this company for a transitioning military veteran.
+
+COMPANY: ${job.company}
+ROLE: ${job.title}
+VETERAN: ${p.branch||'Military'} | ${p.rank||'N/A'} | ${p.yearsOfService||'N/A'} years | Clearance: ${p.clearance||'None'}
+
+Provide intelligence across these areas (use clear section headers, keep each section to 2-4 sentences, be specific not generic):
+
+**Company Overview**
+Size, industry, business model, recent trajectory.
+
+**Veteran & Military Hiring**
+Do they actively recruit veterans? Any veteran affinity groups, veteran hiring programs, military-friendly reputation? Is this a cleared environment?
+
+**Culture & Work Environment**
+What's the actual culture like? Pace, hierarchy, autonomy. How do former military typically describe the adjustment?
+
+**Recent News & Stability**
+Any recent layoffs, contract wins/losses, leadership changes, financial news, or major developments in the past 12 months that affect whether to pursue this role.
+
+**Insider Tips**
+1-2 specific things a veteran should know before interviewing here that aren't obvious from the job posting.
+
+Keep each section specific and direct. Skip anything you don't have good information on rather than writing vague generalities.`
+    );
+
+    const updatedJobs = state.jobs.map(j =>
+      j.id === jid
+        ? { ...j, companyResearch: { data: raw.trim(), fetchedAt: new Date().toISOString() } }
+        : j
+    );
+    setState({
+      jobs: updatedJobs,
+      ui: { ...state.ui, [`researching_${jid}`]: false, [`showResearch_${jid}`]: true }
+    });
+    if (typeof trackAction === 'function') trackAction('company_research');
+    showToast(`✓ ${job.company} researched`);
+  } catch(err) {
+    setState({ ui: { ...state.ui, [`researching_${jid}`]: false } });
+    showToast('Research failed: ' + err.message, false);
+  }
 }
 
 function removeJob(jid) { if(confirm('Delete this job?')) setState({ jobs: state.jobs.filter(j=>j.id!==jid) }); }
