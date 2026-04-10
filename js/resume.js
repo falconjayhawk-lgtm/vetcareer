@@ -58,12 +58,18 @@ function renderResume() {
     <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0 0 4px;color:var(--accent);letter-spacing:0.02em">Resume Builder</h1>
     <p style="color:var(--muted);font-size:13px;margin:0 0 20px">AI-powered resume writing — Claude reads your actual experience and writes a real resume</p>
 
-    <!-- Mode tabs — airline tab appears only when airline path is active -->
-    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:2px;overflow:hidden;border:1.5px solid var(--rule-dark);width:fit-content">
+    <!-- Mode tabs -->
+    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:2px;overflow:hidden;border:1.5px solid var(--rule-dark);width:fit-content;flex-wrap:wrap">
       <button onclick="toggleUI('resumeMode','targeted')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='targeted'?'var(--accent)':'white'};color:${mode==='targeted'?'white':'var(--muted)'};transition:all 0.15s">🎯 TAILORED TO A JOB</button>
       <button onclick="toggleUI('resumeMode','generic')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='generic'?'var(--accent)':'white'};color:${mode==='generic'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">📋 GENERAL RESUME</button>
+      <button onclick="toggleUI('resumeMode','federal')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='federal'?'var(--accent)':'white'};color:${mode==='federal'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">🏛️ USAJOBS FEDERAL</button>
       ${(typeof isAirlinePath === 'function' && isAirlinePath()) ? `<button onclick="toggleUI('resumeMode','airline')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${mode==='airline'?'var(--accent)':'white'};color:${mode==='airline'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">✈️ AIRLINE RESUME</button>` : ''}
     </div>
+
+    ${mode==='federal' ? `
+    <div>
+      ${typeof renderFederalResumeMode === 'function' ? renderFederalResumeMode() : '<p style="color:var(--muted)">Loading federal resume module...</p>'}
+    </div>` : `
 
     <div class="card">
       <h2>${mode==='airline'?'✈️ Airline Resume Configuration':mode==='targeted'?'Configure & Generate Tailored Resume':'Generate General-Purpose Resume'}</h2>
@@ -169,8 +175,9 @@ function renderResume() {
       </div>`:''}
       ${error?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:12px;margin-top:12px;font-size:13px;color:#dc2626">${esc(error)}</div>`:''}
     </div>
+    `}
     ${result && result.isAirline  ? (typeof renderAirlineResumeResult === 'function' ? renderAirlineResumeResult(result) : '') : ''}
-    ${result && !result.isAirline ? renderResumeResult(result,fmt) : ''}`;
+    ${result && !result.isAirline && !result.isFederal ? renderResumeResult(result,fmt) : ''}`;
 }
 
 function renderResumeResult(result, fmt) {
