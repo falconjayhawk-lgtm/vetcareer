@@ -40,6 +40,7 @@ async function syncToSupabase(showFeedback = true) {
       civilian_jobs:state.civilianJobs,
       awards:       state.awards,
       achievements: state.achievements || [],
+      timeline:     state.timeline     || {},
       jobs:         state.jobs,
       checklist:    state.checklist,
       scout_filters:state.scoutFilters,
@@ -85,6 +86,7 @@ async function loadFromSupabase() {
     if (d.civilian_jobs) { state.civilianJobs   = d.civilian_jobs; saveKey('civilianJobs'); }
     if (d.awards)        { state.awards         = d.awards;        saveKey('awards'); }
     if (d.achievements)  { state.achievements   = d.achievements;  saveKey('achievements'); }
+    if (d.timeline)      { state.timeline      = d.timeline;      saveKey('timeline'); }
     if (d.jobs)          { state.jobs           = d.jobs;          saveKey('jobs'); }
     if (d.checklist)     { state.checklist      = d.checklist;     saveKey('checklist'); }
     if (d.scout_filters) { state.scoutFilters   = d.scout_filters; saveKey('scoutFilters'); }
@@ -216,7 +218,8 @@ CREATE POLICY &quot;anon full access&quot; ON afteraction_data FOR ALL USING (tr
           <strong>Already have the table?</strong> Run this to add new columns:<br>
           <code>ALTER TABLE afteraction_data ADD COLUMN IF NOT EXISTS documents JSONB;</code><br>
           <code style="margin-top:4px;display:inline-block">ALTER TABLE afteraction_data ADD COLUMN IF NOT EXISTS sf86 JSONB;</code><br>
-          <code style="margin-top:4px;display:inline-block">ALTER TABLE afteraction_data ADD COLUMN IF NOT EXISTS achievements JSONB;</code>
+          <code style="margin-top:4px;display:inline-block">ALTER TABLE afteraction_data ADD COLUMN IF NOT EXISTS achievements JSONB;</code><br>
+          <code style="margin-top:4px;display:inline-block">ALTER TABLE afteraction_data ADD COLUMN IF NOT EXISTS timeline JSONB;</code>
         </div>
         4. Choose any <strong>User ID</strong> — a nickname, email, or any unique string you'll remember<br>
         5. Paste all three below and click Save
@@ -340,6 +343,7 @@ function exportData() {
       civilianJobs: state.civilianJobs,
       awards:       state.awards,
       achievements: state.achievements || [],
+      timeline:     state.timeline     || {},
       documents:    state.documents,
       jobs:         state.jobs,
       checklist:    state.checklist,
@@ -371,6 +375,7 @@ function importData(event) {
         civilianJobs: imported.data.civilianJobs   || [],
         awards:       imported.data.awards         || [],
         achievements: imported.data.achievements   || [],
+        timeline:     imported.data.timeline      || {},
         documents:    imported.data.documents      || [],
         jobs:         imported.data.jobs           || [],
         checklist:    imported.data.checklist      || {},

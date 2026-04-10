@@ -1,44 +1,28 @@
 // ── State ─────────────────────────────────────────────────────────────
 let state = {
-  loggedIn: false,   // Controlled by Clerk — do not persist to localStorage
-  clerkUserId: '',   // Set by auth.js after Clerk initializes
+  loggedIn: false,
+  clerkUserId: '',
   view: 'dashboard',
   profile: { fullName:'', email:'', phone:'', location:'', linkedin:'', branch:'', rank:'', yearsOfService:'', mosRate:'', clearance:'', clearanceStatus:'', workPreference:'', willingToRelocate:'', targetLocations:'', targetIndustries:[], technicalSkills:[], softSkills:[], education:'', certifications:'', training:'', elevatorPitch:'' },
   assignments: [],
   civilianJobs: [],
   awards: [],
-  achievements: [],  // Brag book — feeds resume builder, interview prep, cover letters
+  achievements: [],
+  timeline: { separationDate: '', separationType: '', milestones: [] },
   documents: [],
   jobs: [],
   apiKey: '',
   checklist: {},
-  scoutFilters: {
-    roleTypes: '',
-    domains: '',
-    geography: '',
-    exclusions: '',
-    companies: '',
-    seniority: '',
-    additionalContext: ''
-  },
-  sf86: {
-    residences: [],
-    employers: [],
-    references: [],
-    foreignContacts: [],
-    foreignTravel: [],
-    relatives: [],
-    notes: ''
-  },
-  supabase: { url: '', url: '', anonKey: '', userId: '', syncing: false, lastSync: null, syncError: '' },
-  access: { plan: 'free', proUntil: null, promoCode: null },
-  // UI state
+  scoutFilters: { roleTypes:'', domains:'', geography:'', exclusions:'', companies:'', seniority:'', additionalContext:'' },
+  sf86: { residences:[], employers:[], references:[], foreignContacts:[], foreignTravel:[], relatives:[], notes:'' },
+  supabase: { url:'', anonKey:'', userId:'', syncing:false, lastSync:null, syncError:'' },
+  access: { plan:'free', proUntil:null, promoCode:null },
   ui: {}
 };
 
 function loadState() {
   try {
-    const keys = ['profile','assignments','civilianJobs','awards','achievements','documents','jobs','apiKey','checklist','scoutFilters','sf86','supabase','access'];
+    const keys = ['profile','assignments','civilianJobs','awards','achievements','timeline','documents','jobs','apiKey','checklist','scoutFilters','sf86','supabase','access'];
     keys.forEach(k => {
       const v = localStorage.getItem('vc_' + k);
       if (v) state[k] = JSON.parse(v);
@@ -56,9 +40,10 @@ function setState(updates, shouldRender=true) {
   if (updates.assignments !== undefined)  { saveKey('assignments');  scheduleSync(); }
   if (updates.civilianJobs !== undefined) { saveKey('civilianJobs'); scheduleSync(); }
   if (updates.awards !== undefined)       { saveKey('awards');       scheduleSync(); }
-  if (updates.achievements !== undefined) { saveKey('achievements');  scheduleSync(); }
-  if (updates.documents !== undefined)    { saveKey('documents');     scheduleSync(); }
-  if (updates.jobs !== undefined)         { saveKey('jobs');          scheduleSync(); }
+  if (updates.achievements !== undefined) { saveKey('achievements'); scheduleSync(); }
+  if (updates.timeline !== undefined)     { saveKey('timeline');     scheduleSync(); }
+  if (updates.documents !== undefined)    { saveKey('documents');    scheduleSync(); }
+  if (updates.jobs !== undefined)         { saveKey('jobs');         scheduleSync(); }
   if (updates.apiKey !== undefined)       saveKey('apiKey');
   if (updates.checklist !== undefined)    { saveKey('checklist');    scheduleSync(); }
   if (updates.scoutFilters !== undefined) { saveKey('scoutFilters'); scheduleSync(); }
@@ -68,7 +53,6 @@ function setState(updates, shouldRender=true) {
   if (shouldRender) render();
 }
 
-// Debounced sync — waits 2s after last change before syncing to avoid hammering Supabase
 let syncTimer = null;
 function scheduleSync() {
   if (!state.supabase?.url || !state.supabase?.anonKey || !state.supabase?.userId) return;

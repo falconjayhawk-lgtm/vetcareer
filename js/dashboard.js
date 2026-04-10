@@ -15,6 +15,7 @@ function renderDashboard() {
     {label:'Complete your profile', autoDone:!!(p.fullName&&p.branch), view:'profile'},
     {label:'Review & edit your experience', autoDone:state.assignments.length>0 || state.civilianJobs.length>0, view:'experience'},
     {label:'Build your achievements library', autoDone:achievements.length>=3, view:'achievements'},
+    {label:'Set up your separation timeline', autoDone:!!(state.timeline?.separationDate), view:'timeline'},
     {label:'Search for jobs', autoDone:state.jobs.length>0||state.ui.scoutResults?.length>0, view:'scout'},
     {label:'Add jobs to tracker', autoDone:state.jobs.length>0, view:'jobs'},
     {label:'You\'re connected! AI features are ready to use.', autoDone:true, view:'dashboard'},
@@ -118,6 +119,36 @@ function renderDashboard() {
           </div>
         </div>
       </div>
+    </div>` : ''}
+
+
+    ${(typeof getUpcomingMilestones === 'function' && getUpcomingMilestones(3).length > 0) ? `
+    <div class="card" style="border-left:4px solid var(--accent)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0">📅 Upcoming Timeline Deadlines</h2>
+        <button onclick="setState({view:'timeline'})" style="background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;font-size:12px;font-family:'Familjen Grotesk',sans-serif">View full timeline →</button>
+      </div>
+      ${getUpcomingMilestones(3).map(m => {
+        const days = m.days;
+        const isUrgent = days <= 7;
+        const dateStr = m.actualDate || m.calculatedDate;
+        return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);cursor:pointer" onclick="setState({view:'timeline'})">
+          <div style="font-size:18px;flex-shrink:0">${
+            m.category === 'benefits' ? '🏥' :
+            m.category === 'financial' ? '💰' :
+            m.category === 'job-search' ? '💼' :
+            m.category === 'records' ? '📋' : '🎖️'
+          }</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:13px;color:var(--accent)">${esc(m.label.replace(/^⚡ /,''))}</div>
+            <div style="font-size:11px;color:var(--muted)">${formatTimelineDate ? formatTimelineDate(dateStr) : dateStr}${m.actualDate?' · ✓ Confirmed':' · Estimated'}</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:${isUrgent?'var(--red)':'var(--muted)'};white-space:nowrap;font-family:'Familjen Grotesk',sans-serif">
+            ${days === 0 ? 'TODAY' : days < 0 ? `${Math.abs(days)}d ago` : `${days}d`}
+          </div>
+        </div>`;
+      }).join('')}
     </div>` : ''}
 
     <div class="card">
