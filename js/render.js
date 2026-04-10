@@ -165,6 +165,7 @@ function renderView() {
     case 'experience':   return renderExperience();
     case 'achievements': return renderAchievements();
     case 'timeline':     return renderTimeline();
+    case 'debrief':      return renderDebrief();
     case 'documents':    return renderDocuments();
     case 'jobs':         return renderJobs();
     case 'scout':        return renderScout();

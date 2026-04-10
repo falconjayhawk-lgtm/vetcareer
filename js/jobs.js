@@ -157,6 +157,12 @@ function renderJobs() {
               ✨ Build Resume
             </button>
           `}
+          ${['interviewing','offered','rejected','withdrawn'].includes(j.status) ? `
+            <button onclick="setState({view:'debrief',ui:{...state.ui,debriefJobId:'${j.id}',activeDebriefId:null,debriefAdding:false}})"
+              style="background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:600;cursor:pointer">
+              📝 ${(j.debriefs||[]).length > 0 ? `${j.debriefs.length} Debrief${j.debriefs.length>1?'s':''}` : 'Debrief'}
+            </button>
+          ` : ''}
         </div>
 
         ${(j.hiringManager||j.teamSize||j.budgetCycle||j.warmIntro||j.salaryOffered) ? `
