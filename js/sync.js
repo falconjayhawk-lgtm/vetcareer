@@ -16,9 +16,7 @@ async function supabaseFetch(path, method = 'GET', body = null, extraHeaders = {
   });
   const responseText = await res.text();
   console.log('[Supabase] Response', res.status, responseText.slice(0, 500));
-  if (!res.ok) {
-    throw new Error(`Supabase ${res.status}: ${responseText}`);
-  }
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${responseText}`);
   if (method === 'GET' && responseText) {
     try { return JSON.parse(responseText); } catch(e) { return []; }
   }
@@ -36,23 +34,20 @@ async function syncToSupabase(showFeedback = true) {
   if (showFeedback) render();
   try {
     const payload = {
-      user_id: userId,
-      profile: state.profile,
-      assignments: state.assignments,
-      civilian_jobs: state.civilianJobs,
-      awards: state.awards,
-      jobs: state.jobs,
-      checklist: state.checklist,
-      scout_filters: state.scoutFilters,
-      sf86: state.sf86,
-      documents: state.documents.map(d => ({
-        id: d.id,
-        name: d.name,
-        type: d.type,
-        uploadDate: d.uploadDate,
-        content: d.content || '',
-        fileType: d.fileType || '',
-        size: d.size || 0,
+      user_id:      userId,
+      profile:      state.profile,
+      assignments:  state.assignments,
+      civilian_jobs:state.civilianJobs,
+      awards:       state.awards,
+      achievements: state.achievements || [],
+      jobs:         state.jobs,
+      checklist:    state.checklist,
+      scout_filters:state.scoutFilters,
+      sf86:         state.sf86,
+      documents:    state.documents.map(d => ({
+        id: d.id, name: d.name, type: d.type,
+        uploadDate: d.uploadDate, content: d.content || '',
+        fileType: d.fileType || '', size: d.size || 0,
       })),
       updated_at: new Date().toISOString(),
     };
@@ -79,22 +74,22 @@ async function loadFromSupabase() {
   render();
   try {
     const rows = await supabaseFetch(`afteraction_data?user_id=eq.${encodeURIComponent(userId)}&limit=1`);
-    console.log('[Supabase] Load rows:', JSON.stringify(rows).slice(0, 500));
     if (!rows || rows.length === 0) {
       state.supabase = { ...state.supabase, syncing: false, syncError: 'No data found for this User ID' };
       showToast('No cloud data found for this User ID. Check that you synced from the other device first.', false);
       render(); return;
     }
     const d = rows[0];
-    if (d.profile)       { state.profile      = d.profile;       saveKey('profile'); }
-    if (d.assignments)   { state.assignments   = d.assignments;   saveKey('assignments'); }
-    if (d.civilian_jobs) { state.civilianJobs  = d.civilian_jobs; saveKey('civilianJobs'); }
-    if (d.awards)        { state.awards        = d.awards;        saveKey('awards'); }
-    if (d.jobs)          { state.jobs          = d.jobs;          saveKey('jobs'); }
-    if (d.checklist)     { state.checklist     = d.checklist;     saveKey('checklist'); }
-    if (d.scout_filters) { state.scoutFilters  = d.scout_filters; saveKey('scoutFilters'); }
-    if (d.sf86)          { state.sf86          = d.sf86;          saveKey('sf86'); }
-    if (d.documents)     { state.documents     = d.documents;     saveKey('documents'); }
+    if (d.profile)       { state.profile       = d.profile;       saveKey('profile'); }
+    if (d.assignments)   { state.assignments    = d.assignments;   saveKey('assignments'); }
+    if (d.civilian_jobs) { state.civilianJobs   = d.civilian_jobs; saveKey('civilianJobs'); }
+    if (d.awards)        { state.awards         = d.awards;        saveKey('awards'); }
+    if (d.achievements)  { state.achievements   = d.achievements;  saveKey('achievements'); }
+    if (d.jobs)          { state.jobs           = d.jobs;          saveKey('jobs'); }
+    if (d.checklist)     { state.checklist      = d.checklist;     saveKey('checklist'); }
+    if (d.scout_filters) { state.scoutFilters   = d.scout_filters; saveKey('scoutFilters'); }
+    if (d.sf86)          { state.sf86           = d.sf86;          saveKey('sf86'); }
+    if (d.documents)     { state.documents      = d.documents;     saveKey('documents'); }
     const now = new Date().toLocaleTimeString();
     state.supabase = { ...state.supabase, syncing: false, lastSync: now, syncError: '' };
     saveKey('supabase');
@@ -122,7 +117,7 @@ async function testSupabaseConnection() {
   if (!url || !anonKey || !userId) { showToast('Save your config first', false); return; }
   showToast('Testing connection...', true);
   try {
-    const rows   = await supabaseFetch(`afteraction_data?limit=1`);
+    await supabaseFetch(`afteraction_data?limit=1`);
     const myRows = await supabaseFetch(`afteraction_data?user_id=eq.${encodeURIComponent(userId)}&limit=1`);
     if (!myRows || myRows.length === 0) {
       showToast(`⚠️ Connection works but NO DATA found for User ID "${userId}". Click "Sync Now" from your main device first.`, false);
@@ -142,18 +137,9 @@ function renderSettings() {
   const syncConfigured = !!(sb.url && sb.anonKey && sb.userId);
   const userIsPro = isPro();
 
-  // ── Manage Subscription button ──────────────────────────────────────
   const manageBtn = userIsPro
-    ? `<button id="manage-billing-btn" class="btn btn-secondary"
-              onclick="openCustomerPortal()"
-              style="margin-top:12px">
-         💳 Manage Subscription
-       </button>`
-    : `<button class="btn btn-secondary" disabled
-              style="margin-top:12px;opacity:0.45;cursor:not-allowed"
-              title="Subscribe to Pro to manage billing">
-         💳 Manage Subscription
-       </button>`;
+    ? `<button id="manage-billing-btn" class="btn btn-secondary" onclick="openCustomerPortal()" style="margin-top:12px">💳 Manage Subscription</button>`
+    : `<button class="btn btn-secondary" disabled style="margin-top:12px;opacity:0.45;cursor:not-allowed" title="Subscribe to Pro to manage billing">💳 Manage Subscription</button>`;
 
   return `
     <h1 style="font-size:24px;font-weight:800;margin:0 0 4px">Settings</h1>
@@ -163,42 +149,26 @@ function renderSettings() {
     <div class="card">
       <h2>🎟️ Subscription</h2>
       ${userIsPro ? `
-        <div style="background:var(--green-light);border:1px solid #c8e6cd;border-radius:2px;
-                    padding:14px;display:flex;align-items:center;gap:12px">
+        <div style="background:var(--green-light);border:1px solid #c8e6cd;border-radius:2px;padding:14px;display:flex;align-items:center;gap:12px">
           <span style="font-size:28px">✅</span>
           <div>
-            <div style="font-family:'Familjen Grotesk',sans-serif;font-weight:700;color:var(--green);font-size:15px">
-              Pro Access Active
-            </div>
-            <div style="font-size:13px;color:var(--green)">
-              ${proExpiresLabel()}${getAccess().promoCode ? ' · Code: ' + getAccess().promoCode : ''}
-            </div>
+            <div style="font-family:'Familjen Grotesk',sans-serif;font-weight:700;color:var(--green);font-size:15px">Pro Access Active</div>
+            <div style="font-size:13px;color:var(--green)">${proExpiresLabel()}${getAccess().promoCode ? ' · Code: ' + getAccess().promoCode : ''}</div>
           </div>
         </div>
-        <p style="font-size:12px;color:var(--dim);margin:10px 0 0;font-family:'Familjen Grotesk',sans-serif">
-          Cancel, update your payment method, or view invoices via the Stripe Customer Portal.
-        </p>
+        <p style="font-size:12px;color:var(--dim);margin:10px 0 0;font-family:'Familjen Grotesk',sans-serif">Cancel, update your payment method, or view invoices via the Stripe Customer Portal.</p>
         ${manageBtn}
       ` : `
-        <div style="background:var(--paper-dark);border:1px solid var(--rule);border-radius:2px;
-                    padding:14px;margin-bottom:16px">
-          <div style="font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:14px;
-                      color:var(--text);margin-bottom:4px">Free Plan</div>
-          <div style="font-size:13px;color:var(--muted)">
-            Upgrade to Pro for AI Resume Builder, Job Scout, Interview Prep, and 6 more tools.
-          </div>
+        <div style="background:var(--paper-dark);border:1px solid var(--rule);border-radius:2px;padding:14px;margin-bottom:16px">
+          <div style="font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px">Free Plan</div>
+          <div style="font-size:13px;color:var(--muted)">Upgrade to Pro for AI Resume Builder, Job Scout, Interview Prep, and 6 more tools.</div>
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="openUpgradeModal()">
-            ⭐ Upgrade to Pro — $15/mo
-          </button>
+          <button class="btn btn-primary" onclick="openUpgradeModal()">⭐ Upgrade to Pro — $15/mo</button>
           ${manageBtn}
         </div>
         <div style="margin-top:16px">
-          <div style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;font-weight:700;
-                      letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">
-            Have a promo code?
-          </div>
+          <div style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Have a promo code?</div>
           ${promoCodeWidget('settings')}
         </div>
       `}
@@ -207,8 +177,7 @@ function renderSettings() {
     <!-- AI Status -->
     <div class="card">
       <h2>🤖 AI Features</h2>
-      <div style="display:flex;align-items:center;gap:10px;background:var(--green-light);
-                  border:1px solid #c8e6cd;border-radius:2px;padding:14px;font-size:14px;color:var(--green)">
+      <div style="display:flex;align-items:center;gap:10px;background:var(--green-light);border:1px solid #c8e6cd;border-radius:2px;padding:14px;font-size:14px;color:var(--green)">
         <span style="font-size:24px">✅</span>
         <div>
           <div style="font-family:'Familjen Grotesk',sans-serif;font-weight:700">AI is included with your subscription</div>
@@ -233,6 +202,7 @@ function renderSettings() {
   assignments JSONB,
   civilian_jobs JSONB,
   awards JSONB,
+  achievements JSONB,
   jobs JSONB,
   checklist JSONB,
   scout_filters JSONB,
@@ -245,7 +215,8 @@ CREATE POLICY &quot;anon full access&quot; ON afteraction_data FOR ALL USING (tr
         <div style="background:var(--gold-light);border:1px solid #e8d5a0;border-radius:2px;padding:8px 10px;margin-top:8px;font-size:12px;color:var(--gold)">
           <strong>Already have the table?</strong> Run this to add new columns:<br>
           <code>ALTER TABLE afteraction_data ADD COLUMN IF NOT EXISTS documents JSONB;</code><br>
-          <code style="margin-top:4px;display:inline-block">ALTER TABLE afteraction_data ADD COLUMN IF NOT EXISTS sf86 JSONB;</code>
+          <code style="margin-top:4px;display:inline-block">ALTER TABLE afteraction_data ADD COLUMN IF NOT EXISTS sf86 JSONB;</code><br>
+          <code style="margin-top:4px;display:inline-block">ALTER TABLE afteraction_data ADD COLUMN IF NOT EXISTS achievements JSONB;</code>
         </div>
         4. Choose any <strong>User ID</strong> — a nickname, email, or any unique string you'll remember<br>
         5. Paste all three below and click Save
@@ -309,15 +280,12 @@ CREATE POLICY &quot;anon full access&quot; ON afteraction_data FOR ALL USING (tr
       <h2 style="color:var(--red)">⚠️ Danger Zone</h2>
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px">These actions are permanent and cannot be undone.</p>
       <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;
-                    background:var(--red-light);border:1px solid #fecaca;border-radius:2px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--red-light);border:1px solid #fecaca;border-radius:2px;flex-wrap:wrap;gap:8px">
           <div>
             <div style="font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:14px;color:var(--text)">Restart Onboarding</div>
             <div style="font-size:12px;color:var(--muted)">Clears all your data and runs the setup wizard again.</div>
           </div>
-          <button class="btn btn-sm btn-danger" onclick="confirmResetAndOnboard()">
-            🔄 Erase & Restart
-          </button>
+          <button class="btn btn-sm btn-danger" onclick="confirmResetAndOnboard()">🔄 Erase & Restart</button>
         </div>
       </div>
     </div>`;
@@ -337,24 +305,26 @@ function toggleApiKeyVis() {
 
 // ── Reset & onboarding restart ────────────────────────────────────────
 function resetAllData() {
-  const keys = ['profile','assignments','civilianJobs','awards','documents','jobs',
-                 'apiKey','checklist','scoutFilters','sf86','supabase'];
+  const keys = ['profile','assignments','civilianJobs','awards','achievements',
+                 'documents','jobs','apiKey','checklist','scoutFilters','sf86','supabase'];
   keys.forEach(k => localStorage.removeItem('vc_' + k));
   localStorage.removeItem('t2t_onboarding_complete');
   setState({
-    profile: { fullName:'', email:'', phone:'', location:'', linkedin:'', branch:'', rank:'',
-               yearsOfService:'', mosRate:'', clearance:'', clearanceStatus:'', workPreference:'',
-               willingToRelocate:'', targetLocations:'', targetIndustries:[], technicalSkills:[],
-               softSkills:[], education:'', certifications:'', training:'', elevatorPitch:'' },
-    assignments: [], civilianJobs: [], awards: [], documents: [], jobs: [],
-    checklist: {}, scoutFilters: {}, sf86: {},
+    profile: {
+      fullName:'', email:'', phone:'', location:'', linkedin:'', branch:'', rank:'',
+      yearsOfService:'', mosRate:'', clearance:'', clearanceStatus:'', workPreference:'',
+      willingToRelocate:'', targetLocations:'', targetIndustries:[], technicalSkills:[],
+      softSkills:[], education:'', certifications:'', training:'', elevatorPitch:''
+    },
+    assignments: [], civilianJobs: [], awards: [], achievements: [],
+    documents: [], jobs: [], checklist: {}, scoutFilters: {}, sf86: {},
     ui: { onboardStep: 1 },
     view: 'onboarding'
   });
 }
 
 function confirmResetAndOnboard() {
-  if (confirm('⚠️ This will permanently erase all your profile data, documents, jobs, and resume history.\n\nAre you sure you want to start over?')) {
+  if (confirm('⚠️ This will permanently erase all your profile data, documents, jobs, achievements, and resume history.\n\nAre you sure you want to start over?')) {
     resetAllData();
     showToast('Data cleared — starting onboarding');
   }
@@ -362,13 +332,14 @@ function confirmResetAndOnboard() {
 
 function exportData() {
   const exportPackage = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     data: {
       profile:      state.profile,
       assignments:  state.assignments,
       civilianJobs: state.civilianJobs,
       awards:       state.awards,
+      achievements: state.achievements || [],
       documents:    state.documents,
       jobs:         state.jobs,
       checklist:    state.checklist,
@@ -395,13 +366,14 @@ function importData(event) {
       if (!imported.version || !imported.data) throw new Error('Invalid backup file format');
       if (!confirm('This will replace all current data with the imported backup. Continue?')) return;
       setState({
-        profile:      imported.data.profile      || {},
-        assignments:  imported.data.assignments   || [],
-        civilianJobs: imported.data.civilianJobs  || [],
-        awards:       imported.data.awards        || [],
-        documents:    imported.data.documents     || [],
-        jobs:         imported.data.jobs          || [],
-        checklist:    imported.data.checklist     || {},
+        profile:      imported.data.profile       || {},
+        assignments:  imported.data.assignments    || [],
+        civilianJobs: imported.data.civilianJobs   || [],
+        awards:       imported.data.awards         || [],
+        achievements: imported.data.achievements   || [],
+        documents:    imported.data.documents      || [],
+        jobs:         imported.data.jobs           || [],
+        checklist:    imported.data.checklist      || {},
         view: 'dashboard'
       });
       showToast('✓ Data imported successfully!');
