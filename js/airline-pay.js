@@ -120,7 +120,9 @@ function renderAirlinePay() {
   const airlineOn    = typeof isAirlinePath === 'function' && isAirlinePath();
   const viewMode     = state.ui.payViewMode   || 'fo';       // fo | ca | both
   const filterType   = state.ui.payFilterType || 'all';      // all | major | cargo | regional
-  const selectedYear = parseInt(state.ui.payYear || '1');    // 1-12
+  const selectedYear    = parseInt(state.ui.payYear || '1');    // 1-12
+  const longevityCredit = parseInt(state.ui.payCredit || '0');  // years of credit given by airline
+  const effectiveYear   = Math.min(12, selectedYear + longevityCredit);
   const showAnnual   = state.ui.payShowAnnual !== false;     // hourly vs annual
 
   const filtered = filterType === 'all'
@@ -158,7 +160,7 @@ function renderAirlinePay() {
 
         <!-- Year of service slider -->
         <div class="field" style="margin:0;flex:1;min-width:180px">
-          <label class="field-label">Year of Service: <strong style="color:var(--accent)">Year ${selectedYear}</strong></label>
+          <label class="field-label">Year of Service: <strong style="color:var(--accent)">Year ${selectedYear}</strong>${longevityCredit > 0 ? ` <span style="color:var(--green);font-size:10px">+ ${longevityCredit}yr credit → Effective Year ${effectiveYear}</span>` : ''}</label>
           <input type="range" min="1" max="12" value="${selectedYear}"
             oninput="toggleUI('payYear',this.value)"
             style="width:100%;accent-color:var(--accent)">
@@ -171,6 +173,17 @@ function renderAirlinePay() {
           <div style="display:flex;gap:0;border-radius:2px;overflow:hidden;border:1.5px solid var(--rule-dark)">
             <button onclick="toggleUI('payShowAnnual',false)" style="padding:7px 14px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;background:${!showAnnual?'var(--accent)':'white'};color:${!showAnnual?'white':'var(--muted)'}">$/hr</button>
             <button onclick="toggleUI('payShowAnnual',true)" style="padding:7px 14px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;background:${showAnnual?'var(--accent)':'white'};color:${showAnnual?'white':'var(--muted)'};border-left:1px solid var(--rule-dark)">Annual est.</button>
+          </div>
+        </div>
+
+        <!-- Longevity credit -->
+        <div class="field" style="margin:0">
+          <label class="field-label">Longevity Credit (yrs)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" min="0" max="11" value="${longevityCredit}"
+              onchange="toggleUI('payCredit',Math.max(0,Math.min(11,parseInt(this.value)||0)))"
+              style="width:64px;font-size:14px;font-weight:700;text-align:center;padding:7px 6px">
+            <span style="font-size:11px;color:var(--dim)">years given<br>by airline</span>
           </div>
         </div>
 
@@ -190,12 +203,13 @@ function renderAirlinePay() {
 
     <!-- Pay comparison cards -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:16px">
-      ${filtered.map(a => renderAirlinePayCard(a, viewMode, selectedYear, showAnnual)).join('')}
+      ${filtered.map(a => renderAirlinePayCard(a, viewMode, selectedYear, showAnnual, effectiveYear, longevityCredit)).join('')}
     </div>
 
     <!-- Full scale table -->
     <div class="card">
       <h2>📊 Full Pay Scale Table — ${viewMode === 'fo' ? 'First Officers' : viewMode === 'ca' ? 'Captains' : 'FO & Captain'}</h2>
+      ${longevityCredit > 0 ? `<div style="background:var(--green-light);border:1px solid #c8e6cd;border-radius:2px;padding:7px 12px;font-size:12px;color:var(--green);margin-bottom:10px">✓ With <strong>${longevityCredit}-year longevity credit</strong>, a new hire starts at <strong>Year ${longevityCredit + 1} pay</strong>. The highlighted column shows your effective starting year.</div>` : ''}
       <p style="font-size:12px;color:var(--muted);margin:-8px 0 14px">All years of service · ${showAnnual ? `Estimated annual (${CREDIT_HOURS_PER_YEAR.toLocaleString()} credit hrs)` : 'Hourly rate'}</p>
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:600px">
@@ -212,9 +226,10 @@ function renderAirlinePay() {
                 rows.push(`
                   <tr style="background:${ai%2===0?'white':'var(--paper)'}">
                     <td style="padding:8px 10px;font-weight:700;white-space:nowrap">${a.icon} ${a.name}${viewMode==='both'?' (FO)':''}</td>
-                    ${a.fo.map(rate => {
+                    ${a.fo.map((rate, rIdx) => {
                       const val = rate ? (showAnnual ? '$'+Math.round(rate*CREDIT_HOURS_PER_YEAR/1000)+'K' : '$'+rate) : '—';
-                      return `<td style="padding:6px;text-align:center;color:var(--accent)">${val}</td>`;
+                      const isStart = longevityCredit > 0 && rIdx === longevityCredit;
+                      return `<td style="padding:6px;text-align:center;color:${isStart?'var(--gold)':'var(--accent)'};font-weight:${isStart?'800':'400'};background:${isStart?'var(--gold-light)':'transparent'}">${val}${isStart?' ★':''}</td>`;
                     }).join('')}
                   </tr>`);
               }
@@ -222,9 +237,10 @@ function renderAirlinePay() {
                 rows.push(`
                   <tr style="background:${viewMode==='both'?'var(--green-light)':ai%2===0?'white':'var(--paper)'}">
                     <td style="padding:8px 10px;font-weight:700;color:var(--green);white-space:nowrap">${a.icon} ${a.name}${viewMode==='both'?' (CA)':''}</td>
-                    ${a.ca.map(rate => {
+                    ${a.ca.map((rate, rIdx) => {
                       const val = rate ? (showAnnual ? '$'+Math.round(rate*CREDIT_HOURS_PER_YEAR/1000)+'K' : '$'+rate) : '—';
-                      return `<td style="padding:6px;text-align:center;color:var(--green);font-weight:${rate?'600':'400'}">${val}</td>`;
+                      const isStart = longevityCredit > 0 && rIdx === longevityCredit;
+                      return `<td style="padding:6px;text-align:center;color:${isStart?'var(--gold)':'var(--green)'};font-weight:${isStart?'800':rate?'600':'400'};background:${isStart?'var(--gold-light)':'transparent'}">${val}${isStart?' ★':''}</td>`;
                     }).join('')}
                   </tr>`);
               }
@@ -266,8 +282,9 @@ function renderAirlinePay() {
 
 // ── Pay card ───────────────────────────────────────────────────────────
 
-function renderAirlinePayCard(a, viewMode, year, showAnnual) {
-  const yrIdx = year - 1;
+function renderAirlinePayCard(a, viewMode, year, showAnnual, effectiveYear, credit) {
+  credit = credit || 0;
+  const yrIdx = (effectiveYear || year) - 1;
   const foRate = a.fo[yrIdx] || a.fo[a.fo.length-1];
   const caRate = a.ca[yrIdx];
 
@@ -304,6 +321,7 @@ function renderAirlinePayCard(a, viewMode, year, showAnnual) {
         </div>` : ''}
       </div>
 
+      ${credit > 0 ? `<div style="font-size:10px;color:var(--green);background:var(--green-light);border-radius:2px;padding:3px 8px;margin-bottom:10px;font-family:'Familjen Grotesk',sans-serif;font-weight:700">+${credit}yr credit · Effective Year ${effectiveYear}</div>` : ''}
       <!-- Quick facts -->
       <div style="font-size:11px;color:var(--muted);line-height:1.7">
         <div><strong style="color:var(--text)">Hubs:</strong> ${a.hub}</div>
