@@ -27,6 +27,26 @@ const TAG_MAP = Object.fromEntries(ACHIEVEMENT_TAGS.map(t => [t.id, t]));
 // ── Main render ────────────────────────────────────────────────────────
 
 function renderAchievements() {
+  const achTab = state.ui.achTab || 'bragbook';
+
+  const stories    = state.stories || [];
+  const achCount   = (state.achievements||[]).length;
+  const storyCount = stories.length;
+
+  const tabBar = `
+    <div style="display:flex;gap:0;margin-bottom:20px;border-radius:2px;overflow:hidden;border:1.5px solid var(--rule-dark);width:fit-content">
+      <button onclick="toggleUI('achTab','bragbook')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${achTab==='bragbook'?'var(--accent)':'white'};color:${achTab==='bragbook'?'white':'var(--muted)'};transition:all 0.15s">
+        🏆 BRAG BOOK${achCount > 0 ? ` <span style="font-size:9px;background:rgba(184,134,11,0.3);color:var(--gold);padding:2px 6px;border-radius:2px;margin-left:4px;font-family:'Familjen Grotesk',sans-serif;font-weight:700">${achCount}</span>` : ''}
+      </button>
+      <button onclick="toggleUI('achTab','stories')" style="padding:10px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;background:${achTab==='stories'?'var(--accent)':'white'};color:${achTab==='stories'?'white':'var(--muted)'};transition:all 0.15s;border-left:1.5px solid var(--rule-dark)">
+        📖 STORY BANK${storyCount > 0 ? ` <span style="font-size:9px;background:rgba(184,134,11,0.3);color:var(--gold);padding:2px 6px;border-radius:2px;margin-left:4px;font-family:'Familjen Grotesk',sans-serif;font-weight:700">${storyCount}</span>` : ''}
+      </button>
+    </div>`;
+
+  if (achTab === 'stories') {
+    return `<h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0 0 20px;color:var(--accent)">Achievements & Stories</h1>${tabBar}${typeof renderStoryBank === 'function' ? renderStoryBank() : '<p>Loading...</p>'}`;
+  }
+
   const achievements = state.achievements || [];
   const addMode      = state.ui.addAchievement || false;
   const editId       = state.ui.editAchievementId || null;
@@ -51,7 +71,8 @@ function renderAchievements() {
   achievements.forEach(a => (a.tags||[]).forEach(t => { tagCounts[t] = (tagCounts[t]||0)+1; }));
 
   return `
-    <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0 0 4px;color:var(--accent);letter-spacing:0.02em">🏆 Achievements Library</h1>
+    <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0 0 20px;color:var(--accent);letter-spacing:0.02em">Achievements & Stories</h1>
+    \${tabBar}
     <p style="color:var(--muted);font-size:13px;margin:0 0 20px">Your brag book — the specific wins that feed every resume, cover letter, and interview answer Claude writes. Build this before you need it.</p>
 
     <!-- Stats + Add button -->

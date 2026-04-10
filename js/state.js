@@ -8,6 +8,7 @@ let state = {
   civilianJobs: [],
   awards: [],
   achievements: [],
+  stories: [],     // STAR+R behavioral interview story bank
   timeline: { separationDate: '', separationType: '', milestones: [] },
   documents: [],
   jobs: [],
@@ -22,7 +23,7 @@ let state = {
 
 function loadState() {
   try {
-    const keys = ['profile','assignments','civilianJobs','awards','achievements','timeline','documents','jobs','apiKey','checklist','scoutFilters','sf86','supabase','access'];
+    const keys = ['profile','assignments','civilianJobs','awards','achievements','stories','timeline','documents','jobs','apiKey','checklist','scoutFilters','sf86','supabase','access'];
     keys.forEach(k => {
       const v = localStorage.getItem('vc_' + k);
       if (v) state[k] = JSON.parse(v);
@@ -41,6 +42,7 @@ function setState(updates, shouldRender=true) {
   if (updates.civilianJobs !== undefined) { saveKey('civilianJobs'); scheduleSync(); }
   if (updates.awards !== undefined)       { saveKey('awards');       scheduleSync(); }
   if (updates.achievements !== undefined) { saveKey('achievements'); scheduleSync(); }
+  if (updates.stories !== undefined)      { saveKey('stories');      scheduleSync(); }
   if (updates.timeline !== undefined)     { saveKey('timeline');     scheduleSync(); }
   if (updates.documents !== undefined)    { saveKey('documents');    scheduleSync(); }
   if (updates.jobs !== undefined)         { saveKey('jobs');         scheduleSync(); }

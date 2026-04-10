@@ -141,9 +141,12 @@ async function generateInterviewPrep() {
   const exp    = state.assignments.slice(0,4).map(a=>`${a.dutyTitle} at ${a.base}: ${(a.accomplishments||'').slice(0,300)}`).join('\n');
   const awards = state.awards.slice(0,3).map(a=>a.name).join(', ');
 
-  // Pull achievements context if available
+  // Pull achievements and story bank context
   const achievementsContext = typeof buildAchievementsContext === 'function'
     ? buildAchievementsContext(6)
+    : '';
+  const storiesContext = typeof buildStoriesContext === 'function'
+    ? buildStoriesContext(4)
     : '';
 
   try {
@@ -158,7 +161,7 @@ Clearance: ${p.clearance||'None'} (${p.clearanceStatus||'N/A'})
 Skills: ${[...(p.technicalSkills||[]),(p.softSkills||[])].slice(0,10).join(', ')}
 Experience: ${exp}
 Awards: ${awards||'None'}
-${achievementsContext}
+${achievementsContext}${storiesContext}
 
 TARGET JOB: ${job ? job.title+' at '+job.company : manualRole+(manualCompany?' at '+manualCompany:'')}
 Requirements/Notes: ${job?.notes||'Not specified'}
