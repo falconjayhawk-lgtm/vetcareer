@@ -1,176 +1,184 @@
-// ── Dashboard ─────────────────────────────────────────────────────────
-function renderDashboard() {
-  const p = state.profile;
-  const active = state.jobs.filter(j=>['applied','interviewing'].includes(j.status)).length;
-  const total = state.jobs.length;
-  const achievements = state.achievements || [];
+// ── Render engine ─────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
 
-  // Documents count as done if: files uploaded locally, OR profile was clearly populated from doc extraction
-  const docsEffectivelyDone = state.documents.length > 0 ||
-    state.documents.some(d => d.content && d.content.length > 0) ||
-    !!(p.fullName && p.branch && p.rank && p.mosRate);
+  if (!state.loggedIn) {
+    app.innerHTML = renderLogin();
+    setTimeout(() => mountClerkSignIn('clerk-signin-container'), 50);
+    return;
+  }
 
-  const checks = [
-    {label:'Upload your documents (DD-214, performance reports, resume)', autoDone: docsEffectivelyDone, view:'documents', priority:true},
-    {label:'Complete your profile', autoDone:!!(p.fullName&&p.branch), view:'profile'},
-    {label:'Review & edit your experience', autoDone:state.assignments.length>0 || state.civilianJobs.length>0, view:'experience'},
-    {label:'Build your achievements library', autoDone:achievements.length>=3, view:'achievements'},
-    {label:'Set up your separation timeline', autoDone:!!(state.timeline?.separationDate), view:'timeline'},
-    {label:'Search for jobs', autoDone:state.jobs.length>0||state.ui.scoutResults?.length>0, view:'scout'},
-    {label:'Add jobs to tracker', autoDone:state.jobs.length>0, view:'jobs'},
-    {label:'You\'re connected! AI features are ready to use.', autoDone:true, view:'dashboard'},
-    {label:'Generate your LinkedIn profile', autoDone:false, view:'linkedin', manualOnly:true},
-    {label:'Generate a tailored resume', autoDone:false, view:'resume', manualOnly:true},
-    {label:'Run interview prep for a target job', autoDone:false, view:'interview', manualOnly:true},
-    {label:'Get salary intelligence for a target role', autoDone:false, view:'salary', manualOnly:true},
-    {label:'Generate a reference letter', autoDone:false, view:'refletter', manualOnly:true},
-    {label:'Start your SF-86 prep', autoDone:!!(state.sf86?.residences?.length), view:'sf86', manualOnly:false},
-    {label:'Review gap analysis', autoDone:false, view:'gap', manualOnly:true},
-  ];
+  app.innerHTML = `
+    <div style="display:flex;min-height:100vh">
+      ${renderSidebar()}
+      <div class="main">${renderView()}</div>
+    </div>`;
+  if (typeof trackView === 'function') trackView(state.view);
+  if (state.view === 'stats' && typeof loadStats === 'function') setTimeout(loadStats, 50);
 
-  // Merge auto-done status with manual checks
-  const checksWithStatus = checks.map(c => ({
-    ...c,
-    done: c.autoDone || !!state.checklist[c.label]
-  }));
+  const backBtn = document.getElementById('mobile-back');
+  if (backBtn) backBtn.style.display = state.view !== 'dashboard' ? 'block' : 'none';
+  bindEvents();
+}
 
-  const pct = Math.round(checksWithStatus.filter(c=>c.done).length/checksWithStatus.length*100);
-  const doneCount = checksWithStatus.filter(c=>c.done).length;
-  const totalCount = checksWithStatus.length;
+function renderLogin() {
+  const clerkError = state.ui && state.ui.clerkError;
 
-  // Profile completeness
-  const profileFields = [
-    !!(p.fullName), !!(p.branch), !!(p.rank), !!(p.yearsOfService),
-    !!(p.mosRate), !!(p.location), !!(p.email || p.phone), !!(p.clearance),
-    !!(p.elevatorPitch), !!(p.identityFrame),
-    !!(p.technicalSkills?.length), !!(p.softSkills?.length),
-    !!(p.targetIndustries?.length), !!(state.assignments.length > 0),
-  ];
-  const profilePct = Math.round(profileFields.filter(Boolean).length / profileFields.length * 100);
-  const name = p.fullName ? ', ' + p.fullName.split(' ')[0] : '';
-  const isNewUser = state.documents.length === 0 && !p.fullName && state.assignments.length === 0;
-  const needsSkillsGen = state.assignments.length > 0 && (state.profile.technicalSkills||[]).length === 0 && !state.ui.skillsGenDismissed;
-  const needsSummaryGen = state.assignments.length > 0 && !state.profile.elevatorPitch && !state.ui.summaryGenDismissed;
-
-  // Achievements prompt — show when experience exists but brag book is empty or thin
-  const needsAchievements = state.assignments.length > 0 && achievements.length < 3 && !state.ui.achievementsDismissed;
-
-  const appColor = '#1a3a6b';
-  const profileColor = profilePct === 100 ? '#1a5c2a' : profilePct >= 70 ? '#b8860b' : '#8b1a1a';
-  const docsColor = state.documents.length > 0 || state.assignments.length > 0 ? '#1a5c2a' : '#1a3a6b';
+  const logoSVG = `<svg width="56" height="44" viewBox="0 0 56 44" xmlns="http://www.w3.org/2000/svg">
+    <polyline points="4,24 28,4 52,24" fill="none" stroke="#1a3a6b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="4,40 28,20 52,40" fill="none" stroke="#b8860b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
 
   return `
-    <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0 0 20px;color:var(--accent);letter-spacing:0.02em">Welcome back${name}! 👋</h1>
+    <div class="login-page">
+      <div class="login-card" style="text-align:center">
 
-    ${isNewUser ? `
-    <div class="card" style="border-left:4px solid var(--gold);background:var(--gold-light)">
-      <h2>🚀 Get Started in 3 Steps</h2>
-      <div style="font-size:14px;color:var(--text);line-height:1.8">
-        <strong>1. Upload Documents</strong> — Start with your DD-214, performance reports, or civilian resume. Claude will auto-fill everything.<br>
-        <strong>2. Review & Fill Gaps</strong> — Check your Profile and Experience pages, add anything missing.<br>
-        <strong>3. Build Resumes</strong> — Add jobs to your tracker, then let Claude write tailored resumes for each one.
-      </div>
-      <button class="btn btn-primary" onclick="setState({view:'documents'})" style="margin-top:12px">📤 Start: Upload Documents</button>
-    </div>` : ''}
+        <div style="margin-bottom:20px">${logoSVG}</div>
 
-    <div class="grid3" style="margin-bottom:20px">
-      ${[
-        ['Active Applications', active+'/'+total, appColor],
-        ['Profile Complete', profilePct+'%', profileColor],
-        ['Documents', (() => { const n = state.documents.length; return n > 0 ? n + ' ✓' : (state.assignments.length > 0 ? '✓' : '0'); })(), docsColor]
-      ].map(([l,v,c])=>`
-        <div class="card" style="margin-bottom:0;text-align:center">
-          <div style="font-size:32px;font-weight:800;color:${c};font-family:'Familjen Grotesk',sans-serif">${v}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.06em;text-transform:uppercase">${l}</div>
-        </div>`).join('')}
-    </div>
+        <div style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Veteran Career Platform</div>
+        <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:30px;font-weight:700;margin:0 0 6px;color:var(--accent)">Tactical 2 Talent</h1>
+        <p style="font-family:'Lora',serif;font-style:italic;color:var(--muted);font-size:14px;margin:0 0 28px">Your military-to-civilian transition platform</p>
 
-    ${(needsSkillsGen || needsSummaryGen) ? `
-    <div class="card" style="border-left:4px solid var(--gold);background:var(--gold-light)">
-      <div style="display:flex;align-items:start;gap:12px">
-        <span style="font-size:20px;flex-shrink:0">🤖</span>
-        <div style="flex:1">
-          <div style="font-weight:700;font-size:14px;color:var(--accent);margin-bottom:4px;font-family:'Familjen Grotesk',sans-serif;text-transform:uppercase;letter-spacing:0.04em">Your profile is missing a few things Claude needs</div>
-          <div style="font-size:13px;color:var(--text);margin-bottom:12px">You have experience loaded but ${[needsSkillsGen?'no skills inventory':null,needsSummaryGen?'no professional summary':null].filter(Boolean).join(' and ')}. These are used in every resume, LinkedIn profile, and interview answer.</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            ${needsSkillsGen ? `<button class="btn btn-primary btn-sm" onclick="setState({view:'profile'});setTimeout(extractSkillsFromExperience,300)">✨ Auto-generate Skills</button>` : ''}
-            ${needsSummaryGen ? `<button class="btn btn-primary btn-sm" onclick="setState({view:'profile'});setTimeout(generateElevatorPitch,300)">✨ Auto-generate Summary</button>` : ''}
-            <button onclick="setState({ui:{...state.ui,skillsGenDismissed:true,summaryGenDismissed:true}})" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px">Dismiss</button>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+          <div style="flex:1;height:1px;background:var(--rule-dark)"></div>
+          <div style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--dim)">Sign In</div>
+          <div style="flex:1;height:1px;background:var(--rule-dark)"></div>
+        </div>
+
+        ${clerkError
+          ? `<div style="background:var(--red-light);border:1px solid #e8c0c0;border-radius:2px;padding:14px;font-size:13px;color:var(--red);margin-bottom:16px">
+               Sign-in failed to load. Please refresh the page.<br>
+               <button onclick="location.reload()" class="btn btn-primary btn-sm" style="margin-top:8px">Refresh</button>
+             </div>`
+          : `<div id="clerk-signin-container" style="min-height:80px;text-align:left">
+               <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">
+                 <div class="spinner" style="margin:0 auto 8px"></div>
+                 Loading sign-in...
+               </div>
+             </div>`
+        }
+
+        <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--rule)">
+          <p style="font-family:'Familjen Grotesk',sans-serif;font-size:10px;letter-spacing:0.08em;color:var(--dim);margin:0 0 8px">
+            YOUR DATA IS ENCRYPTED AND NEVER SOLD &nbsp;·&nbsp; BUILT FOR VETERANS, BY A VETERAN
+          </p>
+          <div style="display:flex;gap:16px;justify-content:center">
+            <a href="/privacy.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'Familjen Grotesk',sans-serif">Privacy Policy</a>
+            <a href="/terms.html" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;font-family:'Familjen Grotesk',sans-serif">Terms of Service</a>
           </div>
         </div>
-      </div>
-    </div>
-    ` : ''}
 
-    ${needsAchievements ? `
-    <div class="card" style="border-left:4px solid var(--gold)">
-      <div style="display:flex;align-items:start;gap:12px">
-        <span style="font-size:20px;flex-shrink:0">🏆</span>
-        <div style="flex:1">
-          <div style="font-weight:700;font-size:14px;color:var(--accent);margin-bottom:4px;font-family:'Familjen Grotesk',sans-serif;text-transform:uppercase;letter-spacing:0.04em">Build your achievements library</div>
-          <div style="font-size:13px;color:var(--text);margin-bottom:12px">
-            You have experience loaded but no brag book yet. Claude uses your achievements library to write stronger resume bullets, more specific interview answers, and better cover letters.
-            ${achievements.length > 0 ? `You have <strong>${achievements.length}</strong> — aim for at least 5 to 8.` : 'Claude can auto-extract your best wins from your experience in one click.'}
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-primary btn-sm" onclick="setState({view:'achievements'})">🏆 Open Achievements Library</button>
-            <button class="btn btn-secondary btn-sm" onclick="setState({view:'achievements'});setTimeout(extractAchievementsFromExperience,300)">🤖 Auto-Extract Now</button>
-            <button onclick="setState({ui:{...state.ui,achievementsDismissed:true}})" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px">Dismiss</button>
-          </div>
-        </div>
       </div>
-    </div>` : ''}
-
-
-    ${(typeof getUpcomingMilestones === 'function' && getUpcomingMilestones(3).length > 0) ? `
-    <div class="card" style="border-left:4px solid var(--accent)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h2 style="margin:0">📅 Upcoming Timeline Deadlines</h2>
-        <button onclick="setState({view:'timeline'})" style="background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;font-size:12px;font-family:'Familjen Grotesk',sans-serif">View full timeline →</button>
-      </div>
-      ${getUpcomingMilestones(3).map(m => {
-        const days = m.days;
-        const isUrgent = days <= 7;
-        const dateStr = m.actualDate || m.calculatedDate;
-        return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);cursor:pointer" onclick="setState({view:'timeline'})">
-          <div style="font-size:18px;flex-shrink:0">${
-            m.category === 'benefits' ? '🏥' :
-            m.category === 'financial' ? '💰' :
-            m.category === 'job-search' ? '💼' :
-            m.category === 'records' ? '📋' : '🎖️'
-          }</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:13px;color:var(--accent)">${esc(m.label.replace(/^⚡ /,''))}</div>
-            <div style="font-size:11px;color:var(--muted)">${formatTimelineDate ? formatTimelineDate(dateStr) : dateStr}${m.actualDate?' · ✓ Confirmed':' · Estimated'}</div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:${isUrgent?'var(--red)':'var(--muted)'};white-space:nowrap;font-family:'Familjen Grotesk',sans-serif">
-            ${days === 0 ? 'TODAY' : days < 0 ? `${Math.abs(days)}d ago` : `${days}d`}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>` : ''}
-
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <h2 style="margin:0">Getting Started Checklist</h2>
-        <span style="font-size:12px;font-weight:700;font-family:'Familjen Grotesk',sans-serif;color:${pct===100?'var(--green)':'var(--muted)'}">${doneCount}/${totalCount} complete</span>
-      </div>
-      <div style="height:6px;background:var(--rule);border-radius:2px;margin-bottom:16px;overflow:hidden">
-        <div style="height:6px;border-radius:2px;background:${pct===100?'var(--green)':'var(--gold)'};width:${pct}%;transition:width 0.4s ease"></div>
-      </div>
-      ${checksWithStatus.map(c=>`
-        <div class="checklist-item${c.done?' done':''}" onclick="${c.done?'':''}${c.manualOnly?`toggleChecklistItem('${c.label}')`:c.done?'':`setState({view:'${c.view}'})`}" style="${c.priority&&!c.done?'border-color:var(--gold);background:var(--gold-light);':''}">
-          <div class="check-circle${c.done?' done':' todo'}" ${c.manualOnly&&!c.done?`onclick="event.stopPropagation();toggleChecklistItem('${c.label}')"`:''}>${c.done?'✓':c.priority?'!':''}</div>
-          <span style="${c.done?'text-decoration:line-through;color:var(--dim)':c.priority&&!c.done?'font-weight:600;color:var(--accent)':''}">${c.label}</span>
-          ${!c.done&&!c.manualOnly?'<span style="margin-left:auto;color:var(--gold);font-size:12px;font-weight:700">→</span>':''}
-          ${c.manualOnly&&!c.done?'<span style="margin-left:auto;color:var(--dim);font-size:11px;font-style:italic;font-family:\'Familjen Grotesk\',sans-serif">Click to mark done</span>':''}
-        </div>`).join('')}
-      ${pct===100?`<div style="text-align:center;padding:12px;background:var(--green-light);border:1px solid #c8e6cd;border-radius:2px;margin-top:8px;color:var(--green);font-weight:700;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em">🎉 SETUP COMPLETE — YOUR PROFILE IS READY</div>`:''}
     </div>`;
 }
 
-function toggleChecklistItem(label) {
-  const current = state.checklist[label] || false;
-  setState({ checklist: { ...state.checklist, [label]: !current } });
+function renderSidebar() {
+  const items = [
+    {id:'dashboard',   label:'&#127968; Dashboard'},
+    {id:'documents',   label:'&#128228; Upload Docs', highlight:true},
+    {id:'profile',     label:'&#128100; Profile'},
+    {id:'experience',  label:'&#128506; Experience'},
+    {id:'achievements',label:'&#127942; Achievements'},
+    {id:'timeline',    label:'&#128197; Sep Timeline'},
+    {id:'scout',       label:'&#128301; Job Scout'},
+    {id:'jobs',        label:'&#128188; Job Tracker'},
+    {id:'resume',      label:'&#128196; Resume Builder'},
+    {id:'linkedin',    label:'&#128188; LinkedIn Generator'},
+    {id:'interview',   label:'&#127908; Interview Prep'},
+    {id:'salary',      label:'&#128176; Salary Intel'},
+    {id:'network',     label:'&#128140; Networking Emails'},
+    {id:'refletter',   label:'&#128220; Reference Letter'},
+    {id:'sf86',        label:'&#128272; SF-86 Prep'},
+    {id:'gap',         label:'&#128202; Gap Analysis'},
+    {id:'settings',    label:'&#9881; Settings'},
+    {id:'faq',         label:'&#10067; Help & FAQ'},
+  ];
+
+  const displayName = getDisplayName();
+
+  const chevronMark = `<svg width="22" height="22" viewBox="0 0 56 44" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+    <polyline points="4,24 28,4 52,24" fill="none" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="4,40 28,20 52,40" fill="none" stroke="#b8860b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+
+  const achCount = (state.achievements||[]).length;
+  const tl = state.timeline || {};
+  const sepDays = tl.separationDate ? Math.round((new Date(tl.separationDate) - new Date()) / (1000*60*60*24)) : null;
+
+  return `
+    <div class="sidebar">
+
+      <!-- Brand -->
+      <div style="padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.1)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          ${chevronMark}
+          <div>
+            <div style="font-family:'Familjen Grotesk',sans-serif;font-weight:700;color:white;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;line-height:1.1">Tactical 2 Talent</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.35);font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.12em;text-transform:uppercase">Career Transition · v0.9</div>
+          </div>
+        </div>
+        ${displayName ? `
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:8px">
+          <div style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.7);font-family:'Familjen Grotesk',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(displayName)}">${esc(displayName)}</div>
+        </div>` : ''}
+        ${sepDays !== null ? `
+        <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(184,134,11,0.15);border-radius:2px;margin-top:6px;border:1px solid rgba(184,134,11,0.3)">
+          <div style="font-size:10px;color:var(--gold);font-family:'Familjen Grotesk',sans-serif;font-weight:700">
+            ${sepDays > 0 ? `📅 ${sepDays}d to separation` : sepDays === 0 ? '🎖️ Separation day!' : `🎖️ ${Math.abs(sepDays)}d post-sep`}
+          </div>
+        </div>` : ''}
+      </div>
+
+      <!-- Nav items -->
+      <nav style="flex:1;padding:8px;overflow-y:auto">
+        ${items.map(i => `
+          <button class="nav-btn${state.view===i.id?' active':''}${i.highlight&&state.documents.length===0?' start-here':''}"
+            onclick="setState({view:'${i.id}'}); closeNav()">
+            ${i.label}
+            ${i.highlight&&state.documents.length===0
+              ? `<span style="font-size:9px;background:var(--gold);color:white;padding:2px 6px;border-radius:2px;margin-left:4px;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.08em">START</span>`
+              : ''}
+            ${i.id==='achievements' && achCount > 0
+              ? `<span style="font-size:9px;background:rgba(184,134,11,0.3);color:var(--gold);padding:2px 6px;border-radius:2px;margin-left:auto;font-family:'Familjen Grotesk',sans-serif;font-weight:700">${achCount}</span>`
+              : ''}
+          </button>`).join('')}
+      </nav>
+
+      <!-- Bottom: sign out + legal -->
+      <div style="padding:8px;border-top:1px solid rgba(255,255,255,0.1)">
+        <button class="nav-btn" style="color:#f87171" onclick="clerkSignOut()">&#128682; Sign Out</button>
+        <div style="padding:4px 10px 6px;display:flex;gap:14px">
+          <a href="/privacy.html" target="_blank" style="font-size:10px;color:rgba(255,255,255,0.3);text-decoration:none;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;transition:color 0.15s" onmouseover="this.style.color='rgba(255,255,255,0.65)'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">Privacy</a>
+          <a href="/terms.html" target="_blank" style="font-size:10px;color:rgba(255,255,255,0.3);text-decoration:none;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.04em;transition:color 0.15s" onmouseover="this.style.color='rgba(255,255,255,0.65)'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">Terms</a>
+        </div>
+      </div>
+
+    </div>`;
+}
+
+function renderView() {
+  switch(state.view) {
+    case 'onboarding':   return renderOnboarding();
+    case 'dashboard':    return renderDashboard();
+    case 'profile':      return renderProfile();
+    case 'experience':   return renderExperience();
+    case 'achievements': return renderAchievements();
+    case 'timeline':     return renderTimeline();
+    case 'documents':    return renderDocuments();
+    case 'jobs':         return renderJobs();
+    case 'scout':        return renderScout();
+    case 'resume':       return renderResume();
+    case 'linkedin':     return renderLinkedIn();
+    case 'interview':    return renderInterview();
+    case 'salary':       return renderSalary();
+    case 'network':      return renderNetwork();
+    case 'refletter':    return renderRefLetter();
+    case 'sf86':         return renderSF86();
+    case 'gap':          return renderGap();
+    case 'settings':     return renderSettings();
+    case 'faq':          return renderFAQ();
+    case 'stats':        return renderStats();
+    default:             return renderDashboard();
+  }
 }
