@@ -7,6 +7,7 @@ let state = {
   assignments: [],
   civilianJobs: [],
   awards: [],
+  achievements: [],  // Brag book — feeds resume builder, interview prep, cover letters
   documents: [],
   jobs: [],
   apiKey: '',
@@ -29,7 +30,7 @@ let state = {
     relatives: [],
     notes: ''
   },
-  supabase: { url: '', anonKey: '', userId: '', syncing: false, lastSync: null, syncError: '' },
+  supabase: { url: '', url: '', anonKey: '', userId: '', syncing: false, lastSync: null, syncError: '' },
   access: { plan: 'free', proUntil: null, promoCode: null },
   // UI state
   ui: {}
@@ -37,7 +38,7 @@ let state = {
 
 function loadState() {
   try {
-    const keys = ['profile','assignments','civilianJobs','awards','documents','jobs','apiKey','checklist','scoutFilters','sf86','supabase','access'];
+    const keys = ['profile','assignments','civilianJobs','awards','achievements','documents','jobs','apiKey','checklist','scoutFilters','sf86','supabase','access'];
     keys.forEach(k => {
       const v = localStorage.getItem('vc_' + k);
       if (v) state[k] = JSON.parse(v);
@@ -51,18 +52,19 @@ function saveKey(k) {
 
 function setState(updates, shouldRender=true) {
   Object.assign(state, updates);
-  if (updates.profile !== undefined) { saveKey('profile'); scheduleSync(); }
-  if (updates.assignments !== undefined) { saveKey('assignments'); scheduleSync(); }
+  if (updates.profile !== undefined)      { saveKey('profile');      scheduleSync(); }
+  if (updates.assignments !== undefined)  { saveKey('assignments');  scheduleSync(); }
   if (updates.civilianJobs !== undefined) { saveKey('civilianJobs'); scheduleSync(); }
-  if (updates.awards !== undefined) { saveKey('awards'); scheduleSync(); }
-  if (updates.documents !== undefined) { saveKey('documents'); scheduleSync(); }
-  if (updates.jobs !== undefined) { saveKey('jobs'); scheduleSync(); }
-  if (updates.apiKey !== undefined) saveKey('apiKey');
-  if (updates.checklist !== undefined) { saveKey('checklist'); scheduleSync(); }
+  if (updates.awards !== undefined)       { saveKey('awards');       scheduleSync(); }
+  if (updates.achievements !== undefined) { saveKey('achievements');  scheduleSync(); }
+  if (updates.documents !== undefined)    { saveKey('documents');     scheduleSync(); }
+  if (updates.jobs !== undefined)         { saveKey('jobs');          scheduleSync(); }
+  if (updates.apiKey !== undefined)       saveKey('apiKey');
+  if (updates.checklist !== undefined)    { saveKey('checklist');    scheduleSync(); }
   if (updates.scoutFilters !== undefined) { saveKey('scoutFilters'); scheduleSync(); }
-  if (updates.sf86 !== undefined) { saveKey('sf86'); scheduleSync(); }
-  if (updates.access !== undefined) saveKey('access');
-  if (updates.supabase !== undefined) saveKey('supabase');
+  if (updates.sf86 !== undefined)         { saveKey('sf86');         scheduleSync(); }
+  if (updates.access !== undefined)       saveKey('access');
+  if (updates.supabase !== undefined)     saveKey('supabase');
   if (shouldRender) render();
 }
 
@@ -73,4 +75,3 @@ function scheduleSync() {
   clearTimeout(syncTimer);
   syncTimer = setTimeout(() => syncToSupabase(false), 2000);
 }
-
