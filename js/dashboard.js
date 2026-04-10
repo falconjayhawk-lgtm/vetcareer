@@ -3,15 +3,18 @@ function renderDashboard() {
   const p = state.profile;
   const active = state.jobs.filter(j=>['applied','interviewing'].includes(j.status)).length;
   const total = state.jobs.length;
-  
+  const achievements = state.achievements || [];
+
   // Documents count as done if: files uploaded locally, OR profile was clearly populated from doc extraction
-  const docsEffectivelyDone = state.documents.length > 0 || 
+  const docsEffectivelyDone = state.documents.length > 0 ||
     state.documents.some(d => d.content && d.content.length > 0) ||
     !!(p.fullName && p.branch && p.rank && p.mosRate);
+
   const checks = [
     {label:'Upload your documents (DD-214, performance reports, resume)', autoDone: docsEffectivelyDone, view:'documents', priority:true},
     {label:'Complete your profile', autoDone:!!(p.fullName&&p.branch), view:'profile'},
     {label:'Review & edit your experience', autoDone:state.assignments.length>0 || state.civilianJobs.length>0, view:'experience'},
+    {label:'Build your achievements library', autoDone:achievements.length>=3, view:'achievements'},
     {label:'Search for jobs', autoDone:state.jobs.length>0||state.ui.scoutResults?.length>0, view:'scout'},
     {label:'Add jobs to tracker', autoDone:state.jobs.length>0, view:'jobs'},
     {label:'You\'re connected! AI features are ready to use.', autoDone:true, view:'dashboard'},
@@ -34,22 +37,13 @@ function renderDashboard() {
   const doneCount = checksWithStatus.filter(c=>c.done).length;
   const totalCount = checksWithStatus.length;
 
-  // Profile completeness — based on key fields that actually matter for generation
+  // Profile completeness
   const profileFields = [
-    !!(p.fullName),
-    !!(p.branch),
-    !!(p.rank),
-    !!(p.yearsOfService),
-    !!(p.mosRate),
-    !!(p.location),
-    !!(p.email || p.phone),
-    !!(p.clearance),
-    !!(p.elevatorPitch),
-    !!(p.identityFrame),
-    !!(p.technicalSkills?.length),
-    !!(p.softSkills?.length),
-    !!(p.targetIndustries?.length),
-    !!(state.assignments.length > 0),
+    !!(p.fullName), !!(p.branch), !!(p.rank), !!(p.yearsOfService),
+    !!(p.mosRate), !!(p.location), !!(p.email || p.phone), !!(p.clearance),
+    !!(p.elevatorPitch), !!(p.identityFrame),
+    !!(p.technicalSkills?.length), !!(p.softSkills?.length),
+    !!(p.targetIndustries?.length), !!(state.assignments.length > 0),
   ];
   const profilePct = Math.round(profileFields.filter(Boolean).length / profileFields.length * 100);
   const name = p.fullName ? ', ' + p.fullName.split(' ')[0] : '';
@@ -57,14 +51,16 @@ function renderDashboard() {
   const needsSkillsGen = state.assignments.length > 0 && (state.profile.technicalSkills||[]).length === 0 && !state.ui.skillsGenDismissed;
   const needsSummaryGen = state.assignments.length > 0 && !state.profile.elevatorPitch && !state.ui.summaryGenDismissed;
 
-  // Stat card color logic — navy base, gold accent, red for warning
+  // Achievements prompt — show when experience exists but brag book is empty or thin
+  const needsAchievements = state.assignments.length > 0 && achievements.length < 3 && !state.ui.achievementsDismissed;
+
   const appColor = '#1a3a6b';
   const profileColor = profilePct === 100 ? '#1a5c2a' : profilePct >= 70 ? '#b8860b' : '#8b1a1a';
   const docsColor = state.documents.length > 0 || state.assignments.length > 0 ? '#1a5c2a' : '#1a3a6b';
 
   return `
     <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0 0 20px;color:var(--accent);letter-spacing:0.02em">Welcome back${name}! 👋</h1>
-    
+
     ${isNewUser ? `
     <div class="card" style="border-left:4px solid var(--gold);background:var(--gold-light)">
       <h2>🚀 Get Started in 3 Steps</h2>
@@ -75,7 +71,7 @@ function renderDashboard() {
       </div>
       <button class="btn btn-primary" onclick="setState({view:'documents'})" style="margin-top:12px">📤 Start: Upload Documents</button>
     </div>` : ''}
-    
+
     <div class="grid3" style="margin-bottom:20px">
       ${[
         ['Active Applications', active+'/'+total, appColor],
@@ -105,6 +101,25 @@ function renderDashboard() {
     </div>
     ` : ''}
 
+    ${needsAchievements ? `
+    <div class="card" style="border-left:4px solid var(--gold)">
+      <div style="display:flex;align-items:start;gap:12px">
+        <span style="font-size:20px;flex-shrink:0">🏆</span>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px;color:var(--accent);margin-bottom:4px;font-family:'Familjen Grotesk',sans-serif;text-transform:uppercase;letter-spacing:0.04em">Build your achievements library</div>
+          <div style="font-size:13px;color:var(--text);margin-bottom:12px">
+            You have experience loaded but no brag book yet. Claude uses your achievements library to write stronger resume bullets, more specific interview answers, and better cover letters.
+            ${achievements.length > 0 ? `You have <strong>${achievements.length}</strong> — aim for at least 5 to 8.` : 'Claude can auto-extract your best wins from your experience in one click.'}
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="setState({view:'achievements'})">🏆 Open Achievements Library</button>
+            <button class="btn btn-secondary btn-sm" onclick="setState({view:'achievements'});setTimeout(extractAchievementsFromExperience,300)">🤖 Auto-Extract Now</button>
+            <button onclick="setState({ui:{...state.ui,achievementsDismissed:true}})" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px">Dismiss</button>
+          </div>
+        </div>
+      </div>
+    </div>` : ''}
+
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <h2 style="margin:0">Getting Started Checklist</h2>
@@ -114,7 +129,7 @@ function renderDashboard() {
         <div style="height:6px;border-radius:2px;background:${pct===100?'var(--green)':'var(--gold)'};width:${pct}%;transition:width 0.4s ease"></div>
       </div>
       ${checksWithStatus.map(c=>`
-        <div class="checklist-item${c.done?' done':''}" onclick="${c.done?'':''}${c.manualOnly?`toggleChecklistItem('${c.label}')`:c.done?'':`setState({view:'${c.view}'})`}" style="${c.priority&&!c.done?'border-color:var(--gold);background:var(--gold-light);':''}" >
+        <div class="checklist-item${c.done?' done':''}" onclick="${c.done?'':''}${c.manualOnly?`toggleChecklistItem('${c.label}')`:c.done?'':`setState({view:'${c.view}'})`}" style="${c.priority&&!c.done?'border-color:var(--gold);background:var(--gold-light);':''}">
           <div class="check-circle${c.done?' done':' todo'}" ${c.manualOnly&&!c.done?`onclick="event.stopPropagation();toggleChecklistItem('${c.label}')"`:''}>${c.done?'✓':c.priority?'!':''}</div>
           <span style="${c.done?'text-decoration:line-through;color:var(--dim)':c.priority&&!c.done?'font-weight:600;color:var(--accent)':''}">${c.label}</span>
           ${!c.done&&!c.manualOnly?'<span style="margin-left:auto;color:var(--gold);font-size:12px;font-weight:700">→</span>':''}
