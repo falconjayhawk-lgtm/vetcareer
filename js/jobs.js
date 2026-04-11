@@ -125,11 +125,11 @@ function renderJobs() {
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
               <span style="font-weight:700;font-size:16px">${esc(j.title)}</span> ${statusBadge(j.status)}
-              ${j.fitScore ? (() => {
-                const s = j.fitScore;
-                const color = s >= 8 ? '#16a34a' : s >= 6 ? '#2563eb' : s >= 4 ? '#d97706' : '#dc2626';
-                const bg = s >= 8 ? '#f0fdf4' : s >= 6 ? '#eff6ff' : s >= 4 ? '#fffbeb' : '#fef2f2';
-                return `<span style="background:${bg};color:${color};border:1.5px solid ${color}60;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700">⭐ ${s}/10 ${j.fitLabel||''}</span>`;
+              ${j.scorecard ? (() => {
+                const g = j.scorecard.grade || 'C';
+                const cfg = {A:{color:'var(--green)',bg:'var(--green-light)'},B:{color:'#2563eb',bg:'#eff6ff'},C:{color:'var(--gold)',bg:'var(--gold-light)'},D:{color:'#e65100',bg:'#fff3e0'},F:{color:'var(--red)',bg:'var(--red-light)'}};
+                const c = cfg[g]||cfg['C'];
+                return `<span style="background:${c.bg};color:${c.color};border:1.5px solid ${c.color}60;border-radius:2px;padding:2px 10px;font-size:12px;font-weight:800;font-family:'Familjen Grotesk',sans-serif">Grade ${g} — ${esc(j.scorecard.verdict||'')}</span>`;
               })() : ''}
             </div>
             <div style="font-size:14px;color:#4b5563">${esc(j.company)}${j.location?' — '+esc(j.location):''}</div>
@@ -290,8 +290,7 @@ function saveJob() {
     warmIntro:document.getElementById(pre+'-warmIntro')?.value || '',
     rejectionReason: '',
     lessonsLearned: '',
-    fitScore: state.ui.jobAnalysisResult?.fitScore || null,
-    fitLabel: state.ui.jobAnalysisResult?.fitLabel || null,
+    scorecard: state.ui.jobAnalysisResult?.scorecard || null,
     activityLog: [{ date: now, type: 'status', from: null, to: status, note: 'Job added to tracker' }]
   };
   setState({ jobs:[...state.jobs,j], ui:{...state.ui,addJob:false,jobAnalysisResult:null} });
@@ -420,44 +419,177 @@ async function analyzeJobPosting() {
   if (!input) { showToast('Please paste a job URL or description', false); return; }
   setState({ ui: { ...state.ui, jobAnalyzing: true, jobAnalysisError: '', jobAnalysisResult: null } });
   try {
-    const p = state.profile;
+    const p  = state.profile;
     const sf = state.scoutFilters;
+
     const veteranContext = `VETERAN PROFILE:
-Name: ${p.fullName || 'Not provided'}
-Branch: ${p.branch || 'N/A'} | Rank: ${p.rank || 'N/A'} | Years: ${p.yearsOfService || 'N/A'}
-Clearance: ${p.clearance || 'None'} (${p.clearanceStatus || 'N/A'})
-Location: ${p.location || 'N/A'}
-Technical Skills: ${(p.technicalSkills||[]).join(', ') || 'None listed'}
-Leadership Skills: ${(p.softSkills||[]).join(', ') || 'None listed'}
-Target Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?(i.subType?i.name+' - '+i.subType:i.name):i).join(', ') || 'Not specified'}
+Branch: ${p.branch||'N/A'} | Rank: ${p.rank||'N/A'} | Years: ${p.yearsOfService||'N/A'} | MOS: ${p.mosRate||'N/A'}
+Clearance: ${p.clearance||'None'} (${p.clearanceStatus||'N/A'})
+Location: ${p.location||'N/A'} | Willing to relocate: ${p.willingToRelocate||'Unknown'}
+Target salary: ${p.targetSalary||sf?.salary||'Not specified'}
+Technical Skills: ${(p.technicalSkills||[]).join(', ')||'None'}
+Soft Skills: ${(p.softSkills||[]).join(', ')||'None'}
+Target Industries: ${(p.targetIndustries||[]).map(i=>typeof i==='object'?i.name:i).join(', ')||'Not specified'}
+Target Roles: ${sf?.roleTypes||'Not specified'} | Seniority: ${sf?.seniority||'Not specified'}
+Hard Exclusions: ${sf?.exclusions||'None'}
 
 RECENT EXPERIENCE:
-${[...state.assignments.slice(0,3).map(a=>`${a.dutyTitle} at ${a.base}: ${(a.accomplishments||'').slice(0,200)}`), ...state.civilianJobs.slice(0,2).map(j=>`${j.title} at ${j.company}: ${(j.accomplishments||'').slice(0,200)}`)].join('\n') || 'None'}
-
-${sf?.roleTypes ? `STANDING JOB PREFERENCES:\nTarget Roles: ${sf.roleTypes}\nTarget Domains: ${sf.domains || 'N/A'}\nGeography: ${sf.geography || 'N/A'}\nSeniority Target: ${sf.seniority || 'N/A'}\nHard Exclusions: ${sf.exclusions || 'None'}` : ''}`;
+${[...state.assignments.slice(0,3).map(a=>`${a.dutyTitle} at ${a.base}: ${(a.accomplishments||'').slice(0,250)}`),
+   ...state.civilianJobs.slice(0,2).map(j=>`${j.title} at ${j.company}: ${(j.accomplishments||'').slice(0,200)}`)
+].join('\n')||'None'}`;
 
     const result = await callClaude(
-      'You are a military-to-civilian career transition expert and hiring advisor. You give direct, opinionated assessments. Return valid JSON only.',
-      `Analyze this job posting for a veteran.\n\n${veteranContext}\n\nJOB POSTING:\n${input}\n\nReturn ONLY this JSON:\n{"title":"","company":"","location":"","clearance":"","salaryRange":"","reqId":"","fitScore":<1-10>,"fitLabel":"Strong Fit/Good Fit/Moderate Fit/Weak Fit/Poor Fit","seniority":"On-Target/Stretch/Too Senior/Too Junior","worthYourTime":true,"assessment":"2-3 sentence fit explanation","whyItMatters":"one sentence","watchOut":"one red flag or empty string","transferableStrengths":["2-3 specific military-to-civilian mappings"]}`
-    );
-    let analysis;
-    try { analysis = JSON.parse(result.replace(/```json|```/g, '').trim()); }
-    catch(e) { throw new Error('Could not parse analysis. Try pasting the job description text instead of a URL.'); }
+      `You are a military-to-civilian career transition expert and hiring advisor with deep knowledge of defense, federal, and commercial hiring. You evaluate job fit across 10 weighted dimensions and give direct, opinionated assessments. Scores of 1-5 per dimension. Return valid JSON only.`,
+      `Score this job posting for the veteran below across 10 dimensions. Be specific and direct in each insight.
 
+${veteranContext}
+
+JOB POSTING:
+${input.slice(0, 4000)}
+
+SCORING DIMENSIONS AND WEIGHTS:
+1. role_fit (weight 20) — Does title/function match their experience level and background?
+2. skills_match (weight 20) — Required skills vs. their actual skill inventory?
+3. clearance_fit (weight 15) — Required clearance vs. held clearance and status?
+4. comp_fit (weight 10) — Posted/implied comp vs. their target and military equivalent?
+5. seniority_fit (weight 10) — Is the level/grade a match, stretch, or mismatch?
+6. location_fit (weight 8) — Location/remote compatibility with their situation?
+7. industry_fit (weight 7) — Does their military background translate to this industry?
+8. veteran_culture (weight 5) — Company's known track record with veterans and military hires?
+9. growth_potential (weight 3) — Does this role position them well for career advancement?
+10. ats_match (weight 2) — Does their likely resume language match the posting keywords?
+
+GRADE SCALE: A=85-100, B=70-84, C=55-69, D=40-54, F=below 40
+Composite = sum(score/5 * weight) for all dimensions
+
+Return ONLY this JSON (no markdown):
+{
+  "title": "extracted job title",
+  "company": "extracted company",
+  "location": "extracted location",
+  "clearance": "clearance requirement or empty string",
+  "salaryRange": "extracted salary or empty string",
+  "reqId": "req/job ID if present or empty string",
+  "scorecard": {
+    "grade": "A|B|C|D|F",
+    "composite": <0-100 number>,
+    "recommendation": "yes|caution|no",
+    "verdict": "5-8 word verdict e.g. Strong match — apply this week",
+    "dimensions": [
+      {"id":"role_fit","label":"Role / Title Fit","score":<1-5>,"weight":20,"insight":"One specific sentence. Reference actual job title and their rank/role."},
+      {"id":"skills_match","label":"Skills Match","score":<1-5>,"weight":20,"insight":"One specific sentence. Name the matching and missing skills."},
+      {"id":"clearance_fit","label":"Clearance Alignment","score":<1-5>,"weight":15,"insight":"One specific sentence. State required vs. held."},
+      {"id":"comp_fit","label":"Compensation Fit","score":<1-5>,"weight":10,"insight":"One specific sentence. Reference actual numbers if available."},
+      {"id":"seniority_fit","label":"Seniority / Level","score":<1-5>,"weight":10,"insight":"One specific sentence. On-target, stretch, or mismatch?"},
+      {"id":"location_fit","label":"Location / Remote","score":<1-5>,"weight":8,"insight":"One specific sentence."},
+      {"id":"industry_fit","label":"Industry Fit","score":<1-5>,"weight":7,"insight":"One specific sentence. How does military experience translate here?"},
+      {"id":"veteran_culture","label":"Veteran-Friendly Culture","score":<1-5>,"weight":5,"insight":"One specific sentence. What is this company's veteran hiring reputation?"},
+      {"id":"growth_potential","label":"Growth Potential","score":<1-5>,"weight":3,"insight":"One specific sentence."},
+      {"id":"ats_match","label":"Resume Keyword Match","score":<1-5>,"weight":2,"insight":"One specific sentence. List 2-3 keywords from the posting."}
+    ],
+    "strengths": ["2-3 specific veteran leverage points for this role"],
+    "gaps": ["2-3 specific gaps or things to address"],
+    "applyAdvice": "2-3 sentences of direct apply advice — what to lead with, what to address, whether to apply at all."
+  }
+}`
+    );
+
+    let analysis;
+    try {
+      analysis = typeof extractJSON === 'function'
+        ? extractJSON(result)
+        : JSON.parse(result.replace(/```json|```/g,'').trim());
+    } catch(e) { throw new Error('Could not parse analysis. Try pasting the full job description text instead of a URL.'); }
+
+    // Auto-fill the form fields
     if (analysis.title)      { const el = document.getElementById('nj-title');      if(el) el.value = analysis.title; }
     if (analysis.company)    { const el = document.getElementById('nj-company');    if(el) el.value = analysis.company; }
     if (analysis.location)   { const el = document.getElementById('nj-location');   if(el) el.value = analysis.location; }
     if (analysis.salaryRange){ const el = document.getElementById('nj-salaryRange');if(el) el.value = analysis.salaryRange; }
     if (input.startsWith('http')) { const el = document.getElementById('nj-jobUrl'); if(el) el.value = input.split('\n')[0]; }
     let notesContent = '';
-    if (analysis.clearance)  notesContent += `Clearance Required: ${analysis.clearance}\n`;
-    if (analysis.reqId)      notesContent += `Req ID: ${analysis.reqId}\n`;
-    if (analysis.watchOut)   notesContent += `⚠️ ${analysis.watchOut}\n`;
+    if (analysis.clearance) notesContent += `Clearance Required: ${analysis.clearance}\n`;
+    if (analysis.reqId)     notesContent += `Req ID: ${analysis.reqId}\n`;
+    const gaps = analysis.scorecard?.gaps;
+    if (gaps?.length) notesContent += `Gaps to address: ${gaps.join('; ')}\n`;
     if (notesContent) { const el = document.getElementById('nj-notes'); if(el) el.value = notesContent.trim(); }
 
     setState({ ui: { ...state.ui, jobAnalyzing: false, jobAnalysisResult: analysis } });
-    showToast('✓ Job analyzed and form auto-filled!');
+    if (typeof trackAction === 'function') trackAction('job_analyze');
+    showToast('✓ Job scored — see your A-F scorecard below');
   } catch(err) {
     setState({ ui: { ...state.ui, jobAnalyzing: false, jobAnalysisError: err.message } });
   }
+}
+
+// ── Scorecard panel renderer ──────────────────────────────────────────
+
+function renderScorecardPanel(analysis) {
+  const sc = analysis?.scorecard;
+  if (!sc) return '';
+
+  const grade     = sc.grade || 'C';
+  const composite = sc.composite || 0;
+  const gradeCfg  = {
+    A: { color:'var(--green)',  bg:'var(--green-light)', border:'#c8e6cd', label:'Apply immediately' },
+    B: { color:'#2563eb',      bg:'#eff6ff',            border:'#bfdbfe', label:'Strong — apply this week' },
+    C: { color:'var(--gold)',  bg:'var(--gold-light)',  border:'#e8d5a0', label:'Worth a shot — address gaps' },
+    D: { color:'#e65100',      bg:'#fff3e0',            border:'#ffcc80', label:'Stretch — apply if passionate' },
+    F: { color:'var(--red)',   bg:'var(--red-light)',   border:'#e8c0c0', label:'Not the right fit right now' }
+  };
+  const gc = gradeCfg[grade] || gradeCfg['C'];
+
+  const dimColors = { 5:'var(--green)', 4:'#16a34a', 3:'var(--gold)', 2:'#e65100', 1:'var(--red)' };
+
+  return `
+    <div style="border:2px solid ${gc.border};border-radius:2px;padding:18px;margin-bottom:16px;background:${gc.bg}">
+
+      <!-- Header: grade + verdict -->
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="width:72px;height:72px;border-radius:2px;background:${gc.color};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+          <div style="font-size:36px;font-weight:800;color:white;font-family:'Familjen Grotesk',sans-serif;line-height:1">${grade}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.7);font-family:'Familjen Grotesk',sans-serif">${composite}/100</div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:16px;color:${gc.color};font-family:'Familjen Grotesk',sans-serif;margin-bottom:4px">${esc(sc.verdict||gc.label)}</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.6">${esc(sc.applyAdvice||'')}</div>
+        </div>
+      </div>
+
+      <!-- Dimension bars -->
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        ${(sc.dimensions||[]).map(d => {
+          const score = d.score || 1;
+          const pct   = Math.round((score/5)*100);
+          const color = dimColors[score] || dimColors[3];
+          return `
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
+              <div style="font-size:11px;font-weight:700;color:var(--text);font-family:'Familjen Grotesk',sans-serif">${esc(d.label)}</div>
+              <div style="font-size:10px;color:var(--muted);white-space:nowrap;margin-left:8px">${score}/5 · ${d.weight}%</div>
+            </div>
+            <div style="height:5px;background:var(--rule);border-radius:3px;overflow:hidden;margin-bottom:2px">
+              <div style="height:5px;background:${color};width:${pct}%;border-radius:3px"></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.4">${esc(d.insight||'')}</div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <!-- Strengths + Gaps -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        ${(sc.strengths||[]).length ? `
+        <div style="background:white;border-radius:2px;padding:10px;border:1px solid #c8e6cd">
+          <div style="font-size:10px;font-weight:700;color:var(--green);font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Your Leverage</div>
+          ${sc.strengths.map(s=>`<div style="font-size:12px;color:var(--text);margin-bottom:3px">✓ ${esc(s)}</div>`).join('')}
+        </div>` : ''}
+        ${(sc.gaps||[]).length ? `
+        <div style="background:white;border-radius:2px;padding:10px;border:1px solid #e8d5a0">
+          <div style="font-size:10px;font-weight:700;color:var(--gold);font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Address These</div>
+          ${sc.gaps.map(g=>`<div style="font-size:12px;color:var(--text);margin-bottom:3px">⚠ ${esc(g)}</div>`).join('')}
+        </div>` : ''}
+      </div>
+
+      <button class="btn btn-secondary btn-sm" onclick="toggleUI('jobAnalysisResult',null)">Clear Analysis</button>
+    </div>`;
 }
