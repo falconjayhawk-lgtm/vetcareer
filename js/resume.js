@@ -89,6 +89,8 @@ function renderResume() {
       ${job && (job.resumeVersions||[]).length > 0 ? `
       <div style="background:var(--green-light);border:1.5px solid #c8e6cd;border-radius:2px;padding:14px;margin-bottom:16px">
         <div style="font-weight:700;font-size:12px;color:var(--green);margin-bottom:10px;font-family:'Familjen Grotesk',sans-serif;letter-spacing:0.06em;text-transform:uppercase">📁 Saved Versions (${job.resumeVersions.length})</div>
+          ${(job.resumeVersions||[]).length >= 2 ? `<button class="btn btn-secondary btn-sm" onclick="openResumeCompare('${job.id}')" style="font-size:11px">📊 Compare Versions</button>` : ''}
+        </div>
         <div style="display:flex;flex-direction:column;gap:6px">
           ${[...job.resumeVersions].reverse().map((v,i) => `
             <div style="display:flex;justify-content:space-between;align-items:center;background:white;border:1px solid #c8e6cd;border-radius:2px;padding:8px 12px">

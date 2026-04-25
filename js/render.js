@@ -80,6 +80,7 @@ function renderSidebar() {
     {id:'experience',  label:'&#128506; Experience'},
     {id:'achievements',label:'&#127942; Achievements'},
     {id:'timeline',    label:'&#128197; Sep Timeline'},
+    {id:'va-claim',    label:'&#127973;&#65039; VA Claim Docs'},
     {id:'atp',         label:'&#9992;&#65039; ATP Calculator'},
     {id:'airline-pay',  label:'&#9992;&#65039; Airline Pay'},
     {id:'plan90',       label:'&#128197; 90-Day Plan'},
@@ -169,7 +170,9 @@ function renderView() {
     case 'experience':   return renderExperience();
     case 'achievements': return renderAchievements();
     case 'timeline':     return renderTimeline();
+    case 'va-claim':     return renderVAClaim();
     case 'debrief':      return renderDebrief();
+    case 'resume-compare': return renderResumeCompare();
     case 'atp':          return renderATP();
     case 'airline-pay':  return renderAirlinePay();
     case 'plan90':       return renderPlan90();
