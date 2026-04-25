@@ -113,7 +113,7 @@ function renderSidebar() {
   const sepDays = tl.separationDate ? Math.round((new Date(tl.separationDate) - new Date()) / (1000*60*60*24)) : null;
 
   return `
-    <div class="sidebar">
+    <div class="sidebar" style="height:100vh;overflow:hidden;display:flex;flex-direction:column;position:sticky;top:0;flex-shrink:0">
 
       <!-- Brand -->
       <div style="padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.1)">
