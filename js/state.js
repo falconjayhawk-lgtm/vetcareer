@@ -12,7 +12,7 @@ let state = {
   timeline: { separationDate: '', separationType: '', milestones: [] },
   vaClaim: { filingStatus:'', separationDate:'', conditions:[], examDate:'', ratingReceived:null },
   networkContacts: [],
-  logbookChecklist: {}
+  logbookChecklist: {},
   documents: [],
   jobs: [],
   apiKey: '',
