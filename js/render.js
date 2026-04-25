@@ -82,6 +82,7 @@ function renderSidebar() {
     {id:'timeline',    label:'&#128197; Sep Timeline'},
     {id:'va-claim',    label:'&#127973;&#65039; VA Claim Docs'},
     {id:'atp',         label:'&#9992;&#65039; ATP Calculator'},
+    {id:'logbook',      label:'&#128218; Logbook Checklist'},
     {id:'airline-pay',  label:'&#9992;&#65039; Airline Pay'},
     {id:'plan90',       label:'&#128197; 90-Day Plan'},
     {id:'milcomp',      label:'&#129683; Comp Translator'},
@@ -92,6 +93,7 @@ function renderSidebar() {
     {id:'interview',   label:'&#127908; Interview Prep'},
     {id:'salary',      label:'&#128176; Salary Intel'},
     {id:'network',     label:'&#128140; Networking Emails'},
+    {id:'net-tracker',  label:'&#128200; Network Tracker'},
     {id:'refletter',   label:'&#128220; Reference Letter'},
     {id:'sf86',        label:'&#128272; SF-86 Prep'},
     {id:'gap',         label:'&#128202; Gap Analysis'},
@@ -174,6 +176,7 @@ function renderView() {
     case 'debrief':      return renderDebrief();
     case 'resume-compare': return renderResumeCompare();
     case 'atp':          return renderATP();
+    case 'logbook':      return renderLogbookChecklist();
     case 'airline-pay':  return renderAirlinePay();
     case 'plan90':       return renderPlan90();
     case 'milcomp':      return renderMilComp();
@@ -185,6 +188,7 @@ function renderView() {
     case 'interview':    return renderInterview();
     case 'salary':       return renderSalary();
     case 'network':      return renderNetwork();
+    case 'net-tracker':  return renderNetworkTracker();
     case 'refletter':    return renderRefLetter();
     case 'sf86':         return renderSF86();
     case 'gap':          return renderGap();

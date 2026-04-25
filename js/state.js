@@ -11,6 +11,8 @@ let state = {
   stories: [],     // STAR+R behavioral interview story bank
   timeline: { separationDate: '', separationType: '', milestones: [] },
   vaClaim: { filingStatus:'', separationDate:'', conditions:[], examDate:'', ratingReceived:null },
+  networkContacts: [],
+  logbookChecklist: {}
   documents: [],
   jobs: [],
   apiKey: '',
@@ -24,7 +26,7 @@ let state = {
 
 function loadState() {
   try {
-    const keys = ['profile','assignments','civilianJobs','awards','achievements','stories','timeline','vaClaim','documents','jobs','apiKey','checklist','scoutFilters','sf86','supabase','access'];
+    const keys = ['profile','assignments','civilianJobs','awards','achievements','stories','timeline','vaClaim','networkContacts','logbookChecklist','documents','jobs','apiKey','checklist','scoutFilters','sf86','supabase','access'];
     keys.forEach(k => {
       const v = localStorage.getItem('vc_' + k);
       if (v) state[k] = JSON.parse(v);
@@ -46,6 +48,8 @@ function setState(updates, shouldRender=true) {
   if (updates.stories !== undefined)      { saveKey('stories');      scheduleSync(); }
   if (updates.timeline !== undefined)     { saveKey('timeline');     scheduleSync(); }
   if (updates.vaClaim !== undefined)      { saveKey('vaClaim');      scheduleSync(); }
+  if (updates.networkContacts !== undefined) { saveKey('networkContacts'); scheduleSync(); }
+  if (updates.logbookChecklist !== undefined){ saveKey('logbookChecklist'); }
   if (updates.documents !== undefined)    { saveKey('documents');    scheduleSync(); }
   if (updates.jobs !== undefined)         { saveKey('jobs');         scheduleSync(); }
   if (updates.apiKey !== undefined)       saveKey('apiKey');
