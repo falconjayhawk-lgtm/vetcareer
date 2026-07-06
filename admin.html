@@ -9,64 +9,7 @@
 <!-- Clerk -->
 <script async crossorigin="anonymous"
   src="https://clerk.tactical2talent.com/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
-  data-clerk-publishable-key="pk_live_Y2xlcmsudGFjdGljYWwydGFsZW50LmNvbSQ">
-
-// ── Revenue ───────────────────────────────────────────────────────────
-function fmt(cents) {
-  return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-async function loadRevenue() {
-  document.getElementById('revenue-loading').style.display = 'block';
-  document.getElementById('revenue-stats').style.display   = 'none';
-  document.getElementById('revenue-error').style.display   = 'none';
-
-  try {
-    const res = await fetch(`${WORKER}/api/admin/revenue`, { headers: await authHeader() });
-    if (!res.ok) throw new Error(`Worker returned ${res.status}`);
-    const d = await res.json();
-    if (d.error) throw new Error(d.error);
-
-    document.getElementById('rev-mrr').textContent       = fmt(d.mrr);
-    document.getElementById('rev-arr').textContent       = fmt(d.arr);
-    document.getElementById('rev-active').textContent    = d.activeCount;
-    document.getElementById('rev-trial').textContent     = d.trialCount;
-    document.getElementById('rev-available').textContent = fmt(d.availableBalance);
-    document.getElementById('rev-pending').textContent   = fmt(d.pendingBalance);
-
-    // Trial pipeline detail
-    const trialRevPotential = fmt(d.trialMRR);
-    document.getElementById('rev-trial-detail').innerHTML =
-      `<strong>${d.trialCount}</strong> user${d.trialCount !== 1 ? 's' : ''} currently in free trial · ` +
-      `potential MRR if all convert: <strong style="color:var(--yellow)">${trialRevPotential}</strong>/mo`;
-
-    // Recent payments table
-    const payments = d.recentPayments || [];
-    document.getElementById('rev-payments').innerHTML = payments.length
-      ? `<table>
-          <thead><tr><th>Date</th><th>Email</th><th>Amount</th><th>Receipt</th></tr></thead>
-          <tbody>
-            ${payments.map(p => `
-              <tr>
-                <td class="mono muted">${new Date(p.created * 1000).toLocaleDateString()}</td>
-                <td style="color:var(--dim)">${p.email}</td>
-                <td class="mono" style="color:var(--green)">${fmt(p.amount)}</td>
-                <td>${p.receipt ? `<a href="${p.receipt}" target="_blank" style="color:var(--accent);font-size:12px">View ↗</a>` : '—'}</td>
-              </tr>`).join('')}
-          </tbody>
-        </table>`
-      : '<div class="empty">No payments yet.</div>';
-
-    document.getElementById('revenue-loading').style.display = 'none';
-    document.getElementById('revenue-stats').style.display   = 'block';
-
-  } catch (err) {
-    document.getElementById('revenue-loading').style.display = 'none';
-    document.getElementById('revenue-error').style.display   = 'block';
-    document.getElementById('revenue-error').textContent     = `Could not load revenue: ${err.message}`;
-  }
-}
-</script>
+  data-clerk-publishable-key="pk_live_Y2xlcmsudGFjdGljYWwydGFsZW50LmNvbSQ"></script>
 <style>
   :root {
     --bg: #0a0c10;
@@ -233,6 +176,14 @@ async function loadRevenue() {
         <div class="stat-card">
           <div class="stat-value" style="color:var(--purple)" id="stat-codes-active">—</div>
           <div class="stat-label">Active Promo Codes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--accent)" id="stat-accounts-total">—</div>
+          <div class="stat-label">Total Accounts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--green)" id="stat-accounts-new">—</div>
+          <div class="stat-label">New Accounts (14d)</div>
         </div>
       </div>
 
@@ -445,7 +396,6 @@ function showTab(id, event) {
   if (id === 'feedback')  loadFeedback();
   if (id === 'promo')     loadPromos();
   if (id === 'revenue')   loadRevenue();
-  if (id === 'revenue')   loadRevenue();
 }
 
 function toast(msg, ok = true) {
@@ -457,8 +407,24 @@ function toast(msg, ok = true) {
 
 async function refreshAll() {
   document.getElementById('last-refresh').textContent = 'Refreshing...';
-  await Promise.all([loadOverview(), loadPromos()]);
+  await Promise.all([loadOverview(), loadPromos(), loadAccounts()]);
   document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+// ── Accounts ──────────────────────────────────────────────────────────
+async function loadAccounts() {
+  try {
+    const res = await fetch(`${WORKER}/api/admin/accounts`, { headers: await authHeader() });
+    if (!res.ok) throw new Error(`Worker returned ${res.status}`);
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+    document.getElementById('stat-accounts-total').textContent = d.totalAccounts;
+    document.getElementById('stat-accounts-new').textContent   = `+${d.newAccounts}`;
+  } catch (e) {
+    document.getElementById('stat-accounts-total').textContent = '—';
+    document.getElementById('stat-accounts-new').textContent   = '—';
+    console.warn('Could not load account stats:', e.message);
+  }
 }
 
 // ── Promo Codes ───────────────────────────────────────────────────────
@@ -681,26 +647,26 @@ async function loadRevenue() {
     if (!res.ok) throw new Error(`Worker returned ${res.status}`);
     const d = await res.json();
 
-    document.getElementById('rev-mrr').textContent     = fmt(d.mrr);
-    document.getElementById('rev-arr').textContent     = fmt(d.arr);
-    document.getElementById('rev-active').textContent  = d.subscribers.active;
-    document.getElementById('rev-trial').textContent   = d.subscribers.trialing;
-    document.getElementById('rev-pastdue').textContent = d.subscribers.pastDue;
-    document.getElementById('rev-canceled').textContent= d.subscribers.canceled;
-    document.getElementById('rev-balance').textContent = fmt(d.balance.available);
-    document.getElementById('rev-pending').textContent = fmt(d.balance.pending);
+    document.getElementById('rev-mrr').textContent      = fmt(d.mrr);
+    document.getElementById('rev-arr').textContent       = fmt(d.arr);
+    document.getElementById('rev-active').textContent    = d.activeCount;
+    document.getElementById('rev-trial').textContent     = d.trialCount;
+    document.getElementById('rev-pastdue').textContent   = d.pastDueCount;
+    document.getElementById('rev-canceled').textContent  = d.canceledCount;
+    document.getElementById('rev-balance').textContent   = fmt(d.availableBalance);
+    document.getElementById('rev-pending').textContent   = fmt(d.pendingBalance);
 
-    const charges = d.recentCharges || [];
-    document.getElementById('rev-charges').innerHTML = charges.length
+    const payments = d.recentPayments || [];
+    document.getElementById('rev-charges').innerHTML = payments.length
       ? `<table>
-          <thead><tr><th>Date</th><th>Amount</th><th>Email</th><th>Status</th></tr></thead>
+          <thead><tr><th>Date</th><th>Amount</th><th>Email</th><th>Receipt</th></tr></thead>
           <tbody>
-            ${charges.map(c => `
+            ${payments.map(p => `
               <tr>
-                <td class="mono muted">${new Date(c.date * 1000).toLocaleDateString()}</td>
-                <td class="mono" style="color:var(--green)">${fmt(c.amount)}</td>
-                <td style="color:var(--dim);font-size:12px">${c.email || '—'}</td>
-                <td><span class="badge badge-green">${c.status}</span></td>
+                <td class="mono muted">${new Date(p.created * 1000).toLocaleDateString()}</td>
+                <td class="mono" style="color:var(--green)">${fmt(p.amount)}</td>
+                <td style="color:var(--dim);font-size:12px">${p.email || '—'}</td>
+                <td>${p.receipt ? `<a href="${p.receipt}" target="_blank" style="color:var(--accent);font-size:12px">View ↗</a>` : '—'}</td>
               </tr>`).join('')}
           </tbody>
         </table>`
@@ -734,62 +700,6 @@ async function resetData(targets) {
   } catch (err) {
     resultEl.style.color = 'var(--red)';
     resultEl.textContent = `❌ Reset failed: ${err.message}`;
-  }
-}
-
-// ── Revenue ───────────────────────────────────────────────────────────
-function fmt(cents) {
-  return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-async function loadRevenue() {
-  document.getElementById('revenue-loading').style.display = 'block';
-  document.getElementById('revenue-stats').style.display   = 'none';
-  document.getElementById('revenue-error').style.display   = 'none';
-
-  try {
-    const res = await fetch(`${WORKER}/api/admin/revenue`, { headers: await authHeader() });
-    if (!res.ok) throw new Error(`Worker returned ${res.status}`);
-    const d = await res.json();
-    if (d.error) throw new Error(d.error);
-
-    document.getElementById('rev-mrr').textContent       = fmt(d.mrr);
-    document.getElementById('rev-arr').textContent       = fmt(d.arr);
-    document.getElementById('rev-active').textContent    = d.activeCount;
-    document.getElementById('rev-trial').textContent     = d.trialCount;
-    document.getElementById('rev-available').textContent = fmt(d.availableBalance);
-    document.getElementById('rev-pending').textContent   = fmt(d.pendingBalance);
-
-    // Trial pipeline detail
-    const trialRevPotential = fmt(d.trialMRR);
-    document.getElementById('rev-trial-detail').innerHTML =
-      `<strong>${d.trialCount}</strong> user${d.trialCount !== 1 ? 's' : ''} currently in free trial · ` +
-      `potential MRR if all convert: <strong style="color:var(--yellow)">${trialRevPotential}</strong>/mo`;
-
-    // Recent payments table
-    const payments = d.recentPayments || [];
-    document.getElementById('rev-payments').innerHTML = payments.length
-      ? `<table>
-          <thead><tr><th>Date</th><th>Email</th><th>Amount</th><th>Receipt</th></tr></thead>
-          <tbody>
-            ${payments.map(p => `
-              <tr>
-                <td class="mono muted">${new Date(p.created * 1000).toLocaleDateString()}</td>
-                <td style="color:var(--dim)">${p.email}</td>
-                <td class="mono" style="color:var(--green)">${fmt(p.amount)}</td>
-                <td>${p.receipt ? `<a href="${p.receipt}" target="_blank" style="color:var(--accent);font-size:12px">View ↗</a>` : '—'}</td>
-              </tr>`).join('')}
-          </tbody>
-        </table>`
-      : '<div class="empty">No payments yet.</div>';
-
-    document.getElementById('revenue-loading').style.display = 'none';
-    document.getElementById('revenue-stats').style.display   = 'block';
-
-  } catch (err) {
-    document.getElementById('revenue-loading').style.display = 'none';
-    document.getElementById('revenue-error').style.display   = 'block';
-    document.getElementById('revenue-error').textContent     = `Could not load revenue: ${err.message}`;
   }
 }
 </script>
