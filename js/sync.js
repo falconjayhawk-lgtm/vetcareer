@@ -107,7 +107,8 @@ function toggleApiKeyVis() {
 function resetAllData() {
   const keys = ['profile','assignments','civilianJobs','awards','achievements',
                  'documents','jobs','apiKey','checklist','scoutFilters','sf86'];
-  keys.forEach(k => localStorage.removeItem('vc_' + k));
+  // Clear both stores — sf86 lives in sessionStorage (S9), the rest in localStorage.
+  keys.forEach(k => { localStorage.removeItem('vc_' + k); sessionStorage.removeItem('vc_' + k); });
   localStorage.removeItem('t2t_onboarding_complete');
   setState({
     profile: {
