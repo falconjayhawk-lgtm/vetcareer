@@ -46,7 +46,7 @@ async function redeemPromoCode(rawCode) {
     const resp = await fetch(`/api/promo/redeem`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, userId: state.supabase?.userId || state.profile?.fullName || 'anonymous' })
+      body: JSON.stringify({ code, userId: state.profile?.fullName || 'anonymous' })
     });
 
     if (!resp.ok) {
