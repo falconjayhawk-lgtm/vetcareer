@@ -43,10 +43,11 @@ async function redeemPromoCode(rawCode) {
   if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Checking...'; }
 
   try {
+    const token = await getClerkToken();
     const resp = await fetch(`/api/promo/redeem`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, userId: state.profile?.fullName || 'anonymous' })
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ code })
     });
 
     if (!resp.ok) {
