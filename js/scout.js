@@ -35,9 +35,13 @@ function renderScout() {
   ];
 
   function jobCard(job, i, isMulti) {
-    const grade = job.grade || 5;
-    const gradeColor = grade >= 8 ? '#16a34a' : grade >= 6 ? '#2563eb' : '#6b7280';
-    const gradeLabel = grade >= 8 ? 'Strong Match' : grade >= 6 ? 'Good Match' : 'Possible Match';
+    // C5: an unscored job (grade null) shows "Not scored" rather than a
+    // fabricated number.
+    const scored = Number.isFinite(job.grade);
+    const grade = scored ? job.grade : null;
+    const gradeColor = !scored ? '#6b7280' : grade >= 8 ? '#16a34a' : grade >= 6 ? '#2563eb' : '#6b7280';
+    const gradeLabel = !scored ? 'Not scored' : grade >= 8 ? 'Strong Match' : grade >= 6 ? 'Good Match' : 'Possible Match';
+    const gradeBadge = scored ? `${grade}/10 ${gradeLabel}` : gradeLabel;
     const tracked = !!(state.jobs || []).find(j => j.jobUrl === job.url);
     const trackedJob = (state.jobs || []).find(j => j.jobUrl === job.url);
     const trackFn = isMulti ? `trackMultiJob(${i})` : `trackScoutJob(${i})`;
@@ -47,7 +51,7 @@ function renderScout() {
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px">
               <span style="font-weight:700;font-size:15px">${esc(job.title)}</span>
-              <span style="background:${gradeColor}18;color:${gradeColor};border:1px solid ${gradeColor}40;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700">${grade}/10 ${gradeLabel}</span>
+              <span style="background:${gradeColor}18;color:${gradeColor};border:1px solid ${gradeColor}40;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700">${gradeBadge}</span>
               ${job.veteranPreference ? `<span style="background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:700">🎖 Vet Pref</span>` : ''}
             </div>
             <div style="font-size:13px;color:#4b5563"><strong>${esc(job.agency||job.company||'')}</strong> · ${esc(job.location)}</div>
@@ -428,7 +432,7 @@ async function runMultiSearch() {
     const seen = new Set();
     const combined = allResults.flat()
       .filter(j => { if (!j.url || seen.has(j.url)) return false; seen.add(j.url); return true; })
-      .sort((a, b) => b.grade - a.grade);
+      .sort((a, b) => (Number.isFinite(b.grade) ? b.grade : -1) - (Number.isFinite(a.grade) ? a.grade : -1));
 
     setState({ ui: { ...state.ui, multiSearchBusy: false, multiResults: combined,
       multiError: combined.length === 0 ? 'No results found across any of your searches. Try broader keywords.' : ''
@@ -541,9 +545,9 @@ function _addJobToTracker(job) {
     location: job.location, jobUrl: job.url, status: 'interested',
     dateAdded: now.split('T')[0], dateApplied:'', contactName:'',
     salaryRange: job.salary||'', interviewDates:'',
-    notes: `${job.gsGrade?job.gsGrade+' | ':''}Closes: ${job.closeDate||'N/A'} | Match: ${job.grade}/10\n${job.whyFits||''}`,
+    notes: `${job.gsGrade?job.gsGrade+' | ':''}Closes: ${job.closeDate||'N/A'} | Match: ${Number.isFinite(job.grade)?job.grade+'/10':'Not scored'}\n${job.whyFits||''}`,
     fitScore: job.grade,
-    fitLabel: job.grade>=8?'Strong Match':job.grade>=6?'Good Match':'Possible Match',
+    fitLabel: !Number.isFinite(job.grade)?'Not scored':job.grade>=8?'Strong Match':job.grade>=6?'Good Match':'Possible Match',
     activityLog: [{ date: now, type:'status', from:null, to:'interested', note:'Added from Job Scout (USAJobs)' }]
   };
   setState({ jobs: [...state.jobs, newJob] });
@@ -557,13 +561,13 @@ function untrackScoutJob(jobId) {
 
 function copyScoutResults() {
   const jobs = state.ui.scoutResults || [];
-  const text = jobs.map(j=>`${j.title} — ${j.agency||j.company}\n${j.location} | ${j.gsGrade||''} | ${j.salary||''}\nCloses: ${j.closeDate||'N/A'} | Match: ${j.grade}/10\n${j.url||''}`).join('\n\n---\n\n');
+  const text = jobs.map(j=>`${j.title} — ${j.agency||j.company}\n${j.location} | ${j.gsGrade||''} | ${j.salary||''}\nCloses: ${j.closeDate||'N/A'} | Match: ${Number.isFinite(j.grade)?j.grade+'/10':'Not scored'}\n${j.url||''}`).join('\n\n---\n\n');
   navigator.clipboard.writeText(text).then(()=>showToast('Copied ✓'));
 }
 
 function copyMultiResults() {
   const jobs = state.ui.multiResults || [];
-  const text = jobs.map(j=>`${j.title} — ${j.agency||j.company}\n${j.location} | ${j.salary||''} | Match: ${j.grade}/10\n${j.searchLabel||''}\n${j.url||''}`).join('\n\n---\n\n');
+  const text = jobs.map(j=>`${j.title} — ${j.agency||j.company}\n${j.location} | ${j.salary||''} | Match: ${Number.isFinite(j.grade)?j.grade+'/10':'Not scored'}\n${j.searchLabel||''}\n${j.url||''}`).join('\n\n---\n\n');
   navigator.clipboard.writeText(text).then(()=>showToast('Copied ✓'));
 }
 
