@@ -25,7 +25,7 @@ let state = {
 
 function loadState() {
   try {
-    const keys = ['profile','assignments','civilianJobs','awards','achievements','stories','timeline','vaClaim','networkContacts','logbookChecklist','documents','jobs','apiKey','checklist','scoutFilters','sf86','supabase','access'];
+    const keys = ['profile','assignments','civilianJobs','awards','achievements','stories','timeline','vaClaim','networkContacts','logbookChecklist','documents','jobs','apiKey','checklist','scoutFilters','sf86','access'];
     keys.forEach(k => {
       const v = localStorage.getItem('vc_' + k);
       if (v) state[k] = JSON.parse(v);
@@ -39,30 +39,22 @@ function saveKey(k) {
 
 function setState(updates, shouldRender=true) {
   Object.assign(state, updates);
-  if (updates.profile !== undefined)      { saveKey('profile');      scheduleSync(); }
-  if (updates.assignments !== undefined)  { saveKey('assignments');  scheduleSync(); }
-  if (updates.civilianJobs !== undefined) { saveKey('civilianJobs'); scheduleSync(); }
-  if (updates.awards !== undefined)       { saveKey('awards');       scheduleSync(); }
-  if (updates.achievements !== undefined) { saveKey('achievements'); scheduleSync(); }
-  if (updates.stories !== undefined)      { saveKey('stories');      scheduleSync(); }
-  if (updates.timeline !== undefined)     { saveKey('timeline');     scheduleSync(); }
-  if (updates.vaClaim !== undefined)      { saveKey('vaClaim');      scheduleSync(); }
-  if (updates.networkContacts !== undefined) { saveKey('networkContacts'); scheduleSync(); }
-  if (updates.logbookChecklist !== undefined){ saveKey('logbookChecklist'); }
-  if (updates.documents !== undefined)    { saveKey('documents');    scheduleSync(); }
-  if (updates.jobs !== undefined)         { saveKey('jobs');         scheduleSync(); }
+  if (updates.profile !== undefined)      saveKey('profile');
+  if (updates.assignments !== undefined)  saveKey('assignments');
+  if (updates.civilianJobs !== undefined) saveKey('civilianJobs');
+  if (updates.awards !== undefined)       saveKey('awards');
+  if (updates.achievements !== undefined) saveKey('achievements');
+  if (updates.stories !== undefined)      saveKey('stories');
+  if (updates.timeline !== undefined)     saveKey('timeline');
+  if (updates.vaClaim !== undefined)      saveKey('vaClaim');
+  if (updates.networkContacts !== undefined)  saveKey('networkContacts');
+  if (updates.logbookChecklist !== undefined) saveKey('logbookChecklist');
+  if (updates.documents !== undefined)    saveKey('documents');
+  if (updates.jobs !== undefined)         saveKey('jobs');
   if (updates.apiKey !== undefined)       saveKey('apiKey');
-  if (updates.checklist !== undefined)    { saveKey('checklist');    scheduleSync(); }
-  if (updates.scoutFilters !== undefined) { saveKey('scoutFilters'); scheduleSync(); }
-  if (updates.sf86 !== undefined)         { saveKey('sf86');         scheduleSync(); }
+  if (updates.checklist !== undefined)    saveKey('checklist');
+  if (updates.scoutFilters !== undefined) saveKey('scoutFilters');
+  if (updates.sf86 !== undefined)         saveKey('sf86');
   if (updates.access !== undefined)       saveKey('access');
-  if (updates.supabase !== undefined)     saveKey('supabase');
   if (shouldRender) render();
-}
-
-let syncTimer = null;
-function scheduleSync() {
-  if (!state.supabase?.url || !state.supabase?.anonKey || !state.supabase?.userId) return;
-  clearTimeout(syncTimer);
-  syncTimer = setTimeout(() => syncToSupabase(false), 2000);
 }
