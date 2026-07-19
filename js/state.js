@@ -23,18 +23,32 @@ let state = {
   ui: {}
 };
 
+// S9: sensitive keys live in sessionStorage (cleared when the tab closes),
+// never persisted to disk long-term. SF86 holds SSN, foreign contacts, etc.
+const SESSION_KEYS = new Set(['sf86']);
+function storeFor(k) { return SESSION_KEYS.has(k) ? sessionStorage : localStorage; }
+
 function loadState() {
   try {
     const keys = ['profile','assignments','civilianJobs','awards','achievements','stories','timeline','vaClaim','networkContacts','logbookChecklist','documents','jobs','apiKey','checklist','scoutFilters','sf86','access'];
     keys.forEach(k => {
-      const v = localStorage.getItem('vc_' + k);
+      let v = storeFor(k).getItem('vc_' + k);
+      // Migrate sensitive keys that older versions wrote to localStorage:
+      // move any existing value into sessionStorage and scrub the disk copy.
+      if (SESSION_KEYS.has(k)) {
+        const legacy = localStorage.getItem('vc_' + k);
+        if (legacy !== null) {
+          if (v === null) { v = legacy; sessionStorage.setItem('vc_' + k, legacy); }
+          localStorage.removeItem('vc_' + k);
+        }
+      }
       if (v) state[k] = JSON.parse(v);
     });
   } catch(e) {}
 }
 
 function saveKey(k) {
-  try { localStorage.setItem('vc_' + k, JSON.stringify(state[k])); } catch(e) {}
+  try { storeFor(k).setItem('vc_' + k, JSON.stringify(state[k])); } catch(e) {}
 }
 
 function setState(updates, shouldRender=true) {
