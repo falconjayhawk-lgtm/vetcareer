@@ -24,6 +24,11 @@ function proExpiresLabel() {
       const d = new Date(_subscription.currentPeriodEnd * 1000);
       return `Pro access renews ${d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
     }
+    if (_subscription.status === 'promo' && _subscription.proUntil) {
+      if (_subscription.proUntil === 'lifetime') return 'Lifetime access';
+      const d = new Date(_subscription.proUntil);
+      return `Pro access until ${d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
+    }
     return 'Pro access active';
   }
   // Promo code label
