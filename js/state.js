@@ -19,7 +19,6 @@ let state = {
   checklist: {},
   scoutFilters: { roleTypes:'', domains:'', geography:'', exclusions:'', companies:'', seniority:'', additionalContext:'' },
   sf86: { residences:[], employers:[], references:[], foreignContacts:[], foreignTravel:[], relatives:[], notes:'' },
-  supabase: { url:'', anonKey:'', userId:'', syncing:false, lastSync:null, syncError:'' },
   access: { plan:'free', proUntil:null, promoCode:null },
   ui: {}
 };
