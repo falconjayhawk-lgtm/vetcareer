@@ -49,7 +49,9 @@ async function redeemPromoCode(rawCode) {
 
   try {
     const token = await getClerkToken();
-    const resp = await fetch(`/api/promo/redeem`, {
+    // Must go to the Worker, not the Netlify origin. A relative URL here would
+    // hit tactical2talent.com and 404 — this is why redemption never worked.
+    const resp = await fetch(`${WORKER_URL}/api/promo/redeem`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ code })
