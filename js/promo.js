@@ -58,8 +58,6 @@ async function redeemPromoCode(rawCode) {
     });
 
     if (!resp.ok) {
-      const devResult = checkDevCode(code);
-      if (devResult) { applyProAccess(devResult, code); return; }
       throw new Error('Invalid or expired code.');
     }
 
@@ -70,22 +68,16 @@ async function redeemPromoCode(rawCode) {
       throw new Error(result.message || 'Invalid or expired code.');
     }
   } catch (err) {
-    const devResult = checkDevCode(code);
-    if (devResult) { applyProAccess(devResult, code); return; }
     showToast('❌ ' + err.message, false);
     if (btn) { btn.disabled = false; btn.innerHTML = '🎟️ Redeem'; }
   }
 }
 
-// Dev/beta codes baked in for launch — change or remove post-launch
-function checkDevCode(code) {
-  const betaCodes = {
-    'BETA2026':   { durationDays: 90, note: 'Beta tester — 3 months free' },
-    'FRIEND2026': { durationDays: 90, note: 'Friends & family — 3 months free' },
-    'LIFETIME':   { durationDays: -1, note: 'Lifetime access' },
-  };
-  return betaCodes[code] || _dynamicCodes[code] || null;
-}
+// SECURITY: the old checkDevCode() fallback lived here with BETA2026 /
+// FRIEND2026 / LIFETIME hardcoded. This file is served publicly, so those codes
+// were readable by anyone — and once server-side redemption started working,
+// they granted real Pro access. Codes now come only from the admin panel, and
+// only the Worker decides whether one is valid. Never hardcode a code here.
 
 function applyProAccess(result, code) {
   let proUntil;
@@ -133,7 +125,7 @@ function promoCodeWidget(context = 'settings') {
 
   const placeholder = context === 'onboarding' ?
     'Have a promo or beta code? Enter it here' :
-    'Enter promo code (e.g. BETA2026)';
+    'Enter your promo code';
 
   return `
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -151,42 +143,8 @@ function promoCodeWidget(context = 'settings') {
     </div>`;
 }
 
-// ── Admin: generate codes (run from browser console) ──────────────────
-//
-// CUSTOM code (you name it):
-//   createPromoCode('PATRICK', 90)        → adds PATRICK for 90 days
-//   createPromoCode('JOHNDOE', -1)        → adds JOHNDOE for lifetime
-//
-// RANDOM codes (batch):
-//   generatePromoCodes('BETA', 5, 90)     → 5 codes like BETA-A3XK2P
-//   generatePromoCodes('T2T', 10, 90)     → 10 codes like T2T-B7YM4Q
-//
-// To make codes permanent, copy the output into betaCodes in promo.js.
-
-const _dynamicCodes = {};
-
-function createPromoCode(code, durationDays = 90, note = '') {
-  const key = code.trim().toUpperCase();
-  if (!key) { console.error('Code cannot be empty'); return; }
-  _dynamicCodes[key] = { durationDays, note: note || `Custom code — ${durationDays === -1 ? 'lifetime' : durationDays + ' days'}` };
-  console.log(`✅ Code created: ${key} (${durationDays === -1 ? 'lifetime' : durationDays + ' days'})`);
-  console.log(`   To make permanent, add this to betaCodes in promo.js:`);
-  console.log(`   '${key}': { durationDays: ${durationDays}, note: '${_dynamicCodes[key].note}' },`);
-  return key;
-}
-
-function generatePromoCodes(prefix = 'T2T', count = 1, durationDays = 90) {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no confusing O,0,I,1
-  const codes = [];
-  for (let i = 0; i < count; i++) {
-    let rand = '';
-    for (let j = 0; j < 6; j++) rand += chars[Math.floor(Math.random() * chars.length)];
-    const code = `${prefix}-${rand}`;
-    _dynamicCodes[code] = { durationDays, note: `Generated — ${durationDays === -1 ? 'lifetime' : durationDays + ' days'}` };
-    codes.push(code);
-  }
-  console.log(`\n✅ Generated ${count} code(s) — ${durationDays === -1 ? 'lifetime' : durationDays + ' days'}:`);
-  codes.forEach(c => console.log(`   ${c}`));
-  console.log(`\nTo make permanent, add to betaCodes in promo.js.`);
-  return codes;
-}
+// Promo codes are created in the admin panel (Promo Codes tab), which stores
+// them server-side in KV. The old browser-console generators that used to live
+// here only wrote to an in-memory list the client checked itself — they never
+// persisted, and their instructions told you to paste codes into this public
+// file. Both are gone. Use the admin panel.

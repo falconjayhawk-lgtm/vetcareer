@@ -87,8 +87,49 @@ function renderSettings() {
           </div>
           <button class="btn btn-sm btn-danger" onclick="confirmResetAndOnboard()">🔄 Erase & Restart</button>
         </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--red-light);border:1px solid #fecaca;border-radius:2px;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:14px;color:var(--text)">Delete All My Data</div>
+            <div style="font-size:12px;color:var(--muted)">Erases your data in this browser and the records we hold on our servers. Billing records are kept as required by law.</div>
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="deleteAllMyData()">🗑 Delete Everything</button>
+        </div>
       </div>
     </div>`;
+}
+
+// Deletes server-side records first, then everything held locally. Server first
+// on purpose: if the request fails we stop and tell the user, rather than wiping
+// their browser and leaving orphaned records behind.
+async function deleteAllMyData() {
+  if (!confirm(
+    '⚠️ This permanently deletes your data.\n\n' +
+    'On our servers: feedback you have submitted, promo access, and cached job searches.\n' +
+    'In this browser: your profile, documents, job tracker, SF-86 worksheet, and everything else.\n\n' +
+    'This cannot be undone. Export a backup first if you want to keep a copy.\n\nContinue?'
+  )) return;
+
+  if (!confirm('Last check — delete everything? This cannot be reversed.')) return;
+
+  try {
+    const token = await getClerkToken();
+    const res = await fetch(`${WORKER_URL}/api/account/delete`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (res.status === 409) {
+      alert(data.error || 'Please cancel your active subscription before deleting your data.');
+      return;
+    }
+    if (!res.ok) throw new Error(data.error || 'Deletion failed. Please try again.');
+
+    resetAllData();
+    showToast('✓ Your data has been deleted.');
+  } catch (err) {
+    showToast('❌ ' + err.message, false);
+  }
 }
 
 function saveApiKey() {
